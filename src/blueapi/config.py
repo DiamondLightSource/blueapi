@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import textwrap
@@ -6,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
@@ -21,11 +22,15 @@ from pydantic import (
     TypeAdapter,
     UrlConstraints,
     ValidationError,
+    WebsocketUrl,
     field_validator,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -48,8 +53,6 @@ yaml.Loader.add_constructor("!expand", _expand_env)
 
 class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
     DEVICE_MANAGER = "deviceManager"
 
 
@@ -63,19 +66,6 @@ class PlanSource(Source):
     )
 
 
-class DeviceSource(Source):
-    kind: Literal[SourceKind.DEVICE_FUNCTIONS] = Field(
-        SourceKind.DEVICE_FUNCTIONS, init=False
-    )
-
-
-class DodalSource(Source):
-    kind: Literal[SourceKind.DODAL] = Field(SourceKind.DODAL, init=False)
-    mock: bool = Field(
-        description="If true, ophyd_async device connections are mocked", default=False
-    )
-
-
 class DeviceManagerSource(Source):
     kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
         SourceKind.DEVICE_MANAGER, init=False
@@ -84,7 +74,9 @@ class DeviceManagerSource(Source):
         description="If true, ophyd_async device connections are mocked", default=False
     )
     name: str = Field(
-        default="devices", description="Name of the device manager in the module"
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
     )
 
 
@@ -150,13 +142,10 @@ class EnvironmentConfig(BlueapiBaseModel):
 
     sources: list[
         Annotated[
-            PlanSource | DeviceSource | DodalSource | DeviceManagerSource,
+            PlanSource | DeviceManagerSource,
             Field(discriminator="kind"),
         ]
-    ] = [
-        PlanSource(module="dodal.plans"),
-        PlanSource(module="dodal.plan_stubs.wrapped"),
-    ]
+    ] = Field(default=[])
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)
 
@@ -181,6 +170,22 @@ class CORSConfig(BlueapiBaseModel):
 class RestConfig(BlueapiBaseModel):
     url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
+
+    @property
+    def ws_address(self) -> WebsocketUrl:
+        api = self.url
+        if api.host is None:
+            # type hints say it could be None but not possible to construct
+            # HttpUrl without host
+            raise ValueError("No host configured")  # pragma: no cover
+        scheme = "ws" if api.scheme == "http" else "wss"
+
+        # HttpUrl adds "/" to the start of paths, even if none was specified so
+        # remove existing leading '/' to prevent duplication
+        path = (api.path or "").removeprefix("/")
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=path
+        )
 
 
 class ScratchRepository(BlueapiBaseModel):
@@ -234,18 +239,41 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
+    well_known_url: str | None = Field(
+        description="URL to fetch OIDC config from the provider",
+        deprecated=True,
+        default=None,
     )
+    issuer: str | None = Field(description="URL of OIDC provider", default=None)
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
     logout_redirect_endpoint: str = Field(
         description="The oidc endpoint required to logout", default=""
     )
 
+    @model_validator(mode="after")
+    def check_urls(self) -> Self:
+        if self.issuer is None and self.__dict__.get("well_known_url") is None:
+            raise ValueError("Please provide 'OIDCConfig.issuer'")
+        if self.__dict__.get("well_known_url"):
+            LOGGER.warning(
+                "OIDCConfig.well_known_url is deprecated, Please use OIDCConfig.issuer"
+            )
+        return self
+
+    @cached_property
+    def _well_known_url(self) -> str:
+        if self.issuer:
+            if self.__dict__.get("well_known_url"):
+                LOGGER.warning(
+                    "well_known_url and issuer are both set. Defaulting to issuer URL"
+                )
+            return self.issuer + "/.well-known/openid-configuration"
+        return cast(str, self.well_known_url)
+
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response = requests.get(self._well_known_url)
         response.raise_for_status()
         return response.json()
 
@@ -258,10 +286,6 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
-
-    @cached_property
-    def issuer(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def authorization_endpoint(self) -> str:
@@ -296,6 +320,14 @@ class Tag(StrEnum):
     META = "Meta"
 
 
+class OpaConfig(BlueapiBaseModel):
+    root: HttpUrl = HttpUrl("http://localhost:8181")
+    audience: str = "account"
+    tiled_service_account_check: str = "blueapi/tiled_service_account_for_beamline"
+    submit_task_check: str = "blueapi/write_to_beamline_visit"
+    admin_check: str = "admin/admin"
+
+
 class ApplicationConfig(BlueapiBaseModel):
     """
     Config for the worker application as a whole. Root of
@@ -303,7 +335,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.3.0"
+    REST_API_VERSION: ClassVar[str] = "1.5.0"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -335,14 +367,21 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    opa: OpaConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
             return (
                 (self.stomp == other.stomp)
+                & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.scratch == other.scratch)
+                & (self.oidc == other.oidc)
+                & (self.auth_token_path == other.auth_token_path)
+                & (self.numtracker == other.numtracker)
+                & (self.opa == other.opa)
             )
         return False
 

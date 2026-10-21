@@ -1,7 +1,10 @@
 import inspect
+import subprocess
 import time
 from asyncio import Queue
 from collections.abc import Generator
+from enum import StrEnum, auto
+from itertools import count
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -15,7 +18,12 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    InvalidParametersError,
+    NotFoundError,
+    ParameterError,
     ServiceUnavailableError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -30,8 +38,8 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
+from blueapi.utils import INSTRUMENT_SESSION_RE
 from blueapi.worker.event import (
-    TaskError,
     TaskResult,
     TaskStatus,
     WorkerEvent,
@@ -39,50 +47,40 @@ from blueapi.worker.event import (
 )
 from blueapi.worker.task_worker import TrackableTask
 
-AUTHORIZED_INSTRUMENT_SESSION = "cm12345-1"
-UNAUTHORIZED_INSTRUMENT_SESSION = "cm54321-1"
-FAKE_ACCESS_TAG = '{"proposal": 12345, "visit": 1, "beamline": "adsim"}'
+
+class User(StrEnum):
+    alice = auto()
+    bob = auto()
+    admin = auto()
+
+
+class NonAdminUser(StrEnum):
+    alice = auto()
+    bob = auto()
+
+
+class AdminUser(StrEnum):
+    admin = auto()
+
+
+ValidUser = User | NonAdminUser | AdminUser
+
+# Below is the default authorized instrument session for Users
+VALID_INSTRUMENT_SESSION: dict[ValidUser, str] = {
+    User.alice: "cm12345-1",
+    User.bob: "cm12345-2",
+    User.admin: "cm12345-2",  # Placeholder session for admin
+}
+INVALID_INSTRUMENT_SESSION = "cm54321-1"
 CURRENT_NUMTRACKER_NUM = 43
 
-_SIMPLE_TASK = TaskRequest(
-    name="sleep",
-    params={"time": 0.0},
-    instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
-)
-_LONG_TASK = TaskRequest(
-    name="sleep",
-    params={"time": 1.0},
-    instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
-)
 
 _DATA_PATH = Path(__file__).parent
 
 
-# These system tests are run in the "system_tests" CI job, they can also be run
-# and debugged locally.
-#
-# 1. Spin up dummy versions of associated services
-# (outside of devcontainer)
-#
-# git submodule init
-# docker compose -f tests/system_tests/compose.yaml up -d
-#
-# 2. Spin up blueapi server (inside devcontainer)
-#
-# source tests/system_tests/.env
-# export TILED_SINGLE_USER_API_KEY=foo
-# blueapi -c tests/system_tests/config.yaml serve
-#
-# Note: You can login into blueapi using username: admin and password: admin
-# 3. Run the system tests
-# tox -e system-test
-#
-# 4. To tear down the associated services
-# (outside of devcontainer)
-#
-# docker compose -f tests/system_tests/compose.yaml down
-
-# This client will give tokens for alice
+# These system tests are run in the "system_tests" CI job.
+# They can also be run and debugged locally.
+# Follow the instructions in: docs/how-to/run-blueapi-and-services-locally
 
 
 def load_config(path: Path) -> ApplicationConfig:
@@ -91,12 +89,65 @@ def load_config(path: Path) -> ApplicationConfig:
     return loader.load()
 
 
-def get_access_token() -> str:
+@pytest.fixture
+def user(request) -> ValidUser:
+    return getattr(request, "param", User.alice)
+
+
+@pytest.fixture
+def instrument_session(request) -> str:
+    return getattr(request, "param", VALID_INSTRUMENT_SESSION[User.alice])
+
+
+@pytest.fixture(scope="module")
+def local_numtracker():
+    """
+    Local version of what we expect the numtracker to provide
+
+    Allows different combinations of tests to be run without having to hard
+    code the expected scan numbers.
+    """
+    return count(CURRENT_NUMTRACKER_NUM + 1)
+
+
+@pytest.fixture
+def scan_id(local_numtracker) -> int:
+    """
+    The next value we expect to use for a scan_id
+
+    Should be used in any test that calls out to numtracker.
+    """
+    return next(local_numtracker)
+
+
+def task_factory(
+    user: ValidUser, instrument_session: str | None, time: float = 0.0
+) -> TaskRequest:
+    return TaskRequest(
+        name="sleep",
+        params={"time": time},
+        instrument_session=instrument_session
+        if instrument_session
+        else VALID_INSTRUMENT_SESSION[user],
+    )
+
+
+@pytest.fixture
+def small_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+    return task_factory(user, instrument_session)
+
+
+@pytest.fixture
+def long_task(user: ValidUser, instrument_session: str | None) -> TaskRequest:
+    return task_factory(user, instrument_session, time=1.0)
+
+
+def get_access_token(user: ValidUser) -> str:
     token_url = "http://localhost:8081/realms/master/protocol/openid-connect/token"
     response = requests.post(
         token_url,
         data={
-            "client_id": "system-test-blueapi",
+            "client_id": "system-test-blueapi-" + user.value,
             "client_secret": "secret",
             "grant_type": "client_credentials",
         },
@@ -114,28 +165,37 @@ def client_without_auth() -> Generator[BlueapiClient]:
         yield BlueapiClient.from_config(config=ApplicationConfig())
 
 
-@pytest.fixture
-def client_with_stomp() -> Generator[BlueapiClient]:
+def patch_session(user: ValidUser):
     mock_session_manager = MagicMock()
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
+    mock_session_manager.get_valid_access_token.return_value = get_access_token(user)
+    return patch(
         "blueapi.service.authentication.SessionManager.from_cache",
         return_value=mock_session_manager,
-    ):
+    )
+
+
+@pytest.fixture
+def client_with_stomp(user: ValidUser) -> Generator[BlueapiClient]:
+    with patch_session(user):
         yield BlueapiClient.from_config(
             config=load_config(_DATA_PATH / "config-cli.yaml")
         )
 
 
 @pytest.fixture
-def client() -> Generator[BlueapiClient]:
-    mock_session_manager = MagicMock()
-    mock_session_manager.get_valid_access_token = get_access_token
-    with patch(
-        "blueapi.service.authentication.SessionManager.from_cache",
-        return_value=mock_session_manager,
-    ):
+def client(user: ValidUser) -> Generator[BlueapiClient]:
+    with patch_session(user):
         yield BlueapiClient.from_config(config=ApplicationConfig())
+
+
+@pytest.fixture
+def client_factory() -> dict[ValidUser, BlueapiClient]:
+    users: dict[ValidUser, BlueapiClient] = {}
+    for user in User:
+        with patch_session(user):
+            users[user] = BlueapiClient.from_config(config=ApplicationConfig())
+
+    return users
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -175,7 +235,7 @@ def blueapi_rest_client_get_methods() -> list[str]:
     return [
         name
         for name, method in BlueapiRestClient.__dict__.items()
-        if not name.startswith("__")
+        if not name.startswith("_")
         and callable(method)
         and len(params := inspect.signature(method).parameters) == 1
         and "self" in params
@@ -193,37 +253,41 @@ def clean_existing_tasks(rest_client: BlueapiRestClient):
 def reset_numtracker():
     server_config = load_config(Path(_DATA_PATH, "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
-    requests.post(
+    response = requests.post(
         str(nt_url),
         json={
-            "query": """mutation {
+            "query": f"""mutation {{
               configure(instrument: "adsim",
-                        config: {directory: "/tmp/",
-                                 scan: "{instrument}-{scan_number}",
-                                 detector: "{instrument}-{scan_number}-{detector}",
-                                 scanNumber: 43}) {
+                        config: {{directory: "/tmp/",
+                            scan: "{{instrument}}-{{scan_number}}",
+                            detector: "{{instrument}}-{{scan_number}}-{{detector}}",
+                            scanNumber: {CURRENT_NUMTRACKER_NUM}}}) {{
                 scanTemplate
-              }
-            }"""
+              }}
+            }}"""
         },
-    ).raise_for_status()
+        headers={"authorization": "Bearer " + get_access_token(User.admin)},
+    )
+    response.raise_for_status()
+    if response.json().get("errors") is not None:
+        raise Exception(response.json())
     yield
 
 
-def test_cannot_access_endpoints(
+def test_cannot_access_endpoints_without_authentication(
     client_without_auth: BlueapiClient, blueapi_rest_client_get_methods: list[str]
 ):
     blueapi_rest_client_get_methods.remove(
         "get_oidc_config"
     )  # get_oidc_config can be accessed without auth
     for get_method in blueapi_rest_client_get_methods:
-        with pytest.raises(BlueskyRemoteControlError, match=r"<Response \[401\]>"):
+        with pytest.raises(UnauthorisedAccessError, match=r"Not authenticated"):
             getattr(client_without_auth._rest, get_method)()
 
 
 def test_can_get_oidc_config_without_auth(client_without_auth: BlueapiClient):
-    assert client_without_auth.oidc_config == OIDCConfig(
-        well_known_url="http://localhost:8081/realms/master/.well-known/openid-configuration",
+    assert client_without_auth.get_oidc_config() == OIDCConfig(
+        issuer="http://localhost:8081/realms/master",
         client_id="ixx-cli-blueapi",
         client_audience="ixx-blueapi",
     )
@@ -243,7 +307,7 @@ def test_get_plans_by_name(client: BlueapiClient, expected_plans: PlanResponse):
 
 
 def test_get_non_existent_plan(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(UnknownPlanError, match=r"Plan 'Not exists' not found"):
         rest_client.get_plan("Not exists")
 
 
@@ -268,7 +332,7 @@ def test_get_device_by_name(
 
 
 def test_get_non_existent_device(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_device("Not exists")
 
 
@@ -277,20 +341,25 @@ def test_client_non_existent_device(client: BlueapiClient):
         _ = client.devices.missing
 
 
-def test_create_task_and_delete_task_by_id(rest_client: BlueapiRestClient):
-    create_task = rest_client.create_task(_SIMPLE_TASK)
+def test_create_task_and_delete_task_by_id(
+    rest_client: BlueapiRestClient, small_task: TaskRequest
+):
+    create_task = rest_client.create_task(small_task)
     rest_client.clear_task(create_task.task_id)
 
 
-def test_instrument_session_propagated(rest_client: BlueapiRestClient):
-    response = rest_client.create_task(_SIMPLE_TASK)
+def test_task_metadata_propagated(
+    rest_client: BlueapiRestClient, small_task: TaskRequest
+):
+    response = rest_client.create_task(small_task)
     trackable_task = rest_client.get_task(response.task_id)
     assert trackable_task.task.metadata == {
-        "user": "alice",
-        "instrument_session": AUTHORIZED_INSTRUMENT_SESSION,
+        "user": User.alice,
+        "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
         "tiled_access_tags": [
-            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
+            '{"proposal": "cm12345", "visit": 1, "beamline": "adsim"}',
         ],
+        "blueapi_task_id": response.task_id,
     }
 
 
@@ -305,9 +374,11 @@ def test_create_task_validation_error(rest_client: BlueapiRestClient):
         )
 
 
-def test_get_all_tasks(rest_client: BlueapiRestClient):
+def test_get_all_tasks(
+    rest_client: BlueapiRestClient, small_task: TaskRequest, long_task: TaskRequest
+):
     created_tasks: list[TaskResponse] = []
-    for task in [_SIMPLE_TASK, _LONG_TASK]:
+    for task in [small_task, long_task]:
         created_task = rest_client.create_task(task)
         created_tasks.append(created_task)
     task_ids = [task.task_id for task in created_tasks]
@@ -321,8 +392,8 @@ def test_get_all_tasks(rest_client: BlueapiRestClient):
         rest_client.clear_task(task_id)
 
 
-def test_get_task_by_id(rest_client: BlueapiRestClient):
-    created_task = rest_client.create_task(_SIMPLE_TASK)
+def test_get_task_by_id(rest_client: BlueapiRestClient, small_task: TaskRequest):
+    created_task = rest_client.create_task(small_task)
 
     get_task = rest_client.get_task(created_task.task_id)
     assert (
@@ -336,37 +407,39 @@ def test_get_task_by_id(rest_client: BlueapiRestClient):
 
 
 def test_get_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_task("Not-exists")
 
 
 def test_delete_non_existent_task(rest_client: BlueapiRestClient):
-    with pytest.raises(KeyError, match="{'detail': 'Item not found'}"):
+    with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.clear_task("Not-exists")
 
 
-def test_put_worker_task(rest_client: BlueapiRestClient):
-    created_task = rest_client.create_task(_SIMPLE_TASK)
+def test_put_worker_task(rest_client: BlueapiRestClient, small_task: TaskRequest):
+    created_task = rest_client.create_task(small_task)
     rest_client.update_worker_task(WorkerTask(task_id=created_task.task_id))
     active_task = rest_client.get_active_task()
     assert active_task.task_id == created_task.task_id
     rest_client.clear_task(created_task.task_id)
 
 
-def test_put_worker_task_fails_if_not_idle(rest_client: BlueapiRestClient):
-    small_task = rest_client.create_task(_SIMPLE_TASK)
-    long_task = rest_client.create_task(_LONG_TASK)
+def test_put_worker_task_fails_if_not_idle(
+    rest_client: BlueapiRestClient, small_task: TaskRequest, long_task: TaskRequest
+):
+    small_task_id = rest_client.create_task(small_task).task_id
+    long_task_id = rest_client.create_task(long_task).task_id
 
-    rest_client.update_worker_task(WorkerTask(task_id=long_task.task_id))
+    rest_client.update_worker_task(WorkerTask(task_id=long_task_id))
     active_task = rest_client.get_active_task()
-    assert active_task.task_id == long_task.task_id
+    assert active_task.task_id == long_task_id
 
     with pytest.raises(BlueskyRemoteControlError) as exception:
-        rest_client.update_worker_task(WorkerTask(task_id=small_task.task_id))
-    assert "<Response [409]>" in str(exception)
+        rest_client.update_worker_task(WorkerTask(task_id=small_task_id))
+    assert exception.value.args[0] == 409
     rest_client.cancel_current_task(WorkerState.ABORTING)
-    rest_client.clear_task(small_task.task_id)
-    rest_client.clear_task(long_task.task_id)
+    rest_client.clear_task(small_task_id)
+    rest_client.clear_task(long_task_id)
 
 
 def test_get_worker_state(client: BlueapiClient):
@@ -376,15 +449,15 @@ def test_get_worker_state(client: BlueapiClient):
 def test_set_state_transition_error(client: BlueapiClient):
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.resume()
-    assert "<Response [400]>" in str(exception)
+    assert "Cannot transition from IDLE to RUNNING" in exception.value.args[1]
     with pytest.raises(BlueskyRemoteControlError) as exception:
         client.pause()
-    assert "<Response [400]>" in str(exception)
+    assert "Cannot transition from IDLE to PAUSED" in exception.value.args[1]
 
 
-def test_get_task_by_status(rest_client: BlueapiRestClient):
-    task_1 = rest_client.create_task(_SIMPLE_TASK)
-    task_2 = rest_client.create_task(_SIMPLE_TASK)
+def test_get_task_by_status(rest_client: BlueapiRestClient, small_task: TaskRequest):
+    task_1 = rest_client.create_task(small_task)
+    task_2 = rest_client.create_task(small_task)
     task_by_pending = rest_client.get_all_tasks()
     # https://github.com/DiamondLightSource/blueapi/issues/680
     # task_by_pending = client.get_tasks_by_status(TaskStatusEnum.PENDING)
@@ -413,13 +486,13 @@ def test_get_task_by_status(rest_client: BlueapiRestClient):
     rest_client.clear_task(task_id=task_2.task_id)
 
 
-def test_progress_with_stomp(client_with_stomp: BlueapiClient):
+def test_progress_with_stomp(client_with_stomp: BlueapiClient, small_task: TaskRequest):
     all_events: list[AnyEvent] = []
 
     def on_event(event: AnyEvent):
         all_events.append(event)
 
-    client_with_stomp.run_task(_SIMPLE_TASK, on_event=on_event)
+    client_with_stomp.run_task(small_task, on_event=on_event)
     assert isinstance(all_events[0], WorkerEvent) and all_events[0].task_status
     task_id = all_events[0].task_status.task_id
     assert all_events == [
@@ -467,20 +540,15 @@ def test_delete_current_environment(client: BlueapiClient):
 
 
 @pytest.mark.parametrize(
-    "task,scan_id",
+    "task,user",
     [
         (
             TaskRequest(
                 name="count",
-                params={
-                    "detectors": [
-                        "det",
-                    ],
-                    "num": 5,
-                },
-                instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
+                params={"detectors": ["det"], "num": 3},
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
-            CURRENT_NUMTRACKER_NUM + 1,
+            User.alice,
         ),
         (
             TaskRequest(
@@ -491,14 +559,14 @@ def test_delete_current_environment(client: BlueapiClient):
                         "outer": {
                             "axis": "stage.x",
                             "start": 0.0,
-                            "stop": 10.0,
+                            "stop": 0.4,
                             "num": 2,
                             "type": "Linspace",
                         },
                         "inner": {
                             "axis": "stage.theta",
                             "start": 5.0,
-                            "stop": 15.0,
+                            "stop": 5.3,
                             "num": 3,
                             "type": "Linspace",
                         },
@@ -506,98 +574,19 @@ def test_delete_current_environment(client: BlueapiClient):
                         "type": "Product",
                     },
                 },
-                instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
+                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
             ),
-            CURRENT_NUMTRACKER_NUM + 2,
+            User.bob,
         ),
     ],
 )
-def test_plan_runs(client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int):
-    resource = Queue(maxsize=1)
-    start = Queue(maxsize=1)
-
-    def on_event(event: AnyEvent) -> None:
-        if isinstance(event, DataEvent):
-            if event.name == "start":
-                start.put_nowait(event.doc)
-            if event.name == "stream_resource":
-                resource.put_nowait(event.doc)
-
-    final_event = client_with_stomp.run_task(task, on_event)
-    assert isinstance(final_event.result, TaskResult)
-    assert final_event.task_complete
-    assert not final_event.task_failed
-
-    start_doc = start.get_nowait()
-    assert start_doc["scan_id"] == scan_id
-    assert start_doc["instrument"] == "adsim"
-    assert start_doc["instrument_session"] == AUTHORIZED_INSTRUMENT_SESSION
-    assert start_doc["data_session_directory"] == "/tmp"
-    assert start_doc["scan_file"] == f"adsim-{scan_id}"
-
-    stream_resource = resource.get_nowait()
-    assert stream_resource["run_start"] == start_doc["uid"]
-    assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
-
-    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
-    response = requests.get(
-        tiled_url, headers={"authorization": "Bearer " + get_access_token()}
-    )
-    assert response.status_code == 200
-    json = response.json()
-    assert "data" in json
-    assert "attributes" in json["data"]
-    assert "metadata" in json["data"]["attributes"]
-    assert "start" in json["data"]["attributes"]["metadata"]
-    start_metadata = response.json()["data"]["attributes"]["metadata"]["start"]
-    assert "instrument_session" in start_metadata
-    assert start_metadata["instrument_session"] == AUTHORIZED_INSTRUMENT_SESSION
-    assert "scan_id" in start_metadata
-    assert start_metadata["scan_id"] == scan_id
-    assert "detectors" in start_metadata
-    assert "det" in start_metadata["detectors"]
-
-
-@pytest.mark.parametrize(
-    "task",
-    [
-        TaskRequest(
-            name="set_absolute",
-            params={
-                "movable": "stage.x",
-                "value": "4.0",
-            },
-            instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
-        ),
-    ],
-)
-def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
-    final_event = client_with_stomp.run_task(task)
-    assert isinstance(final_event.result, TaskResult)
-    assert final_event.task_complete
-    assert not final_event.task_failed
-
-
-@pytest.mark.parametrize(
-    "task,scan_id",
-    [
-        (
-            TaskRequest(
-                name="count",
-                params={
-                    "detectors": [
-                        "det",
-                    ],
-                    "num": 5,
-                },
-                instrument_session=UNAUTHORIZED_INSTRUMENT_SESSION,
-            ),
-            CURRENT_NUMTRACKER_NUM + 1,
-        ),
-    ],
-)
-def test_unauthorized_plan_run(
-    client_with_stomp: BlueapiClient, task: TaskRequest, scan_id: int
+@pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
+def test_plan_runs(
+    client_with_stomp: BlueapiClient,
+    task: TaskRequest,
+    scan_id: int,
+    user: ValidUser,
+    run_method: str,
 ):
     resource = Queue(maxsize=1)
     start = Queue(maxsize=1)
@@ -609,19 +598,141 @@ def test_unauthorized_plan_run(
             if event.name == "stream_resource":
                 resource.put_nowait(event.doc)
 
-    outcome = client_with_stomp.run_task(task, on_event)
-    assert outcome.task_failed
-    assert outcome.task_complete
-    assert isinstance(outcome.result, TaskError)
-    assert outcome.result.type == "ClientError"
-    assert outcome.result.message.startswith(
-        "403: Access policy rejects the provided access blob"
+    runner = getattr(client_with_stomp, run_method)
+    final_event = runner(task, on_event)
+    assert isinstance(final_event.result, TaskResult)
+    assert final_event.task_complete
+    assert not final_event.task_failed
+
+    start_doc = start.get_nowait()
+    assert start_doc["scan_id"] == scan_id
+    assert start_doc["instrument"] == "adsim"
+    assert start_doc["instrument_session"] == VALID_INSTRUMENT_SESSION[user]
+    assert start_doc["data_session_directory"] == "/tmp"
+    assert start_doc["scan_file"] == f"adsim-{scan_id}"
+
+    stream_resource = resource.get_nowait()
+    assert stream_resource["run_start"] == start_doc["uid"]
+    assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
+
+    match = INSTRUMENT_SESSION_RE.match(start_doc["instrument_session"])
+    assert match
+    proposal = match["proposal"]
+    tiled_url = (
+        "http://localhost:8407/api/v1/metadata/"
+        f"{start_doc['instrument']}/{proposal}/{start_doc['instrument_session']}/"
+        f"{start_doc['uid']}"
     )
+    response = requests.get(
+        tiled_url, headers={"authorization": "Bearer " + get_access_token(user)}
+    )
+    assert response.status_code == 200
+    json = response.json()
+    assert "data" in json
+    assert "attributes" in json["data"]
+    assert "metadata" in json["data"]["attributes"]
+    assert "start" in json["data"]["attributes"]["metadata"]
+    start_metadata = response.json()["data"]["attributes"]["metadata"]["start"]
+    assert "instrument_session" in start_metadata
+    assert start_metadata["instrument_session"] == VALID_INSTRUMENT_SESSION[user]
+    assert "scan_id" in start_metadata
+    assert start_metadata["scan_id"] == scan_id
+    assert "blueapi_task_id" in start_metadata
+    assert start_metadata["blueapi_task_id"] == final_event.task_id
+    assert "detectors" in start_metadata
+    assert "det" in start_metadata["detectors"]
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        TaskRequest(
+            name="set_absolute",
+            params={
+                "movable": "stage.x",
+                "value": 1.0,
+            },
+            instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+        ),
+    ],
+)
+def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequest):
+    final_event = client_with_stomp.run_task(task)
+    assert isinstance(final_event.result, TaskResult)
+    assert final_event.task_complete
+    assert not final_event.task_failed
+
+
+@pytest.mark.parametrize(
+    "task,param_error,user",
+    [
+        (
+            TaskRequest(
+                name="count",
+                params={"detectors": "det", "num": 3},  # detectors should be list
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            ParameterError(
+                loc=["body", "params", "detectors"],
+                msg="'str' instances are not allowed as a Sequence value",
+                type="sequence_str",
+                input="det",
+            ),
+            User.alice,
+        ),
+        (
+            TaskRequest(
+                name="spec_scan",
+                params={
+                    "detectors": ["det"],
+                    "spec": {
+                        "axis": "missing",  # doesn't exist
+                        "start": 0.0,
+                        "stop": 0.4,
+                        "num": 2,
+                        "type": "Linspace",
+                    },
+                },
+                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
+            ),
+            ParameterError(
+                loc=["body", "params", "spec", "Linspace", "axis"],
+                msg="Value error, Device missing cannot be found",
+                type="value_error",
+                input="missing",
+            ),
+            User.bob,
+        ),
+    ],
+)
+@pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
+def test_invalid_parameters_fail_cleanly(
+    client_with_stomp: BlueapiClient,
+    task: TaskRequest,
+    user: ValidUser,
+    param_error: ParameterError,
+    run_method: str,
+):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    runner = getattr(client_with_stomp, run_method)
+    with pytest.raises(InvalidParametersError) as ipe:
+        runner(task, on_event)
+
+    assert ipe.value.errors == [param_error]
 
 
 # Regression test for #1480
 def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
-    with pytest.raises(KeyError):
+    with pytest.raises(NotFoundError):
         # This task hasn't been submitted so should return an error...
         client_with_stomp._rest.update_worker_task(WorkerTask(task_id="missing"))
 
@@ -634,7 +745,288 @@ def test_task_submission_after_invalid_task(client_with_stomp: BlueapiClient):
                     "det",
                 ],
             },
-            instrument_session=AUTHORIZED_INSTRUMENT_SESSION,
+            instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         )
     )
     assert isinstance(res.result, TaskResult)
+
+
+@pytest.mark.parametrize(
+    "instrument_session,user",
+    [
+        # bob cannot submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.bob),
+        # alice cannot submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.alice),
+        # admin still needs to put a valid instrument_session
+        (INVALID_INSTRUMENT_SESSION, User.admin),
+    ],
+)
+@pytest.mark.parametrize("method_name", ["create_task", "run_blocking"])
+def test_run_task_without_authz(
+    client: BlueapiClient,
+    small_task: TaskRequest,
+    user: ValidUser,
+    instrument_session: str,
+    method_name: str,
+):
+    method = getattr(client, method_name)
+    with pytest.raises(UnauthorisedAccessError, match="Not authorized to submit task"):
+        method(small_task)
+
+
+@pytest.mark.parametrize(
+    "instrument_session,user",
+    [
+        # alice can submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.alice),
+        # bob can submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.bob),
+        # admin can submit a task that bob is on
+        (VALID_INSTRUMENT_SESSION[User.bob], User.admin),
+        # admin can submit a task that alice is on
+        (VALID_INSTRUMENT_SESSION[User.alice], User.admin),
+    ],
+)
+def test_create_task_authorization(
+    client: BlueapiClient,
+    small_task: TaskRequest,
+    user: ValidUser,
+    instrument_session: str,
+):
+    client.create_task(small_task)
+
+
+def test_non_admin_can_only_get_own_tasks(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for user in NonAdminUser:
+        for task in client_factory[user].get_all_tasks().tasks:
+            assert task.task.metadata["user"] == user.value
+            assert tasks[user] == task.task_id
+
+
+def test_admin_can_get_all_tasks(client_factory: dict[ValidUser, BlueapiClient]):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for user in AdminUser:
+        all_tasks = {}
+        for task in client_factory[user].get_all_tasks().tasks:
+            all_tasks[task.task.metadata["user"]] = task.task_id
+        assert tasks == all_tasks
+
+
+def test_non_admin_can_only_delete_own_tasks(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.alice].clear_task(tasks[NonAdminUser.bob])
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.bob].clear_task(tasks[NonAdminUser.alice])
+
+    for user in NonAdminUser:
+        client_factory[user].clear_task(tasks[user])
+
+
+def test_admin_can_delete_any_task(client_factory: dict[ValidUser, BlueapiClient]):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for task in tasks.values():
+        client_factory[AdminUser.admin].clear_task(task)
+
+
+def test_any_user_can_retrieve_active_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    task_id = (
+        client_factory[AdminUser.admin]
+        .create_and_start_task(
+            task_factory(AdminUser.admin, VALID_INSTRUMENT_SESSION[AdminUser.admin])
+        )
+        .task_id
+    )
+
+    for user in User:
+        assert client_factory[user].get_active_task().task_id == task_id
+
+
+def test_non_admin_can_only_start_own_tasks(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in NonAdminUser:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.alice].start_task(
+            WorkerTask(task_id=tasks[NonAdminUser.bob])
+        )
+
+    with pytest.raises(NotFoundError):
+        client_factory[NonAdminUser.bob].start_task(
+            WorkerTask(task_id=tasks[NonAdminUser.alice])
+        )
+
+    for user in NonAdminUser:
+        client_factory[user].start_task(WorkerTask(task_id=tasks[user]))
+
+
+def test_admin_can_start_any_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    tasks = {}
+    for user in User:
+        tasks[user] = (
+            client_factory[user]
+            .create_task(task_factory(user, VALID_INSTRUMENT_SESSION[user]))
+            .task_id
+        )
+
+    for task in tasks.values():
+        client_factory[AdminUser.admin].start_task(WorkerTask(task_id=task))
+
+
+@pytest.mark.parametrize(
+    "user",
+    [
+        User.bob,
+        User.alice,
+        User.admin,
+    ],
+)
+def test_any_user_can_retrieve_worker_state(client: BlueapiClient, user: User):
+    assert client.get_state() == WorkerState.IDLE
+
+
+def test_non_admin_can_only_abort_own_tasks(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    client_factory[NonAdminUser.alice].create_and_start_task(
+        task_factory(
+            NonAdminUser.alice, VALID_INSTRUMENT_SESSION[NonAdminUser.alice], time=1
+        )
+    )
+    with pytest.raises(
+        UnauthorisedAccessError, match="Not authorized to set worker state"
+    ):
+        client_factory[NonAdminUser.bob].abort()
+
+    client_factory[NonAdminUser.alice].abort()
+
+
+def test_admin_can_abort_any_task(
+    client_factory: dict[ValidUser, BlueapiClient],
+):
+    for user in User:
+        client_factory[user].create_and_start_task(
+            task_factory(user, VALID_INSTRUMENT_SESSION[user], time=1)
+        )
+        client_factory[AdminUser.admin].abort()
+
+
+def test_run_blocking_requires_auth(
+    client_without_auth: BlueapiClient, small_task: TaskRequest
+):
+    with pytest.raises(UnauthorisedAccessError):
+        client_without_auth.run_blocking(small_task)
+
+
+# Kept last: installs packages into the environment, so it must not run
+# before (and potentially disturb) the tests above.
+@pytest.mark.parametrize(
+    "repos,expected_location_name,expected_version",
+    [
+        pytest.param(
+            [("dodal", "2.6.2"), ("dodalv3.0.0", "3.0.0")],
+            "dodalv3.0.0",
+            "3.0.0",
+            id="v2-then-v3",
+        ),
+        pytest.param(
+            [("dodalv3.0.0", "3.0.0"), ("dodal", "2.6.2")],
+            "dodal",
+            "2.6.2",
+            id="v3-then-v2",
+        ),
+    ],
+)
+def test_setup_scratch_last_repo_wins_for_duplicate_package(
+    tmp_path: Path,
+    repos: list[tuple[str, str]],
+    expected_location_name: str,
+    expected_version: str,
+):
+    """
+    Regression test for https://github.com/DiamondLightSource/blueapi/issues/1590
+
+    Two scratch repositories both provide the dls-dodal package, pinned to
+    different tags. setup-scratch installs each editable in config order, so
+    the later entry must be what is left installed.
+    """
+    scratch_root = tmp_path / "scratch"
+    scratch_root.mkdir()
+    overlay = tmp_path / "overlay.yaml"
+    repo_entries = "\n".join(
+        f"""    - name: {name}
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      target_revision: "{revision}\""""
+        for name, revision in repos
+    )
+    overlay.write_text(f"""
+scratch:
+  root: {scratch_root}
+  repositories:
+{repo_entries}
+""")
+
+    result = subprocess.run(
+        ["uv", "run", "blueapi", "-c", str(overlay), "setup-scratch"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    installed = subprocess.run(
+        ["uv", "run", "--no-sync", "uv", "pip", "show", "dls-dodal"],
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        f"Editable project location: {scratch_root / expected_location_name}"
+        in installed.stdout
+    )
+    assert "Name: dls-dodal" in installed.stdout
+    assert f"Version: {expected_version}" in installed.stdout

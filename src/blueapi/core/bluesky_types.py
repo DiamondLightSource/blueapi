@@ -24,13 +24,12 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from bluesky.utils import Msg, MsgGenerator
-from dodal.common import PlanGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel, Field
 
 from blueapi.utils import BlueapiBaseModel
 
-PlanWrapper = Callable[[MsgGenerator], MsgGenerator]
+PlanGenerator = Callable[..., MsgGenerator]
 
 #: An object that encapsulates the device to do useful things to produce
 # data (e.g. move and read)
@@ -76,8 +75,9 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
         return (get_origin(return_type) == Generator) and (
             get_args(return_type)[0] == Msg
         )
-    except TypeError:
-        # get_type_hints fails on some objects (such as Union or Optional)
+    except (TypeError, NameError):
+        # get_type_hints fails on some objects (such as Union, Optional or
+        # pydantic.Field)
         return False
 
 

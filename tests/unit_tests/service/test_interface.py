@@ -2,6 +2,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from inspect import isawaitable
+from multiprocessing.connection import Connection as PipeConnection
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
@@ -9,15 +10,12 @@ import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
-from dodal.common.beamlines.beamline_utils import (
-    clear_path_provider,
-    get_path_provider,
-    set_path_provider,
-)
+from fastapi import status
 from ophyd_async.epics.motor import Motor
-from pydantic import HttpUrl
+from pydantic import HttpUrl, SecretStr
 from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
+from tiled.client.utils import ClientError
 
 from blueapi.config import (
     ApplicationConfig,
@@ -25,13 +23,14 @@ from blueapi.config import (
     MetadataConfig,
     NumtrackerConfig,
     OIDCConfig,
-    PlanSource,
     ScratchConfig,
+    ServiceAccount,
     StompConfig,
     TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
 from blueapi.service import interface
+from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
     DeviceModel,
     PackageInfo,
@@ -44,7 +43,6 @@ from blueapi.service.model import (
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.utils.numtracker import NumtrackerClient
-from blueapi.utils.path_provider import StartDocumentPathProvider
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -160,16 +158,22 @@ def test_get_devices(context_mock: MagicMock):
     context_mock.return_value = context
 
     assert interface.get_devices() == [
-        DeviceModel(name="my_device", protocols=[ProtocolInfo(name="Stoppable")]),
+        DeviceModel(
+            name="my_device",
+            protocols=[
+                ProtocolInfo(name="Stoppable", types=[]),
+            ],
+        ),
         DeviceModel(
             name="my_axis",
             protocols=[
+                ProtocolInfo(name="Checkable", types=[]),
                 ProtocolInfo(name="Flyable", types=[]),
                 ProtocolInfo(name="Movable", types=[]),
                 ProtocolInfo(name="Readable", types=[]),
                 ProtocolInfo(name="Stageable", types=[]),
                 ProtocolInfo(name="Stoppable", types=[]),
-                ProtocolInfo(name="Subscribable", types=["float"]),
+                ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Configurable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],
@@ -255,8 +259,8 @@ def test_subscribers_removed_when_task_not_found(
     # regression test for #1480
     worker = worker_mock()
     ctx = context_mock()
+    worker.get_task_by_id.return_value = None
     worker.begin_task.side_effect = KeyError()
-
     with pytest.raises(KeyError):
         interface.begin_task(WorkerTask(task_id="missing"))
 
@@ -269,28 +273,32 @@ def test_subscribers_removed_when_task_not_found(
     worker.worker_events.unsubscribe.assert_called_once_with(remove_token)
 
 
-@patch("blueapi.service.interface.TaskWorker.get_tasks_by_status")
-def test_get_tasks_by_status(get_tasks_by_status_mock: MagicMock):
-    pending_task1 = TrackableTask(task_id="0", task=Task(name="pending_task1"))
-    pending_task2 = TrackableTask(task_id="1", task=Task(name="pending_task2"))
-    running_task = TrackableTask(task_id="2", task=Task(name="running_task"))
-
-    def mock_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-        if status == TaskStatusEnum.PENDING:
-            return [pending_task1, pending_task2]
-        elif status == TaskStatusEnum.RUNNING:
-            return [running_task]
-        else:
-            return []
-
-    get_tasks_by_status_mock.side_effect = mock_tasks_by_status
-
-    assert interface.get_tasks_by_status(TaskStatusEnum.PENDING) == [
-        pending_task1,
-        pending_task2,
+@patch("blueapi.service.interface.TaskWorker.get_tasks")
+def test_get_tasks(get_tasks_mock: MagicMock):
+    running_task = [TrackableTask(task_id="2", task=Task(name="running_task"))]
+    pending_task = [
+        TrackableTask(task_id="0", task=Task(name="pending_task1")),
+        TrackableTask(task_id="1", task=Task(name="pending_task2")),
     ]
-    assert interface.get_tasks_by_status(TaskStatusEnum.RUNNING) == [running_task]
-    assert interface.get_tasks_by_status(TaskStatusEnum.COMPLETE) == []
+
+    def mock_tasks(
+        status: TaskStatusEnum | None = None,
+    ) -> list[TrackableTask]:
+        if status == TaskStatusEnum.PENDING:
+            return pending_task
+        elif status == TaskStatusEnum.RUNNING:
+            return running_task
+        elif status == TaskStatusEnum.COMPLETE:
+            return []
+        else:
+            return pending_task + running_task
+
+    get_tasks_mock.side_effect = mock_tasks
+
+    assert interface.get_tasks(TaskStatusEnum.PENDING) == pending_task
+    assert interface.get_tasks(TaskStatusEnum.RUNNING) == running_task
+    assert interface.get_tasks(TaskStatusEnum.COMPLETE) == []
+    assert interface.get_tasks() == pending_task + running_task
 
 
 @patch("blueapi.service.interface.BlueskyContext.numtracker")
@@ -341,18 +349,6 @@ def test_cancel_active_task(cancel_active_task_mock: MagicMock):
     cancel_active_task_mock.assert_called_once_with(fail, reason)
 
 
-@patch("blueapi.service.interface.TaskWorker.get_tasks")
-def test_get_tasks(get_tasks_mock: MagicMock):
-    tasks = [
-        TrackableTask(task_id="0", task=Task(name="0")),
-        TrackableTask(task_id="1", task=Task(name="1")),
-        TrackableTask(task_id="2", task=Task(name="2")),
-    ]
-    get_tasks_mock.return_value = tasks
-
-    assert interface.get_tasks() == tasks
-
-
 @pytest.mark.parametrize("tiled_enabled", [True, False])
 @patch("blueapi.service.interface.context")
 @patch("blueapi.service.interface.config")
@@ -377,11 +373,12 @@ def test_get_task_by_id(
 
     expected_metadata: dict[str, Any] = {
         "instrument_session": FAKE_INSTRUMENT_SESSION,
+        "blueapi_task_id": task_id,
     }
 
     if tiled_enabled:
         expected_access_tag = {
-            "proposal": 12345,
+            "proposal": "cm12345",
             "visit": 1,
             "beamline": "ixx",
         }
@@ -417,13 +414,15 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
         metadata,
     )
 
+    expected_metadata = {**metadata, "blueapi_task_id": task_id}
+
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
         request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
-            metadata=metadata,
+            metadata=expected_metadata,
         ),
         is_complete=False,
         is_pending=True,
@@ -441,6 +440,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     context().tiled_conf = TiledConfig()
     context().run_engine.subscribe.return_value = 17
     worker().worker_events.subscribe.return_value = 42
+    worker().get_task_by_id.return_value = None
 
     interface.begin_task(task)
 
@@ -479,6 +479,166 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     )
     context().run_engine.unsubscribe.assert_called_once_with(17)
     worker().worker_events.unsubscribe.assert_called_once_with(42)
+
+
+def _existing_task(instrument_session: str = FAKE_INSTRUMENT_SESSION) -> TrackableTask:
+    return TrackableTask(
+        task_id="foo_bar",
+        task=Task(
+            name="my_plan",
+            params={},
+            metadata={"instrument_session": instrument_session},
+        ),
+    )
+
+
+def _missing_session_path(key: str):
+    """__getitem__ for a client whose beamline/proposal/visit path doesn't exist."""
+    if "/" in key:
+        raise KeyError(key)
+    return MagicMock()
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    root_client = from_uri()
+    root_client.__getitem__.side_effect = _missing_session_path
+    proposal_client = root_client.create_container.return_value
+    session_client = proposal_client.create_container.return_value
+    final_client = session_client.create_container.return_value
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    root_client.create_container.assert_called_once_with(
+        key="p46", access_tags=[json.dumps({"beamline": "p46"})]
+    )
+    proposal_client.create_container.assert_called_once_with(
+        key="cm12345",
+        access_tags=[json.dumps({"beamline": "p46", "proposal": "cm12345"})],
+    )
+    session_client.create_container.assert_called_once_with(
+        key="cm12345-1",
+        access_tags=[
+            json.dumps({"proposal": "cm12345", "visit": 1, "beamline": "p46"})
+        ],
+    )
+    writer.assert_called_once_with(final_client, batch_size=1)
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_finds_existing_session_in_one_lookup(
+    worker, context, from_uri, writer
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    root_client = from_uri()
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    root_client.__getitem__.assert_called_once_with("p46/cm12345/cm12345-1")
+    root_client.create_container.assert_not_called()
+    writer.assert_called_once_with(root_client.__getitem__.return_value, batch_size=1)
+
+
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_raises_for_invalid_instrument_session(worker, context, from_uri):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task(
+        instrument_session="not-valid"
+    )
+
+    with pytest.raises(ValueError, match="Unable to extract proposal and visit"):
+        interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+
+@pytest.mark.parametrize(
+    "status_code,expect_raises",
+    [(status.HTTP_409_CONFLICT, False), (status.HTTP_500_INTERNAL_SERVER_ERROR, True)],
+)
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_handles_tiled_container_create_errors(
+    worker, context, from_uri, writer, status_code, expect_raises
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig()
+    context().run_engine.md = {"instrument": "p46"}
+    worker().get_task_by_id.return_value = _existing_task()
+    tiled_client = from_uri()
+    tiled_client.__getitem__.side_effect = _missing_session_path
+    tiled_client.create_container.side_effect = ClientError(
+        "error", request=MagicMock(), response=MagicMock(status_code=status_code)
+    )
+
+    if expect_raises:
+        with pytest.raises(ClientError):
+            interface.begin_task(WorkerTask(task_id="foo_bar"))
+    else:
+        interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_begin_task_uses_service_account_auth_for_tiled(
+    worker, context, from_uri, writer
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig(
+        authentication=ServiceAccount(
+            client_id="tiled_writer",
+            client_secret=SecretStr("secret"),
+            token_url="https://example.com/token",
+        )
+    )
+    worker().get_task_by_id.return_value = None
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+
+    assert isinstance(from_uri.call_args.kwargs["auth"], TiledAuth)
+
+
+@patch("blueapi.service.interface.TiledWriter")
+@patch("blueapi.service.interface.from_uri")
+@patch("blueapi.service.interface.context")
+@patch("blueapi.service.interface.worker")
+def test_service_account_tiled_client_reused_across_tasks(
+    worker, context, from_uri, writer
+):
+    context().numtracker = None
+    context().tiled_conf = TiledConfig(
+        authentication=ServiceAccount(
+            client_id="tiled_writer",
+            client_secret=SecretStr("secret"),
+            token_url="https://example.com/token",
+        )
+    )
+    worker().get_task_by_id.return_value = None
+    from_uri.reset_mock()
+
+    interface.begin_task(WorkerTask(task_id="foo_bar"))
+    interface.begin_task(WorkerTask(task_id="baz"))
+
+    from_uri.assert_called_once()
 
 
 def test_get_oidc_config(oidc_config: OIDCConfig):
@@ -613,63 +773,6 @@ def test_numtracker_requires_instrument_metadata():
     interface.set_config(ApplicationConfig())
 
 
-def test_setup_without_numtracker_with_existing_provider_does_not_overwrite_provider():
-    conf = ApplicationConfig()
-    mock_provider = Mock()
-    set_path_provider(mock_provider)
-
-    assert get_path_provider() == mock_provider
-    interface.setup(conf)
-    assert get_path_provider() == mock_provider
-
-    clear_path_provider()
-
-
-def test_setup_without_numtracker_without_existing_provider_does_not_make_one():
-    conf = ApplicationConfig()
-    interface.setup(conf)
-
-    with pytest.raises(NameError):
-        get_path_provider()
-
-
-def test_setup_with_numtracker_makes_start_document_provider():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
-        numtracker=NumtrackerConfig(),
-    )
-    interface.setup(conf)
-
-    path_provider = get_path_provider()
-
-    assert isinstance(path_provider, StartDocumentPathProvider)
-
-    clear_path_provider()
-
-
-def test_setup_with_numtracker_raises_if_provider_is_defined_in_device_module():
-    conf = ApplicationConfig(
-        env=EnvironmentConfig(
-            sources=[
-                PlanSource(
-                    module="tests.unit_tests.service.example_beamline_with_path_provider",
-                ),
-            ],
-            metadata=MetadataConfig(instrument="p46"),
-        ),
-        numtracker=NumtrackerConfig(),
-    )
-
-    with pytest.raises(
-        InvalidConfigError,
-        match="Numtracker has been configured but a path provider was imported"
-        " with the devices. Remove this path provider to use numtracker.",
-    ):
-        interface.setup(conf)
-
-    clear_path_provider()
-
-
 @patch("blueapi.utils.numtracker.NumtrackerClient.create_scan")
 async def test_numtracker_create_scan_called_with_arguments_from_metadata(
     mock_create_scan,
@@ -749,3 +852,47 @@ async def test_update_scan_num_side_effect_sets_scan_file_in_re_md(
     assert isawaitable(scan_id) and await scan_id
 
     assert ctx.run_engine.md["scan_file"] == "p46-11"
+
+
+@patch("blueapi.service.interface.worker")
+def test_pipe_events(mock_worker: Mock):
+    worker = mock_worker()
+    tx = Mock(spec=PipeConnection)
+
+    interface.pipe_events(tx)
+
+    worker.worker_events.subscribe.assert_called_once()
+    worker.data_events.subscribe.assert_called_once()
+    worker.progress_events.subscribe.assert_called_once()
+
+    handler = worker.worker_events.subscribe.call_args[0][0]
+
+    evt = Mock()
+    handler(evt, "ignored correlation id")
+    tx.send.assert_called_once_with(evt)
+
+
+@patch("blueapi.service.interface.worker")
+def test_pipe_events_ignores_broken_pipe(mock_worker: Mock):
+    worker = mock_worker()
+    tx = Mock(spec=PipeConnection)
+
+    interface.pipe_events(tx)
+
+    worker.worker_events.subscribe.assert_called_once()
+    handler = worker.worker_events.subscribe.call_args[0][0]
+
+    tx.send.side_effect = BrokenPipeError()
+    # ensure that exceptions are not raised
+    handler(Mock(), "ignored correlation id")
+
+
+@patch("blueapi.service.interface.worker")
+def test_unpipe_events(mock_worker: Mock):
+    worker = mock_worker()
+    handles = interface.SubHandles(worker=1, progress=2, data=3)
+    interface.unpipe_events(handles)
+
+    worker.worker_events.unsubscribe.assert_called_once_with(1)
+    worker.progress_events.unsubscribe.assert_called_once_with(2)
+    worker.data_events.unsubscribe.assert_called_once_with(3)

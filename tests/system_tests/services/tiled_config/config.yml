@@ -8,6 +8,9 @@ authentication:
         device_flow_client_id: tiled-cli
         well_known_uri: "http://localhost:8081/realms/master/.well-known/openid-configuration"
         confirmation_message: "You have logged in with authn.diamond.ac.uk as {id}."
+        scopes_map:
+          read: ["read:metadata", "read:data"]
+          write: ["write:metadata", "write:data", "create:node", "register"]
 trees:
   - path: /
     tree: catalog
@@ -17,7 +20,7 @@ trees:
       init_if_not_exists: true
 
 access_control:
-  access_policy: "config.dls:DiamondOpenPolicyAgentAuthorizationPolicy"
+  access_policy: "dls_tiled.policy:DiamondOpenPolicyAgentAuthorizationPolicy"
   args:
     authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
     token_audience: account

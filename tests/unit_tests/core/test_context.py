@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from inspect import Parameter
 from pathlib import Path
 from types import ModuleType, NoneType
-from typing import Any, Generic, TypeVar, Union
-from unittest.mock import ANY, MagicMock, Mock, patch
+from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import responses
@@ -28,6 +29,7 @@ from ophyd_async.core import (
     init_devices,
 )
 from ophyd_async.epics.adaravis import AravisDetector
+from ophyd_async.epics.adcore import ADWriterFactory
 from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
@@ -36,8 +38,6 @@ from pytest import LogCaptureFixture
 from blueapi.config import (
     ApplicationConfig,
     DeviceManagerSource,
-    DeviceSource,
-    DodalSource,
     EnvironmentConfig,
     MetadataConfig,
     OIDCConfig,
@@ -46,9 +46,8 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
+from blueapi.core.context import generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
-from blueapi.utils.connect_devices import _establish_device_connections
 from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
@@ -85,6 +84,10 @@ def has_one_param(foo: int) -> MsgGenerator:
 
 
 def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:
+    yield from ()
+
+
+def has_optional_parameter(foo: dict[str, Any] | None = None) -> MsgGenerator:
     yield from ()
 
 
@@ -139,7 +142,7 @@ def alt_motor(run_engine: RunEngine) -> Motor:
 def sim_detector(tmp_path: Path) -> StandardDetector:
     path_provider = StaticPathProvider(UUIDFilenameProvider(), tmp_path)
     with init_devices(mock=True):
-        sim_det = AravisDetector("DET:", path_provider)
+        sim_det = AravisDetector("DET:", ADWriterFactory.hdf(path_provider))
     return sim_det
 
 
@@ -169,7 +172,9 @@ def some_configurable() -> SomeConfigurable:
     return SomeConfigurable()
 
 
-@pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
+@pytest.mark.parametrize(
+    "plan", [has_no_params, has_one_param, has_some_params, has_optional_parameter]
+)
 def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator):
     empty_context.register_plan(plan)
     assert plan.__name__ in empty_context.plans
@@ -265,76 +270,27 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
 def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
 
 
-def test_add_failing_deivces_from_module(
+def test_add_failing_devices_from_module(
     caplog: LogCaptureFixture, empty_context: BlueskyContext
 ):
     import tests.unit_tests.core.fake_device_module_failing as device_module
 
     caplog.set_level(10)
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     logs = caplog.get_records("call")
 
-    assert any("TimeoutError: FooBar" in log.message for log in logs)
+    assert any("TimeoutError('FooBar')" in log.message for log in logs)
     assert len(empty_context.devices.keys()) == 0
-
-
-def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
-    empty_context: BlueskyContext,
-):
-    """
-    Note that this functionality is currently used by hyperion.
-    """
-    import tests.unit_tests.core.fake_device_module as device_module
-
-    with patch(
-        "blueapi.core.context.make_all_devices",
-        return_value=({}, {}),
-    ) as mock_make_all_devices:
-        empty_context.with_dodal_module(
-            device_module, some_argument=1, another_argument="two"
-        )
-
-        mock_make_all_devices.assert_called_once_with(
-            device_module, some_argument=1, another_argument="two"
-        )
-
-
-def test_with_dodal_module_returns_connection_exceptions(empty_context: BlueskyContext):
-    import tests.unit_tests.core.fake_device_module as device_module
-
-    def connect_sim_backend(run_engine: RunEngine, devices, sim_backend):
-        return _establish_device_connections(run_engine, devices, True)
-
-    with patch(
-        "blueapi.utils.connect_devices._establish_device_connections",
-        side_effect=connect_sim_backend,
-    ):
-        names_to_devices, exceptions = empty_context.with_dodal_module(device_module)
-
-    assert set(names_to_devices.keys()) == {
-        "motor_y",
-        "ophyd_async_device",
-        "ophyd_device",
-        "device_a",
-        "motor_x",
-        "motor_bundle_a",
-        "motor_bundle_b",
-    }
-    assert len(exceptions) == 2
-    assert isinstance(exceptions["ophyd_device"], RuntimeError)
-    assert isinstance(exceptions["ophyd_async_device"], RuntimeError)
 
 
 @pytest.mark.parametrize(
@@ -355,7 +311,7 @@ def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext):
 
 def test_lookup_non_device(devicey_context: BlueskyContext):
     with pytest.raises(ValueError):
-        devicey_context.find_device("sim._set_success")
+        devicey_context.find_device("sim.name")
 
 
 def test_add_non_plan(empty_context: BlueskyContext):
@@ -374,7 +330,7 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                DeviceSource(
+                DeviceManagerSource(
                     module="tests.unit_tests.core.fake_device_module",
                 ),
                 PlanSource(
@@ -384,13 +340,11 @@ def test_add_devices_and_plans_from_modules_with_config(
         )
     )
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
@@ -407,33 +361,23 @@ def test_add_metadata_with_config(
         assert md in empty_context.run_engine.md.items()
 
 
-@pytest.mark.parametrize("mock", [True, False])
-def test_with_config_passes_mock_to_with_dodal_module(
-    empty_context: BlueskyContext,
-    mock: bool,
-):
-    with patch.object(empty_context, "with_dodal_module") as mock_with_dodal_module:
-        empty_context.with_config(
-            EnvironmentConfig(
-                sources=[
-                    DodalSource(
-                        module="tests.unit_tests.core.fake_device_module", mock=mock
-                    ),
-                    PlanSource(
-                        module="tests.unit_tests.core.fake_plan_module",
-                    ),
-                ]
-            )
-        )
-        mock_with_dodal_module.assert_called_once_with(ANY, mock=mock)
-
-
-def test_function_spec(empty_context: BlueskyContext):
+def test_function_spec_with_some_params(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int
-    assert spec["foo"][1].default_factory == DefaultFactory(42)
+    assert spec["foo"][1].default == 42
     assert spec["bar"][0] is str
-    assert spec["bar"][1].default_factory == DefaultFactory("bar")
+    assert spec["bar"][1].default == "bar"
+
+
+def test_function_spec_with_optional_params(empty_context: BlueskyContext):
+    spec = empty_context._type_spec_for_function(has_optional_parameter)
+    types = get_type_hints(has_optional_parameter)
+    arg_type = types.get("foo", Parameter.empty)
+
+    _type = SkipJsonSchema[empty_context._convert_type(arg_type, False)]
+    inner_type, *annotations = get_args(_type)
+    assert spec["foo"][0] == inner_type
+    assert spec["foo"][1].default_factory() is None  # type: ignore
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext):
@@ -514,7 +458,7 @@ def test_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
     assert spec["mov"][0] == movable_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 def test_generic_default_device_reference(empty_context: BlueskyContext):
@@ -524,7 +468,7 @@ def test_generic_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     motor_ref = empty_context._reference(Movable[float])
     assert spec["mov"][0] == motor_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 class ConcreteStoppable(Stoppable):
@@ -574,7 +518,7 @@ def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor:
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME  # type: ignore
+    assert spec["m"][1].default == SIM_MOTOR_NAME
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
@@ -593,7 +537,7 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]
-    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
+    assert spec["m"][1].default == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
@@ -739,7 +683,10 @@ def test_explicit_none_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
+        "foo": {
+            "title": "Foo",
+            "anyOf": [{"type": "integer"}, {"type": "null"}],
+        }
     }
     assert "foo" in schema.get("required", [])
 

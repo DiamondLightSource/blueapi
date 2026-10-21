@@ -1,27 +1,33 @@
-import uuid
 from collections.abc import Callable
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bluesky_stomp.messaging import MessageContext
-from observability_utils.tracing import (
-    JsonObjectSpanExporter,
-    asserting_span_exporter,
-)
+from observability_utils.tracing import JsonObjectSpanExporter, asserting_span_exporter
 from pydantic import HttpUrl
+from tests.unit_tests.client.constants import (
+    ACTIVE_TASK,
+    COMPLETE_EVENT,
+    DEVICE,
+    DEVICES,
+    ENV,
+    ENVIRONMENT_ID,
+    FAILED_EVENT,
+    NEW_ENV,
+    PLAN,
+    PLANS,
+)
 
 from blueapi.client import BlueapiClient
-from blueapi.client.client import (
-    DeviceCache,
-    DeviceRef,
-    MissingInstrumentSessionError,
-    Plan,
-    PlanCache,
-    PlanFailedError,
-)
+from blueapi.client.client import MissingInstrumentSessionError
 from blueapi.client.event_bus import AnyEvent, EventBusClient
-from blueapi.client.rest import BlueapiRestClient, BlueskyRemoteControlError
-from blueapi.config import MissingStompConfigurationError
+from blueapi.client.plan_cache import Plan, PlanFailedError
+from blueapi.client.rest import (
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    ServiceUnavailableError,
+)
+from blueapi.config import MissingStompConfigurationError, RestConfig
 from blueapi.core import DataEvent
 from blueapi.service.model import (
     DeviceModel,
@@ -32,83 +38,10 @@ from blueapi.service.model import (
     ProtocolInfo,
     TaskRequest,
     TaskResponse,
-    TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import ProgressEvent, Task, TrackableTask, WorkerEvent, WorkerState
+from blueapi.worker import ProgressEvent, WorkerEvent, WorkerState
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
-
-PLANS = PlanResponse(
-    plans=[
-        PlanModel(name="foo"),
-        PlanModel(name="bar"),
-    ]
-)
-PLAN = PlanModel(name="foo")
-FULL_PLAN = PlanModel(
-    name="foobar",
-    description="Description of plan foobar",
-    schema={
-        "title": "foobar",
-        "description": "Model description of plan foobar",
-        "properties": {
-            "one": {},
-            "two": {},
-        },
-        "required": ["one"],
-    },
-)
-DEVICES = DeviceResponse(
-    devices=[
-        DeviceModel(name="foo", protocols=[]),
-        DeviceModel(name="bar", protocols=[]),
-    ]
-)
-DEVICE = DeviceModel(name="foo", protocols=[])
-TASK = TrackableTask(task_id="foo", task=Task(name="bar", params={}))
-TASKS = TasksListResponse(tasks=[TASK])
-ACTIVE_TASK = WorkerTask(task_id="bar")
-ENVIRONMENT_ID = uuid.uuid4()
-NEW_ENVIRONMENT_ID = uuid.uuid4()
-ENV = EnvironmentResponse(environment_id=ENVIRONMENT_ID, initialized=True)
-NEW_ENV = EnvironmentResponse(environment_id=NEW_ENVIRONMENT_ID, initialized=True)
-COMPLETE_EVENT = WorkerEvent(
-    state=WorkerState.IDLE,
-    task_status=TaskStatus(
-        task_id="foo",
-        task_complete=True,
-        task_failed=False,
-        result=TaskResult(type="NoneType", result=None),
-    ),
-)
-FAILED_EVENT = WorkerEvent(
-    state=WorkerState.IDLE,
-    task_status=TaskStatus(
-        task_id="foo",
-        task_complete=True,
-        task_failed=True,
-        result=TaskError(type="PlanFailure", message="The plan failed"),
-    ),
-)
-
-
-@pytest.fixture
-def mock_rest() -> BlueapiRestClient:
-    mock = Mock(spec=BlueapiRestClient)
-
-    mock.get_plans.return_value = PLANS
-    mock.get_plan.side_effect = lambda n: {p.name: p for p in PLANS.plans}[n]
-    mock.get_devices.return_value = DEVICES
-    mock.get_device.side_effect = lambda n: {d.name: d for d in DEVICES.devices}[n]
-    mock.get_state.return_value = WorkerState.IDLE
-    mock.get_task.return_value = TASK
-    mock.get_all_tasks.return_value = TASKS
-    mock.get_active_task.return_value = ACTIVE_TASK
-    mock.get_environment.return_value = ENV
-    mock.delete_environment.return_value = EnvironmentResponse(
-        environment_id=ENVIRONMENT_ID, initialized=False
-    )
-    return mock
 
 
 @pytest.fixture
@@ -121,11 +54,6 @@ def mock_events() -> EventBusClient:
 
 
 @pytest.fixture
-def client(mock_rest: Mock) -> BlueapiClient:
-    return BlueapiClient(rest=mock_rest)
-
-
-@pytest.fixture
 def client_with_events(mock_rest: Mock, mock_events: MagicMock):
     return BlueapiClient(rest=mock_rest, events=mock_events)
 
@@ -135,6 +63,16 @@ def test_client_from_config():
         "tests/unit_tests/valid_example_config/client.yaml"
     )
     assert bc._rest._config.url == HttpUrl("http://example.com:8082")
+
+
+def test_client_for_host():
+    bc = BlueapiClient.for_host("http://custom.example.com:1234")
+    assert bc._rest._config.url == HttpUrl("http://custom.example.com:1234")
+
+
+def test_client_default_for_host():
+    bc = BlueapiClient.for_host()
+    assert bc._rest._config.url == RestConfig().url
 
 
 def test_get_plans(client: BlueapiClient):
@@ -189,9 +127,9 @@ def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
         else None
     )
     foo = client.devices.foo
-    assert foo == "foo"
+    assert foo.model.name == "foo"
     x = client.devices.foo.x
-    assert x == "foo.x"
+    assert x.model.name == "foo.x"
 
 
 def test_state_property(client: BlueapiClient):
@@ -279,6 +217,25 @@ def test_reload_environment(
     assert environment == NEW_ENV
 
 
+def test_reload_environment_removes_caches(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.get_environment.return_value = NEW_ENV
+
+    _ = client.plans, client.devices
+    _ = client.plans, client.devices
+
+    # rest calls only made once as plans/devices are cached
+    mock_rest.get_plans.assert_called_once()
+    mock_rest.get_devices.assert_called_once()
+    mock_rest.reset_mock()
+
+    client.reload_environment()
+    _ = client.plans, client.devices
+
+    # When environment is reloaded, caches are cleared so another call is required
+    mock_rest.get_plans.assert_called_once()
+    mock_rest.get_devices.assert_called_once()
+
+
 @patch("blueapi.client.client.time.time")
 @patch("blueapi.client.client.time.sleep")
 def test_reload_environment_no_timeout(
@@ -350,6 +307,16 @@ def test_reload_environment_failure(
         client.reload_environment()
 
 
+@pytest.mark.parametrize("err", [ServiceUnavailableError(), BlueskyRequestError()])
+def test_reload_propagates_known_errors(
+    err: Exception, client: BlueapiClient, mock_rest: Mock
+):
+    mock_rest.delete_environment.side_effect = err
+
+    with pytest.raises(type(err)):
+        client.reload_environment()
+
+
 def test_abort(
     client: BlueapiClient,
     mock_rest: Mock,
@@ -391,15 +358,15 @@ def test_resume(
     )
 
 
-def test_cannot_run_task_without_message_bus(client: BlueapiClient):
+def test_cannot_run_stomp_without_message_bus(client: BlueapiClient):
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+        client.run_stomp(TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
-def test_run_task_sets_up_control(
+def test_run_stomp_sets_up_control(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -410,14 +377,16 @@ def test_run_task_sets_up_control(
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_stomp(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
     mock_rest.create_task.assert_called_once_with(
         TaskRequest(name="foo", instrument_session="cm12345-1")
     )
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
 
-def test_run_task_fails_on_failing_event(
+def test_run_stomp_fails_on_failing_event(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -430,7 +399,7 @@ def test_run_task_fails_on_failing_event(
     mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
-    outcome = client_with_events.run_task(
+    outcome = client_with_events.run_stomp(
         TaskRequest(name="foo", instrument_session="cm12345-1"),
         on_event=on_event,
     )
@@ -459,7 +428,7 @@ def test_run_task_fails_on_failing_event(
         DataEvent(name="start", doc={}, task_id="0000-1111"),
     ],
 )
-def test_run_task_calls_event_callback(
+def test_run_stomp_calls_event_callback(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -478,7 +447,7 @@ def test_run_task_calls_event_callback(
     mock_events.subscribe_to_all_events = callback  # type: ignore
 
     mock_on_event = Mock()
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
     )
 
@@ -501,7 +470,7 @@ def test_run_task_calls_event_callback(
         object(),
     ],
 )
-def test_run_task_ignores_non_matching_events(
+def test_run_stomp_ignores_non_matching_events(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -520,7 +489,7 @@ def test_run_task_ignores_non_matching_events(
     mock_events.subscribe_to_all_events = callback
 
     mock_on_event = Mock()
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequest(name="foo", instrument_session="cm12345-1"), on_event=mock_on_event
     )
 
@@ -536,7 +505,7 @@ def test_scripting_interface_returns_result():
         result=TaskResult(result=42, type="int"),
     )
     demo_plan = Plan(
-        "demo",
+        name="demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
@@ -552,12 +521,25 @@ def test_scripting_interface_raises_exceptions():
         result=TaskError(type="ValueError", message="Plan failed"),
     )
     demo_plan = Plan(
-        "demo",
+        name="demo",
         client=client,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
     with pytest.raises(PlanFailedError, match="Plan failed"):
         demo_plan()
+
+
+@pytest.mark.parametrize(
+    "events,method", [(None, "run_blocking"), (EventBusClient(Mock()), "run_stomp")]
+)
+def test_run_test_implementation_switching(events: EventBusClient | None, method: str):
+    client = Mock()
+    client._events = events
+
+    task = Mock()
+    BlueapiClient.run_task(client, task)
+
+    getattr(client, method).assert_called_once_with(task, None)
 
 
 def test_oidc_config_property(client, mock_rest):
@@ -673,8 +655,8 @@ def test_cannot_run_task_span_ok(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        with asserting_span_exporter(exporter, "grun_task"):
-            client.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+        with asserting_span_exporter(exporter, "run_stomp"):
+            client.run_stomp(TaskRequest(name="foo", instrument_session="cm12345-1"))
 
 
 def test_instrument_session_required(client):
@@ -682,7 +664,7 @@ def test_instrument_session_required(client):
         _ = client.instrument_session
 
 
-def test_setting_instrument_session(client):
+def test_setting_instrument_session(client: BlueapiClient):
     # This looks like a completely pointless test but instrument_session is a
     # property with some logic so it's not purely to get coverage up
     client.instrument_session = "cm12345-4"
@@ -693,156 +675,6 @@ def test_fluent_instrument_session_setter(client):
     client2 = client.with_instrument_session("cm12345-3")
     assert client is client2
     assert client.instrument_session == "cm12345-3"
-
-
-def test_plan_cache_ignores_underscores(client):
-    cache = PlanCache(client, [PlanModel(name="_ignored"), PlanModel(name="used")])
-    with pytest.raises(AttributeError, match="_ignored"):
-        _ = cache._ignored
-
-
-def test_plan_cache_repr(client):
-    assert repr(client.plans) == "PlanCache(2 plans)"
-
-
-def test_device_cache_ignores_underscores():
-    rest = Mock()
-    rest.get_devices.return_value = DeviceResponse(
-        devices=[
-            DeviceModel(name="_ignored", protocols=[]),
-        ]
-    )
-    cache = DeviceCache(rest)
-    with pytest.raises(AttributeError, match="_ignored"):
-        _ = cache._ignored
-
-    rest.get_devices.reset_mock()
-    with pytest.raises(AttributeError, match="_anything"):
-        _ = cache._anything
-    rest.get_device.assert_not_called()
-
-
-def test_devices_are_cached(mock_rest):
-    cache = DeviceCache(mock_rest)
-    _ = cache.foo
-    mock_rest.get_device.assert_not_called()
-    _ = cache["foo"]
-    mock_rest.get_device.assert_not_called()
-
-
-def test_device_cache_repr(client):
-    assert repr(client.devices) == "DeviceCache(2 devices)"
-
-
-def test_device_repr():
-    cache = Mock()
-    model = Mock()
-    dev = DeviceRef(name="foo", cache=cache, model=model)
-    assert repr(dev) == "Device(foo)"
-
-
-def test_device_ignores_underscores():
-    cache = MagicMock()
-    model = Mock()
-    dev = DeviceRef(name="foo", cache=cache, model=model)
-    with pytest.raises(AttributeError, match="_underscore"):
-        _ = dev._underscore
-    cache.__getitem__.assert_not_called()
-
-
-def test_plan_help_text(client):
-    plan = Plan("foo", PlanModel(name="foo", description="help for foo"), client)
-    assert plan.help_text == "help for foo"
-
-
-def test_plan_fallback_help_text(client):
-    plan = Plan(
-        "foo",
-        PlanModel(
-            name="foo",
-            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
-        ),
-        client,
-    )
-    assert plan.help_text == "Plan foo(one, two=None)"
-
-
-def test_plan_properties(client):
-    plan = Plan(
-        "foo",
-        PlanModel(
-            name="foo",
-            schema={"properties": {"one": {}, "two": {}}, "required": ["one"]},
-        ),
-        client,
-    )
-
-    assert plan.properties == {"one", "two"}
-    assert plan.required == ["one"]
-
-
-def test_plan_empty_fallback_help_text(client):
-    plan = Plan(
-        "foo", PlanModel(name="foo", schema={"properties": {}, "required": []}), client
-    )
-    assert plan.help_text == "Plan foo()"
-
-
-p = pytest.param
-
-
-@pytest.mark.parametrize(
-    "args,kwargs,params",
-    [
-        p((1,), {}, {"one": 1}, id="required_as_positional"),
-        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
-        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
-        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
-        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
-    ],
-)
-def test_plan_param_mapping(args, kwargs, params):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan(
-        FULL_PLAN.name,
-        FULL_PLAN,
-        client,
-    )
-
-    plan(*args, **kwargs)
-    client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
-    )
-
-
-@pytest.mark.parametrize(
-    "args,kwargs,msg",
-    [
-        p((), {}, r"Missing argument\(s\) for \{'one'\}", id="missing_required"),
-        p((1,), {"one": 7}, "multiple values for one", id="duplicate_required"),
-        p((1, 2), {"two": 23}, "multiple values for two", id="duplicate_optional"),
-        p((1, 2, 3), {}, "too many arguments", id="too_many_args"),
-        p(
-            (),
-            {"unknown_key": 42},
-            r"got unexpected arguments: \{'unknown_key'\}",
-            id="unknown_arg",
-        ),
-    ],
-)
-def test_plan_invalid_param_mapping(args, kwargs, msg):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan(
-        FULL_PLAN.name,
-        FULL_PLAN,
-        client,
-    )
-
-    with pytest.raises(TypeError, match=msg):
-        plan(*args, **kwargs)
-    client.run_task.assert_not_called()
 
 
 def test_adding_removing_callback(client):
@@ -891,7 +723,9 @@ def test_client_callbacks(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_stomp(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
 
     assert callback.mock_calls == [call(test_event), call(COMPLETE_EVENT)]
 
@@ -919,7 +753,9 @@ def test_client_callback_failures(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    client_with_events.run_stomp(
+        TaskRequest(name="foo", instrument_session="cm12345-1")
+    )
 
     assert failing_callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
     assert callback.mock_calls == [call(evt), call(COMPLETE_EVENT)]
@@ -958,3 +794,62 @@ def test_client_login_no_oidc(
     client.login()
 
     mock_session_manager.assert_not_called()
+
+
+def test_client_logout(mock_rest: Mock, client: BlueapiClient):
+    mock_session_manager = Mock()
+    mock_rest.session_manager = mock_session_manager
+
+    client.logout()
+
+    mock_session_manager.logout.assert_called_once()
+    assert mock_rest.session_manager is None
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking(event: WorkerEvent, client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    res = client.run_blocking(TaskRequest(name="foo", instrument_session="cm12345-1"))
+    assert res == event.task_status
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.run_blocking(Mock(), on_event=callback)
+
+    callback.assert_called_once_with(event)
+
+
+@pytest.mark.parametrize("event", [COMPLETE_EVENT, FAILED_EVENT])
+def test_run_blocking_client_callbacks(
+    event: WorkerEvent, client: BlueapiClient, mock_rest: Mock
+):
+    callback = Mock()
+    mock_rest.run_blocking.side_effect = lambda req: [event]
+    client.add_callback(callback)
+    client.run_blocking(Mock())
+
+    callback.assert_called_once_with(event)
+
+
+def test_run_blocking_error_if_cut_short(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: []
+    with pytest.raises(
+        BlueskyRemoteControlError, match="Connection closed before plan completed"
+    ):
+        client.run_blocking(Mock())
+
+
+def test_run_blocking_ignores_callback_error(client: BlueapiClient, mock_rest: Mock):
+    mock_rest.run_blocking.side_effect = lambda req: [COMPLETE_EVENT]
+
+    def broken_callback(_: AnyEvent):
+        raise Exception("This callback is broken")
+
+    client.add_callback(broken_callback)
+    res = client.run_blocking(Mock())
+    assert res == COMPLETE_EVENT.task_status

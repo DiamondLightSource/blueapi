@@ -1,22 +1,30 @@
+import contextlib
 import uuid
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Stoppable
-from fastapi import status
+from fastapi import FastAPI, HTTPException, WebSocketDisconnect, status
 from fastapi.testclient import TestClient
-from httpx import Headers
-from pydantic import BaseModel, ValidationError
-from pydantic_core import InitErrorDetails
-from super_state_machine.errors import TransitionError
+from httpx2 import Headers
+from pydantic import BaseModel
+from starlette.testclient import WebSocketDenialResponse
+from starlette.types import Message, Receive, Scope, Send
 
-from blueapi.config import ApplicationConfig, CORSConfig, OIDCConfig, RestConfig
+from blueapi.config import (
+    ApplicationConfig,
+    CORSConfig,
+    OIDCConfig,
+    RestConfig,
+)
 from blueapi.core.bluesky_types import Plan
-from blueapi.service import main
+from blueapi.service import interface, main
+from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
     cancel_active_task,
     get_device,
@@ -37,8 +45,8 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.service.runner import WorkerDispatcher
-from blueapi.worker.event import WorkerState
-from blueapi.worker.task import Task
+from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
+from blueapi.worker.task import InvalidTaskParameter, Task, TaskParameterError
 from blueapi.worker.task_worker import TrackableTask
 
 
@@ -49,9 +57,24 @@ COUNT = Plan(name="count", model=MockCountModel)
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
+SUBMIT_REQUEST = {
+    "kind": "submit",
+    "task": {
+        "name": "foo",
+        "params": {"one": "two"},
+        "instrument_session": "cm12345-1",
+    },
+}
+
+
 @pytest.fixture
 def mock_runner() -> Mock:
-    return Mock(spec=WorkerDispatcher)
+    return MagicMock(spec=WorkerDispatcher)
+
+
+@pytest.fixture
+def mock_opa_client() -> Mock:
+    return Mock(spec=OpaUserClient)
 
 
 @pytest.fixture
@@ -75,6 +98,27 @@ def client_with_auth(
         assert access_token is not None
         client = TestClient(main.get_app(ApplicationConfig(oidc=oidc_config)))
         client.headers = Headers(headers={"Authorization": f"Bearer {access_token}"})
+        yield client
+        main.teardown_runner()
+
+
+@pytest.fixture
+def access_token(valid_token_with_jwt: dict[str, Any]) -> str:
+    return valid_token_with_jwt["access_token"]
+
+
+@pytest.fixture
+def client_with_opa(
+    mock_runner: Mock,
+    oidc_config: OIDCConfig,
+    mock_opa_client: Mock,
+    mock_authn_server,
+):
+    with patch("blueapi.service.interface.worker"):
+        main.setup_runner(runner=mock_runner)
+        app = main.get_app(ApplicationConfig(oidc=oidc_config))
+        app.dependency_overrides[opa] = lambda: mock_opa_client
+        client = TestClient(app)
         yield client
         main.teardown_runner()
 
@@ -251,8 +295,25 @@ def test_create_task(mock_runner: Mock, client: TestClient) -> None:
 
     response = client.post("/tasks", json=task.model_dump())
 
-    mock_runner.run.assert_called_with(submit_task, task, {"user": "Unknown"})
+    mock_runner.run.assert_called_with(submit_task, task, {"user": None})
     assert response.json() == {"task_id": task_id}
+
+
+def test_submit_task_requires_permission(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+):
+    task = TaskRequest(name="sleep", params={"time": 2}, instrument_session="cm12345-2")
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
+    mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
+
+    resp = client_with_opa.post("/tasks", json=task.model_dump())
+
+    assert resp.status_code == 403
+    mock_runner.run.assert_not_called()
 
 
 def test_create_task_inserts_auth_metadata(
@@ -268,21 +329,24 @@ def test_create_task_inserts_auth_metadata(
     task_id = str(uuid.uuid4())
 
     # mock_runner.run.side_effect = [task_id]
-    mock_runner.run.return_value = [task_id]
+    mock_runner.run.return_value = task_id
 
     client_with_auth.post("/tasks", json=task.model_dump())
 
     mock_runner.run.assert_called_with(submit_task, task, {"user": "jd1"})
 
 
-def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:
+def test_create_task_parameter_error(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.side_effect = [
-        ValidationError.from_exception_data(
-            title="ValueError",
-            line_errors=[
-                InitErrorDetails(
-                    type="missing", loc=("id",), msg="value is required for Identifier"
-                )  # type: ignore
+        TaskParameterError(
+            "ValueError",
+            [
+                InvalidTaskParameter(
+                    type="missing",
+                    loc=("id",),
+                    msg="Field required",
+                    input=None,
+                )
             ],
         ),
     ]
@@ -411,9 +475,30 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
     }
 
 
-def test_get_tasks_by_status_invalid(client: TestClient) -> None:
+def test_get_tasks_by_invalid_status(client: TestClient) -> None:
     response = client.get("/tasks", params={"task_status": "AN_INVALID_STATUS"})
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+@pytest.mark.parametrize("admin,task_ids", [(True, ["foo", "bar"]), (False, ["foo"])])
+def test_get_tasks_filters_by_user(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+    admin: bool,
+    task_ids: list[str],
+):
+
+    mock_runner.run.return_value = [
+        TrackableTask(task_id="foo", task=Task(name="f1", metadata={"user": "jd1"})),
+        TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
+    ]
+    mock_opa_client.admin.return_value = admin
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    tasks = client_with_opa.get("/tasks").json().get("tasks")
+
+    assert [t["task_id"] for t in tasks] == task_ids
 
 
 def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
@@ -421,6 +506,28 @@ def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.return_value = task_id
     response = client.delete(f"/tasks/{task_id}")
     assert response.json() == {"task_id": f"{task_id}"}
+
+
+def test_cant_delete_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+):
+    mock_opa_client.admin.return_value = False
+    mock_runner.run.side_effect = lambda mth, *args: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="bar", task=Task(name="t2", metadata={"user": "jd2"})
+        ),
+    }[mth]
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.delete("/tasks/bar")
+
+    # 404 to obfuscate whether task exists when inaccessible
+    assert resp.status_code == 404
+
+    mock_runner.run.assert_called_once()
 
 
 def test_set_active_task(client: TestClient) -> None:
@@ -471,6 +578,35 @@ def test_set_active_task_worker_already_running(
     assert response.json() == {"detail": "Worker already active"}
 
 
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_set_other_users_task_active(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    task_id = "foo"
+    task = WorkerTask(task_id=task_id)
+    mock_opa_client.admin.return_value = admin
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_active_task: None,
+        interface.begin_task: None,
+    }[mth]
+
+    resp = client_with_opa.put("/worker/task", json=task.model_dump())
+
+    assert resp.status_code == status
+
+
 def test_get_task(mock_runner: Mock, client: TestClient):
     task_id = str(uuid.uuid4())
     task = TrackableTask(
@@ -501,6 +637,25 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "outcome": None,
         "task_id": f"{task_id}",
     }
+
+
+@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+def test_get_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_runner.run.return_value = TrackableTask(
+        task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+    )
+    mock_opa_client.admin.return_value = admin
+
+    resp = client_with_opa.get("/tasks/foo")
+    assert resp.status_code == status
 
 
 def test_get_all_tasks(mock_runner: Mock, client: TestClient):
@@ -574,7 +729,12 @@ def test_get_state(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.PAUSED
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -588,7 +748,12 @@ def test_set_state_running_to_paused(mock_runner: Mock, client: TestClient):
 def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.PAUSED
     final_state = WorkerState.RUNNING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -602,7 +767,12 @@ def test_set_state_paused_to_running(mock_runner: Mock, client: TestClient):
 def test_set_state_running_to_aborting(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.ABORTING
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state", json=StateChangeRequest(new_state=final_state).model_dump()
@@ -619,7 +789,12 @@ def test_set_state_running_to_stopping_including_reason(
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
     reason = "blueapi is being stopped"
-    mock_runner.run.side_effect = [current_state, None, final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        None,
+        final_state,
+    ]
 
     response = client.put(
         "/worker/state",
@@ -635,7 +810,11 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     current_state = WorkerState.RUNNING
     final_state = WorkerState.STOPPING
 
-    mock_runner.run.side_effect = [current_state, TransitionError(), final_state]
+    mock_runner.run.side_effect = [
+        current_state,
+        TrackableTask(task_id="foobar", task=Task(name="foo")),
+        TransitionError(),
+    ]
 
     response = client.put(
         "/worker/state",
@@ -643,7 +822,9 @@ def test_set_state_transition_error(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Error while transitioning from {current_state} to {final_state}"
+    }
 
 
 def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
@@ -659,7 +840,38 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == final_state
+    assert response.json() == {
+        "detail": f"Cannot transition from {current_state} to {requested_state}"
+    }
+
+
+@pytest.mark.parametrize("admin,status", [(True, 202), (False, 403)])
+def test_set_state_of_other_users_task(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+    admin: bool,
+    status: int,
+):
+
+    mock_opa_client.admin.return_value = admin
+    mock_runner.run.side_effect = lambda mth, *a, **kw: {
+        interface.get_active_task: TrackableTask(
+            task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
+        ),
+        interface.get_worker_state: WorkerState.RUNNING,
+        interface.cancel_active_task: WorkerState.ABORTING,
+    }[mth]
+
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.put(
+        "/worker/state",
+        json=StateChangeRequest(new_state=WorkerState.ABORTING).model_dump(),
+    )
+
+    assert resp.status_code == status
 
 
 def test_get_environment_idle(mock_runner: Mock, client: TestClient) -> None:
@@ -798,3 +1010,263 @@ def test_logout_when_oidc_config_invalid(
 
     response = client_with_auth.get("/logout")
     assert response.status_code == status.HTTP_205_RESET_CONTENT
+
+
+async def test_websocket_run_plan(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = lambda req, *a, **kw: {
+        interface.get_active_task: None,
+        interface.submit_task: "task_id",
+        interface.begin_task: None,
+    }.get(req)
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=True,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+        assert ws.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "RUNNING",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": False,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        assert ws.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "IDLE",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": True,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        with pytest.raises(WebSocketDisconnect) as discon:
+            ws.receive_text()
+
+        # Check it's a 'normal' end of stream disconnect
+        assert discon.value.code == 1000
+        assert discon.value.reason == ""
+
+
+@pytest.mark.parametrize("req", ["not a json object", "[]", '{"invalid": "keys"}'])
+def test_websocket_run_plan_invalid_request(
+    req: str, mock_runner: Mock, client: TestClient
+):
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_text(req)
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws.receive_text()
+        assert disco.value.code == 1007
+        assert disco.value.reason == "Invalid Request"
+
+
+@pytest.mark.parametrize(
+    "exc,err_message,code,reason",
+    [
+        (
+            KeyError("foo"),
+            {"kind": "plan_not_found", "plan_name": "foo"},
+            4001,
+            "Unknown Plan",
+        ),
+        (
+            TaskParameterError("Not valid", []),
+            {"kind": "invalid_args", "errors": []},
+            4002,
+            "Invalid Args",
+        ),
+    ],
+)
+def test_websocket_run_plan_submit_error(
+    exc: Exception,
+    err_message: str,
+    code: int,
+    reason,
+    mock_runner: Mock,
+    client: TestClient,
+):
+    mock_runner.run.side_effect = exc
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+        assert ws.receive_json() == err_message
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws.receive_text()
+        assert disco.value.code == code
+        assert disco.value.reason == reason
+
+
+def test_websocket_run_plan_server_busy(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = [
+        "task_id",  # submit_task
+        Mock(name="active_task", is_complete=False),
+    ]
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+        assert ws.receive_json() == {"kind": "busy"}
+        with pytest.raises(WebSocketDisconnect) as disco:
+            ws.receive_text()
+        assert disco.value.code == 1013
+        assert disco.value.reason == "Worker busy"
+    pass
+
+
+def test_websocket_run_plan_unrelated_events(mock_runner: Mock, client: TestClient):
+    mock_runner.run.side_effect = lambda req, *a, **kw: {
+        interface.get_active_task: None,
+        interface.submit_task: "task_id",
+        interface.begin_task: None,
+    }.get(req)
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.RUNNING,
+                task_status=TaskStatus(
+                    task_id="other_task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=True,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+        # first event is not sent
+        assert ws.receive_json() == {
+            "kind": "update",
+            "data": {
+                "state": "IDLE",
+                "task_status": {
+                    "task_id": "task_id",
+                    "result": None,
+                    "task_complete": True,
+                    "task_failed": False,
+                },
+                "errors": [],
+                "warnings": [],
+            },
+        }
+        with pytest.raises(WebSocketDisconnect) as discon:
+            ws.receive_text()
+
+        # Check it's a 'normal' end of stream disconnect
+        assert discon.value.code == 1000
+        assert discon.value.reason == ""
+    pass
+
+
+def test_websocket_run_plan_client_disconnect_cancels(
+    mock_runner: Mock, client: TestClient
+):
+    mock_runner.run.side_effect = ["task_id", None, None, None]
+    mock_runner.event_pipe.return_value = contextlib.nullcontext(
+        _aiter(
+            WorkerEvent(
+                state=WorkerState.IDLE,
+                task_status=TaskStatus(
+                    task_id="task_id",
+                    result=None,
+                    task_complete=False,
+                    task_failed=False,
+                ),
+            ),
+        )
+    )
+
+    class Disconnector:
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            async def local_send(message: Message):
+                if message.get("type") == "websocket.send":
+                    # Simulate the connection being closed
+                    raise OSError()
+                await send(message)
+
+            return await self.app(scope, receive, local_send)
+
+    cast(FastAPI, client.app).add_middleware(Disconnector)
+    with client.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+    mock_runner.run.assert_called_with(
+        interface.cancel_active_task, failure=True, reason="Client disconnected"
+    )
+
+
+@pytest.mark.parametrize("token", ["Bearer invalid", None])
+def test_websocket_run_plan_needs_auth_token(
+    client_with_auth: TestClient, token: str | None
+):
+    del client_with_auth.headers["Authorization"]
+    if token:
+        client_with_auth.headers["Authorization"] = token
+    with pytest.raises(WebSocketDenialResponse) as wsdr:
+        with client_with_auth.websocket_connect("/api/v2/run_plan"):
+            pass
+    assert wsdr.value.status_code == 401
+
+
+def test_websocket_run_plan_needs_permission(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    mock_opa_client: Mock,
+    access_token: str,
+):
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+    mock_opa_client.can_submit_task.side_effect = HTTPException(status_code=403)
+    mock_runner.run.side_effect = RuntimeError("Task should not be submitted")
+    with client_with_opa.websocket_connect("/api/v2/run_plan") as ws:
+        ws.send_json(SUBMIT_REQUEST)
+        assert ws.receive_json() == {"kind": "unauthorized"}
+        with pytest.raises(WebSocketDisconnect) as discon:
+            ws.receive_text()
+
+        assert discon.value.code == 4003
+        assert discon.value.reason == "Unauthorized"
+
+
+async def _aiter(*values: Any) -> AsyncIterator:
+    for value in values:
+        yield value

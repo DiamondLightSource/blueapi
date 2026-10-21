@@ -3,7 +3,6 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
-from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
@@ -13,14 +12,13 @@ import pytest
 from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import DeviceSource, EnvironmentConfig
+from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import PlanModel
@@ -109,8 +107,13 @@ def second_fake_device() -> FakeDevice:
 @pytest.fixture
 def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
     ctx.register_device(second_fake_device)
@@ -121,8 +124,13 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
 @pytest.fixture
 def context_without_devices() -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(DeviceSource(module="devices"))
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 
@@ -450,18 +458,7 @@ def begin_task_and_wait_until_complete(
 #
 
 
-@pytest.fixture
-def path_provider(tmp_path: Path):
-    # Prevents issue with leftover state from beamline tests
-    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
-        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
-        mock.return_value.data_session.return_value = "foo"
-        yield
-
-
-def test_worker_and_data_events_produce_in_order(
-    worker: TaskWorker, path_provider
-) -> None:
+def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -512,7 +509,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": {"motor"}, "num": 1})
+    default_task = Task(name="count", params={"detectors": ["motor"], "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -618,7 +615,7 @@ def take_events_from_streams(
         (TaskStatusEnum.COMPLETE, ["task3"]),
     ],
 )
-def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
+def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
     worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
@@ -648,7 +645,7 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
         ),
     }
 
-    result = worker.get_tasks_by_status(status)
+    result = worker.get_tasks(status)
     result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids
@@ -912,3 +909,43 @@ def test_task_result_serialization(plan_result, task_result, type_name):
     res = TaskResult.from_result(plan_result)
     assert res.result == task_result
     assert res.type == type_name
+
+
+@pytest.mark.parametrize(
+    "status,complete",
+    [
+        (None, False),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=False, task_failed=False
+            ),
+            False,
+        ),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=True, task_failed=False
+            ),
+            True,
+        ),
+    ],
+)
+def test_worker_event_complete(status: TaskStatus | None, complete: bool):
+    event = WorkerEvent(
+        state=WorkerState.IDLE, task_status=status
+    )  # state is not used in check
+    assert event.is_complete() == complete
+
+
+def test_worker_event_task_id():
+    event = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id="foo", result=None, task_complete=False, task_failed=False
+        ),
+    )
+    assert event.task_id == "foo"
+
+
+def test_worker_event_no_task_id():
+    event = WorkerEvent(state=WorkerState.IDLE, task_status=None)
+    assert event.task_id is None

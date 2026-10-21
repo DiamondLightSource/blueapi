@@ -3,11 +3,6 @@
 name: AsyncAPI
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - '*'
   pull_request:
   merge_group:
     types: [checks_requested]
@@ -17,8 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: check asyncapi.yaml file
-        uses: WaleedAshraf/asyncapi-github-action@d31f1627ac7c24132e7c4e4b89948d43b619685a # v0.0.10
+        uses: asyncapi/cli@5c382e168801d3762cc0424b794775074a2c6c1d # v6.2.1
         with:
+          command: validate
           filepath: "./docs/reference/asyncapi.yaml"

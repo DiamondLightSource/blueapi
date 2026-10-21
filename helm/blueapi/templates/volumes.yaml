@@ -2,7 +2,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  {{- if .Values.initContainer.persistentVolume.customName }}
+  name: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.initContainer.persistentVolume.customName }}-{{ .Values.image.tag | default .Chart.AppVersion }}
+  {{- else }}
   name: {{ include "blueapi.fullname" . }}-scratch-{{ .Values.image.tag | default .Chart.AppVersion }}
+  {{- end }}
   annotations:
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/compare-options: IgnoreExtraneous

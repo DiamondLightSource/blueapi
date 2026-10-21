@@ -7,7 +7,6 @@ from io import StringIO
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, TypeVar
-from unittest import mock
 from unittest.mock import Mock, patch
 
 import pytest
@@ -72,8 +71,8 @@ def mock_stomp_client(mock_connection: Mock) -> StompClient:
 
 
 @pytest.fixture
-def runner():
-    return CliRunner()
+def runner(tmp_path: Path):
+    return CliRunner(env={"XDG_CACHE_HOME": str(tmp_path)})
 
 
 def test_cli_version(runner: CliRunner):
@@ -118,9 +117,8 @@ def test_connection_error_caught_by_wrapper_func(
 def test_authentication_error_caught_by_wrapper_func(
     mock_requests: Mock, runner: CliRunner
 ):
-    mock_requests.side_effect = BlueskyRemoteControlError("<Response [401]>")
+    mock_requests.side_effect = UnauthorisedAccessError(message="<Response [401]>")
     result = runner.invoke(main, ["controller", "plans"])
-
     assert (
         result.output
         == "Error: Access denied. Please check your login status and try again.\n"
@@ -130,7 +128,6 @@ def test_authentication_error_caught_by_wrapper_func(
 @patch("blueapi.client.rest.requests.Session.request")
 def test_remote_error_raised_by_wrapper_func(mock_requests: Mock, runner: CliRunner):
     mock_requests.side_effect = BlueskyRemoteControlError("Response [450]")
-
     result = runner.invoke(main, ["controller", "plans"])
     assert (
         isinstance(result.exception, BlueskyRemoteControlError)
@@ -250,6 +247,7 @@ def test_submit_plan_without_stomp(runner: CliRunner):
             config_path,
             "controller",
             "run",
+            "--stomp",
             "-i",
             "cm12345-1",
             "sleep",
@@ -359,7 +357,7 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
         (
             TaskResult(result=None, type="CustomType"),
             False,
-            "Plan returned unserializable result of type 'CustomType'\n",
+            "Plan succeeded but returned unserializable result of type 'CustomType'\n",
         ),
         (
             TaskError(type="ValueError", message="Error with value"),
@@ -387,9 +385,9 @@ def test_run_plan_feedback(
         main,
         ["controller", "run", "-i", "cm12345-1", "name"],
     )
+    bc.add_callback.assert_called_once()
     bc.run_task.assert_called_once_with(
         TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
-        on_event=mock.ANY,
     )
     assert res.exit_code == 0
     assert res.stdout == message
@@ -451,6 +449,7 @@ def test_cannot_run_plans_without_stomp_config(runner: CliRunner):
         [
             "controller",
             "run",
+            "--stomp",
             "-i",
             "cm12345-1",
             "sleep",
@@ -701,7 +700,10 @@ def test_env_reload_server_side_error(runner: CliRunner):
     "exception, error_message",
     [
         (UnknownPlanError(), "Error: Plan 'sleep' was not recognised\n"),
-        (UnauthorisedAccessError(), "Error: Unauthorised request\n"),
+        (
+            UnauthorisedAccessError(),
+            "Error: Access denied. Please check your login status and try again.\n",
+        ),
         (
             InvalidParametersError(
                 errors=[
@@ -717,11 +719,15 @@ def test_env_reload_server_side_error(runner: CliRunner):
         ),
         (
             BlueskyRemoteControlError("Server error"),
-            "Error: server error with this message: Server error\n",
+            "Error: Remote control error: Server error\n",
         ),
         (
             ValueError("Error parsing parameters"),
             "Error: task could not run: Error parsing parameters\n",
+        ),
+        (
+            BlueskyStreamingError("streaming failed"),
+            "Error: Streaming error: streaming failed\n",
         ),
     ],
     ids=[
@@ -730,6 +736,7 @@ def test_env_reload_server_side_error(runner: CliRunner):
         "invalid_parameters",
         "remote_control",
         "value_error",
+        "streaming_error",
     ],
 )
 def test_error_handling(exception, error_message, runner: CliRunner):
@@ -1098,7 +1105,7 @@ def test_login_success(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" == result.output
         )
         assert result.exit_code == 0
@@ -1137,7 +1144,7 @@ def test_login_when_cached_token_decode_fails(
         result = runner.invoke(main, ["-c", config_with_auth, "login"])
         assert (
             "Logging in\n"
-            "Please login from this URL:- https://example.com/verify\n"
+            "Please login from this URL:- https://auth.example.com/realms/master/verify\n"
             "Logged in and cached new token\n" in result.output
         )
         assert result.exit_code == 0
@@ -1163,7 +1170,7 @@ def test_invalid_json(
         responses.GET,
         "http://localhost:8000/config/oidc",
         body="blah blah",
-        status=404,
+        status=200,
     )
 
     result = runner.invoke(main, ["-c", config_with_auth, "login"])
@@ -1430,3 +1437,60 @@ def test_log_level_override(flag: str, level: str, runner: CliRunner):
         runner.invoke(main, [flag])
         mock_log.getLogger().setLevel.assert_called_once_with(level)
         mock_log.StreamHandler().setLevel.assert_called_once_with(level)
+
+
+@responses.activate
+def test_host_option(runner: CliRunner):
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        ["--host", "http://override.example.com:5678", "controller", "plans"],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@responses.activate
+def test_host_overrides_config(runner: CliRunner):
+    config_path = "tests/unit_tests/example_yaml/rest_config.yaml"
+    response = responses.add(
+        responses.GET,
+        "http://override.example.com:5678/plans",
+        json={"plans": []},
+        status=200,
+    )
+
+    res = runner.invoke(
+        main,
+        [
+            "--host",
+            "http://override.example.com:5678",
+            "--config",
+            config_path,
+            "controller",
+            "plans",
+        ],
+    )
+    assert response.call_count == 1
+    assert res.exit_code == 0
+
+
+@patch("blueapi.cli.cli.BlueapiClient")
+def test_run_ws_runs_blocking_plan(mock_client: Mock, runner: CliRunner):
+    bc = mock_client.from_config()
+    res = runner.invoke(
+        main,
+        ["controller", "run", "-i", "cm12345-1", "--ws", "name"],
+    )
+    bc.add_callback.assert_called_once()
+    bc.run_task.assert_not_called()
+    bc.run_blocking.assert_called_once_with(
+        TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
+    )
+    assert res.exit_code == 0

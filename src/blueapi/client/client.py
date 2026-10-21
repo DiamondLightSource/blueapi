@@ -3,22 +3,21 @@ import logging
 import time
 from collections.abc import Iterable
 from concurrent.futures import Future
+from contextlib import suppress
 from functools import cached_property
-from itertools import chain
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from observability_utils.tracing import get_tracer, start_as_current_span
+from pydantic import HttpUrl
 
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
     MissingStompConfigurationError,
+    RestConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import SessionCacheManager, SessionManager
@@ -38,11 +37,19 @@ from blueapi.service.model import (
 )
 from blueapi.utils import deprecated
 from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskError, TaskResult, TaskStatus
+from blueapi.worker.event import ProgressEvent, TaskStatus
 from blueapi.worker.task_worker import TrackableTask
 
+from .device_cache import DeviceCache
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .plan_cache import PlanCache
+from .protocols import ClientProtocol
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
@@ -54,154 +61,7 @@ class MissingInstrumentSessionError(Exception):
     pass
 
 
-class PlanCache:
-    def __init__(self, client: "BlueapiClient", plans: list[PlanModel]):
-        self._cache = {
-            model.name: Plan(name=model.name, model=model, client=client)
-            for model in plans
-        }
-        for name, plan in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, plan)
-
-    def __getitem__(self, name: str) -> "Plan":
-        return self._cache[name]
-
-    def __getattr__(self, name: str) -> "Plan":
-        raise AttributeError(f"No plan named '{name}' available")
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"PlanCache({len(self._cache)} plans)"
-
-
-class DeviceCache:
-    def __init__(self, rest: BlueapiRestClient):
-        self._rest = rest
-        self._cache = {
-            model.name: DeviceRef(name=model.name, cache=self, model=model)
-            for model in rest.get_devices().devices
-        }
-        for name, device in self._cache.items():
-            if name.startswith("_"):
-                continue
-            setattr(self, name, device)
-
-    def __getitem__(self, name: str) -> "DeviceRef":
-        if dev := self._cache.get(name):
-            return dev
-        try:
-            model = self._rest.get_device(name)
-            device = DeviceRef(name=name, cache=self, model=model)
-            self._cache[name] = device
-            setattr(self, model.name, device)
-            return device
-        except KeyError:
-            pass
-        raise AttributeError(f"No device named '{name}' available")
-
-    def __getattr__(self, name: str) -> "DeviceRef":
-        if name.startswith("_"):
-            return super().__getattribute__(name)
-        return self[name]
-
-    def __iter__(self):
-        return iter(self._cache.values())
-
-    def __repr__(self) -> str:
-        return f"DeviceCache({len(self._cache)} devices)"
-
-
-class DeviceRef(str):
-    model: DeviceModel
-    _cache: DeviceCache
-
-    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel):
-        instance = super().__new__(cls, name)
-        instance.model = model
-        instance._cache = cache
-        return instance
-
-    def __getattr__(self, name) -> "DeviceRef":
-        if name.startswith("_"):
-            raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self}.{name}"]
-
-    def __repr__(self):
-        return f"Device({self})"
-
-
-class Plan:
-    def __init__(self, name, model: PlanModel, client: "BlueapiClient"):
-        self.name = name
-        self.model = model
-        self._client = client
-        self.__doc__ = model.description
-
-    def __call__(self, *args, **kwargs) -> Any:
-        req = TaskRequest(
-            name=self.name,
-            params=self._build_args(*args, **kwargs),
-            instrument_session=self._client.instrument_session,
-        )
-        match self._client.run_task(req):
-            case TaskStatus(result=TaskResult(result=res)):
-                return res
-            case TaskStatus(result=TaskError(type=typ, message=msg)):
-                raise PlanFailedError(typ, msg)
-
-    @property
-    def help_text(self) -> str:
-        return self.model.description or f"Plan {self!r}"
-
-    @property
-    def properties(self) -> set[str]:
-        return self.model.parameter_schema.get("properties", {}).keys()
-
-    @property
-    def required(self) -> list[str]:
-        return self.model.parameter_schema.get("required", [])
-
-    def _build_args(self, *args, **kwargs):
-        log.info(
-            "Building args for %s, using %s and %s",
-            "[" + ",".join(self.properties) + "]",
-            args,
-            kwargs,
-        )
-
-        if len(args) > len(self.properties):
-            raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
-
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
-
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
-
-        if missing := {k for k in self.required if k not in params}:
-            raise TypeError(f"Missing argument(s) for {missing}")
-        return params
-
-    def __repr__(self):
-        opts = [p for p in self.properties if p not in self.required]
-        params = ", ".join(chain(self.required, (f"{opt}=None" for opt in opts)))
-        return f"{self.name}({params})"
-
-
-class BlueapiClient:
+class BlueapiClient(ClientProtocol):
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
@@ -248,6 +108,14 @@ class BlueapiClient:
             return cls(rest, events)
         else:
             return cls(rest)
+
+    @classmethod
+    def for_host(cls, host: str | None = None) -> Self:
+        if host:
+            conf = ApplicationConfig(api=RestConfig(url=HttpUrl(host)))
+        else:
+            conf = ApplicationConfig()
+        return cls.from_config(conf)
 
     @cached_property
     @start_as_current_span(TRACER)
@@ -453,13 +321,48 @@ class BlueapiClient:
 
         return self.active_task
 
-    @start_as_current_span(TRACER, "task", "timeout")
+    @start_as_current_span(TRACER, "task")
     def run_task(
         self,
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
     ) -> TaskStatus:
+        if self._events:
+            return self.run_stomp(task, on_event)
+        else:
+            return self.run_blocking(task, on_event)
+
+    @start_as_current_span(TRACER, "task")
+    def run_blocking(
+        self, task: TaskRequest, on_event: OnAnyEvent | None = None
+    ) -> TaskStatus:
+        log.debug("Running plan via websocket")
+        for event in self._rest.run_blocking(task):
+            if on_event is not None:
+                on_event(event)
+            for cb in self._callbacks.values():
+                try:
+                    cb(event)
+                except Exception as e:
+                    log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
+            if isinstance(event, WorkerEvent) and event.is_complete():
+                # task_status will always be present if event is complete
+                if event.task_status is None:  # pragma: no cover
+                    raise BlueskyRemoteControlError(
+                        "Server completed without task status"
+                    )
+                return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
+
+    @start_as_current_span(TRACER, "task", "timeout")
+    def run_stomp(
+        self,
+        task: TaskRequest,
+        on_event: OnAnyEvent | None = None,
+        timeout: float | None = None,
+    ) -> TaskStatus:
+        log.debug("Running plan via stomp")
         """
         Synchronously run a task, requires a message bus connection
 
@@ -668,9 +571,18 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+            # clear the cached plans/devices as they may have changed
+            with suppress(AttributeError):
+                del self.plans
+            with suppress(AttributeError):
+                del self.devices
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"
@@ -756,11 +668,11 @@ class BlueapiClient:
                     oidc, cache_manager=SessionCacheManager(token_path)
                 )
                 auth.start_device_flow()
+                self._rest.session_manager = auth
             else:
                 print("Server is not configured to use authentication!")
 
-
-class PlanFailedError(Exception):
-    def __init__(self, typ: str, message: str):
-        super().__init__(message)
-        self._type = typ
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None

@@ -1,0 +1,8 @@
+# Overrides for the example-services submodule.
+# EPICS CA (PCAS gateway and libca clients) loops over every possible file descriptor,
+# so a huge default nofile limit (e.g. 2^31 on some Docker hosts) pegs the CPU and
+# PV connections time out. Cap it.
+services:
+  ca-gateway:
+    ulimits:
+      nofile: 1024

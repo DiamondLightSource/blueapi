@@ -10,10 +10,11 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "tiled[client]>=0.2.4",
+    "tiled[client]==0.2.18",
     "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
     "ophyd-async>=0.13.5",
     "aioca",
@@ -23,12 +24,10 @@ dependencies = [
     "PyYAML>=6.0.2",
     "click>=8.2.0",
     "fastapi>=0.112.0",
-    "uvicorn",
+    "uvicorn>=0.52.1",
     "requests",
-    "dls-dodal>=1.69.0",
-    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
-    "GitPython",
-    "event-model==1.23.1",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p
+    "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
@@ -37,16 +36,21 @@ dependencies = [
     "tomlkit",
     "graypy>=2.1.0",
     "httpx>=0.28.1",
+    "aiohttp>=3.13.5",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
 requires-python = ">=3.11"
 
+[project.optional-dependencies]
+demo = ["dls-dodal>=3.0.2", "ophyd-async[sim]"]
+
 [dependency-groups]
 dev = [
     "ophyd_async[sim]",
     "copier",
+    "dls-dodal>=3.0.2",
     "myst-parser",
     "prek",
     "pydata-sphinx-theme>=0.15.4",
@@ -55,7 +59,6 @@ dev = [
     "pytest-cov",
     "pytest-asyncio",
     "pytest-httpx>=0.35.0",
-    "pytest-timeout",
     "responses",
     "ruff",
     "semver",
@@ -72,8 +75,9 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
-    "tiled[minimal-server]>=0.2.4", # For system-test of dls.py
     "respx",
+    "pytest-xdist[psutil]",
+    "httpx2>=2.5.0",
 ]
 
 [project.scripts]
@@ -95,14 +99,12 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
-addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst"'
+addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore=tests/system_tests/services'
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-timeout = 3
-
 [tool.coverage.run]
 patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
@@ -154,14 +156,16 @@ description = "Run unit tests with coverage"
 commands = [
     [
         "pytest",
-        "tests/unit_tests",
+        "-n",
+        "logical",
+        { replace = "posargs", default = [
+            "tests/unit_tests",
+        ], extend = true },
         "--cov=blueapi",
         "--cov-report",
         "term",
         "--cov-report",
         "xml:cov.xml",
-        { replace = "posargs", default = [
-        ], extend = true },
     ],
 ]
 
@@ -176,7 +180,6 @@ commands = [
         "term",
         "--cov-report",
         "xml:cov.xml",
-        "--timeout=60",
         { replace = "posargs", default = [
         ], extend = true },
     ],

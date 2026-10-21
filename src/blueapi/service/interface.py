@@ -1,14 +1,21 @@
+import json
+import logging
 from collections.abc import Mapping
+from dataclasses import dataclass
 from functools import cache
+from multiprocessing.connection import Connection
 from typing import Any
 
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from fastapi import status
 from tiled.client import from_uri
+from tiled.client.utils import ClientError
 
 from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -23,14 +30,14 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.serialization import access_blob
-from blueapi.worker.event import TaskStatusEnum, WorkerEvent, WorkerState
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 """This module provides interface between web application and underlying Bluesky
 context and worker"""
 
-
+LOGGER = logging.getLogger(__name__)
 _CONFIG: ApplicationConfig = ApplicationConfig()
 
 
@@ -100,6 +107,52 @@ def setup(config: ApplicationConfig) -> None:
     stomp_client()
 
 
+@cache
+def service_account_tiled_client():
+    """One client for every task: its auth refreshes its own token, so unlike a
+    client carrying a caller's pass-through headers it can be reused, which saves
+    the server-info and token requests from_uri makes on every task."""
+    tiled_config = context().tiled_conf
+    assert tiled_config is not None and isinstance(
+        tiled_config.authentication, ServiceAccount
+    )
+    return from_uri(
+        str(tiled_config.url), auth=TiledAuth(tiled_auth=tiled_config.authentication)
+    )
+
+
+def _tiled_session_container(tiled_client, instrument: str, instrument_session: str):
+    """The beamline/proposal/visit container runs are written under.
+
+    It almost always exists already, so it is looked up in one request; only the
+    first task for a visit walks the levels and creates what is missing.
+    """
+    session_blob = access_blob(instrument_session, instrument)
+    proposal = session_blob["proposal"]
+    try:
+        return tiled_client[f"{instrument}/{proposal}/{instrument_session}"]
+    except KeyError:
+        pass
+    # Each level's access blob is the prefix of the full (beamline, proposal,
+    # visit) one, matching the beamline/proposal/session tiers the tiled access
+    # policy expects a container to be tagged with.
+    level_access_blobs = {
+        instrument: {"beamline": instrument},
+        proposal: {"beamline": instrument, "proposal": proposal},
+        instrument_session: session_blob,
+    }
+    for key, blob in level_access_blobs.items():
+        try:
+            tiled_client = tiled_client.create_container(
+                key=key, access_tags=[json.dumps(blob)]
+            )
+        except ClientError as e:
+            if e.response.status_code != status.HTTP_409_CONFLICT:
+                raise
+            tiled_client = tiled_client[key]  # created already, e.g. by another task
+    return tiled_client
+
+
 def teardown() -> None:
     worker().stop()
     if (stomp_client_ref := stomp_client()) is not None:
@@ -107,6 +160,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    service_account_tiled_client.cache_clear()
 
 
 def _publish_event_streams(
@@ -163,7 +217,7 @@ def submit_task(
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set
         assert md
         metadata["tiled_access_tags"] = [
-            access_blob(task_request.instrument_session, md.instrument)
+            json.dumps(access_blob(task_request.instrument_session, md.instrument))
         ]
     task = Task(
         name=task_request.name,
@@ -204,21 +258,26 @@ def begin_task(
     if nt := active_context.numtracker:
         nt.set_headers(pass_through_headers or {})
 
+    if task.task_id is None:
+        return task
+
     subscribers = []
     if tiled_config := active_context.tiled_conf:
         # Tiled queries the root node, so must create an authorized client
         if isinstance(tiled_config.authentication, ServiceAccount):
-            tiled_client = from_uri(
-                str(tiled_config.url),
-                auth=TiledAuth(tiled_auth=tiled_config.authentication),
-            )
+            tiled_client = service_account_tiled_client()
         else:
             tiled_client = from_uri(
                 str(tiled_config.url),
                 api_key=tiled_config.authentication,
                 headers=pass_through_headers,
             )
-
+        if (task_ := get_task_by_id(task_id=task.task_id)) is not None:
+            tiled_client = _tiled_session_container(
+                tiled_client,
+                active_context.run_engine.md["instrument"],
+                task_.task.metadata["instrument_session"],
+            )
         tiled_writer_token = active_context.run_engine.subscribe(
             TiledWriter(tiled_client, batch_size=1)
         )
@@ -240,19 +299,13 @@ def begin_task(
         )
         subscribers.append((active_worker.worker_events, remove_callback))
 
-    if task.task_id is not None:
-        try:
-            active_worker.begin_task(task.task_id)
-        except KeyError:
-            for channel, token in subscribers:
-                channel.unsubscribe(token)
-            raise
+    try:
+        active_worker.begin_task(task.task_id)
+    except Exception:
+        for channel, token in subscribers:
+            channel.unsubscribe(token)
+        raise
     return task
-
-
-def get_tasks_by_status(status: TaskStatusEnum) -> list[TrackableTask]:
-    """Retrieve a list of tasks based on their status."""
-    return worker().get_tasks_by_status(status)
 
 
 def get_active_task() -> TrackableTask | None:
@@ -281,10 +334,10 @@ def cancel_active_task(failure: bool, reason: str | None) -> str:
     return worker().cancel_active_task(failure, reason)
 
 
-def get_tasks() -> list[TrackableTask]:
-    """Return a list of all tasks on the worker,
-    any one of which can be triggered with begin_task"""
-    return worker().get_tasks()
+def get_tasks(status: TaskStatusEnum | None = None) -> list[TrackableTask]:
+    """Retrieve a list of tasks based on their status.
+    Return a list of all tasks on the worker if status is None"""
+    return worker().get_tasks(status)
 
 
 def get_task_by_id(task_id: str) -> TrackableTask | None:
@@ -303,3 +356,36 @@ def get_python_env(
     """Retrieve information about the Python environment"""
     scratch = config().scratch
     return get_python_environment(config=scratch, name=name, source=source)
+
+
+@dataclass
+class SubHandles:
+    worker: int
+    progress: int
+    data: int
+
+
+def pipe_events(sender: Connection) -> SubHandles:
+    tw = worker()
+
+    def handler(
+        worker_event: WorkerEvent | DataEvent | ProgressEvent,
+        _cor_id: str | None,
+    ) -> None:
+
+        try:
+            sender.send(worker_event)
+        except BrokenPipeError:
+            LOGGER.warning("Sending event to broken pipe")
+
+    w = tw.worker_events.subscribe(handler)
+    d = tw.data_events.subscribe(handler)
+    p = tw.progress_events.subscribe(handler)
+    return SubHandles(worker=w, data=d, progress=p)
+
+
+def unpipe_events(handles: SubHandles) -> None:
+    tw = worker()
+    tw.worker_events.unsubscribe(handles.worker)
+    tw.data_events.unsubscribe(handles.data)
+    tw.progress_events.unsubscribe(handles.progress)

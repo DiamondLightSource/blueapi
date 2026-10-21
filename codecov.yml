@@ -4,5 +4,3 @@ coverage:
       default:
         target: 85% # the required coverage value
         threshold: 1% # the leniency in hitting the target
-ignore:
-  - "src/blueapi/startup"

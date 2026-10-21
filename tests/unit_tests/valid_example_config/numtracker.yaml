@@ -1,0 +1,7 @@
+# If using helm values all of the following goes under worker:
+
+numtracker:
+  url: https://numtracker.diamond.ac.uk/graphql
+env:
+  metadata:
+    instrument: <name of your instrument, e.g. i22>

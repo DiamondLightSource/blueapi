@@ -1,0 +1,4 @@
+api:
+  url: "https://p46-blueapi.diamond.ac.uk"
+
+auth_token_path: "~/.cache/blueapi_cache" # Optional: Custom path to store the token

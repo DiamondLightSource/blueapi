@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from blueapi import utils
+
 
 def serialize(obj: Any) -> Any:
     """
@@ -24,3 +26,18 @@ def serialize(obj: Any) -> Any:
         return serialize(obj.__pydantic_model__)
     else:
         return obj
+
+
+def access_blob(instrument_session: str, beamline: str) -> dict[str, Any]:
+    if (match := utils.INSTRUMENT_SESSION_RE.match(instrument_session)) is None:
+        raise ValueError(
+            "Unable to extract proposal and visit from "
+            f"instrument session {instrument_session}"
+        )
+    return {
+        # The full proposal code (e.g. "cm12345"), not just its number - the
+        # tiled access policy strips the letters itself where it needs them.
+        "proposal": match["proposal"],
+        "visit": int(match["visit"]),
+        "beamline": beamline,
+    }

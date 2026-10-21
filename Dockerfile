@@ -1,65 +1,55 @@
 # The devcontainer should use the developer target and run as root with podman
 # or docker with user namespaces.
-# Version SHA has been removed, see: https://github.com/DiamondLightSource/blueapi/issues/1053
-ARG PYTHON_VERSION=3.11
-FROM python:${PYTHON_VERSION} AS developer
+FROM ghcr.io/diamondlightsource/ubuntu-devcontainer:resolute AS developer
 
 # Add any system dependencies for the developer/build environment here
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
     graphviz \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get dist-clean
 
-# Install helm for the dev container. This is the recommended 
+# Install helm for the dev container. This is the recommended
 # approach per the docs: https://helm.sh/docs/intro/install
 RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3; \
     chmod 700 get_helm.sh; \
     ./get_helm.sh; \
     rm get_helm.sh
-
-# Set up a virtual environment and put it in PATH
-RUN python -m venv /venv
-ENV PATH=/venv/bin:$PATH
+RUN helm plugin install https://github.com/losisin/helm-values-schema-json.git --version 2.3.1
 
 # The build stage installs the context into the venv
 FROM developer AS build
-RUN mkdir -p /.cache/pip; chmod o+wrX /.cache/pip
-COPY --chmod=o+wrX . /workspaces/blueapi
-WORKDIR /workspaces/blueapi
-RUN touch dev-requirements.txt && pip install --upgrade pip && pip install -c dev-requirements.txt .
 
-FROM build AS debug
+# Change the working directory to the `app` directory
+# and copy in the project
+WORKDIR /app
+COPY . /app
+RUN chmod o+wrX .
 
-# Set origin to use ssh
-RUN git remote set-url origin git@github.com:diamondlightsource/DiamondLightSource/blueapi.git
+# Tell uv sync to install python in a known location so we can copy it out later
+ENV UV_PYTHON_INSTALL_DIR=/python
 
-# For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
-RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
+# Sync the project without its dev dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-editable --no-dev --managed-python
 
-# Make editable and debuggable
-RUN pip install debugpy
-RUN pip install -e .
+RUN uv pip install debugpy
 
-# Alternate entrypoint to allow devcontainer to attach
-ENTRYPOINT [ "/bin/bash", "-c", "--" ]
-CMD [ "while true; do sleep 30; done;" ]
+# The runtime stage copies the built venv into a runtime container
+FROM ubuntu:resolute AS runtime
 
-# The runtime stage copies the built venv into a slim runtime container
-FROM python:${PYTHON_VERSION}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=build --chmod=o+wrX /venv/ /venv/
-COPY --from=build --chmod=o+wrX /.cache/pip /.cache/pip
-ENV PATH=/venv/bin:$PATH
-ENV PYTHONPYCACHEPREFIX=/tmp/blueapi_pycache
+    # gdb required for attaching debugger
+    gdb \
+    # May be required if attaching devcontainer
+    libnss-ldapd \
+    && apt-get dist-clean
+
+# Install uv to allow setup-scratch to run
+COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /uvx /bin/
 
 # For this pod to understand finding user information from LDAP
-RUN apt update
-RUN DEBIAN_FRONTEND=noninteractive apt install libnss-ldapd -y
 RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 
 # Set the MPLCONFIGDIR environment variable to a temporary directory to avoid
@@ -68,6 +58,28 @@ RUN sed -i 's/files/ldap files/g' /etc/nsswitch.conf
 # https://matplotlib.org/stable/install/environment_variables_faq.html#envvar-MPLCONFIGDIR
 
 ENV MPLCONFIGDIR=/tmp/matplotlib
+
+# Copy the python installation from the build stage
+COPY --from=build /python /python
+
+# Copy the environment, but not the source code
+COPY --chown=1000:1000 --from=build /app/.venv /app/.venv
+RUN chmod -R 777 /app
+ENV PATH=/app/.venv/bin:$PATH
+
+# Add copy of blueapi source to container for debugging
+WORKDIR /workspaces
+COPY --chown=1000:1000 . blueapi
+# Make allowance for non-1000 uid
+RUN chmod o+wrX blueapi
+
+# Make invariant symlink to site-packages for debugging
+# /app/.venv/lib/python/site-packages/blueapi:/workspaces/blueapi
+WORKDIR /app/.venv/lib
+RUN ln -s python* python
+
+# Switch user 1000
+USER ubuntu
 
 ENTRYPOINT ["blueapi"]
 CMD ["serve"]

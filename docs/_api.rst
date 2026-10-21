@@ -15,4 +15,4 @@ API
 
     blueapi
 
-.. autodata:: blueapi.service.main.REST_API_VERSION
+.. autoattribute:: blueapi.config.ApplicationConfig.REST_API_VERSION

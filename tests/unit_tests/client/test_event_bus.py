@@ -40,6 +40,20 @@ def test_client_subscribes_to_all_events(
     mock_stomp_client.subscribe.assert_called_once_with(ANY, on_event)
 
 
+@pytest.mark.parametrize("num_subscriptions", [0, 1, 2])
+def test_client_unsubscribes_on_context_exit(
+    events: EventBusClient,
+    mock_stomp_client: Mock,
+    num_subscriptions: int,
+):
+    on_event = Mock
+    with events:
+        for _ in range(num_subscriptions):
+            events.subscribe_to_all_events(on_event=on_event)  # type: ignore
+
+    assert mock_stomp_client.unsubscribe.call_count == num_subscriptions
+
+
 def test_client_raises_streaming_error_on_subscribe_failure(
     events: EventBusClient,
     mock_stomp_client: Mock,

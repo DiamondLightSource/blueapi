@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterable, Mapping
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Any
 
 from bluesky.protocols import HasName
@@ -186,12 +186,9 @@ class EnvironmentResponse(BlueapiBaseModel):
     )
 
 
-class SourceInfo(str, Enum):
+class SourceInfo(StrEnum):
     PYPI = "pypi"
     SCRATCH = "scratch"
-
-    def __str__(self):
-        return self.value
 
 
 class PackageInfo(BlueapiBaseModel):
@@ -228,7 +225,7 @@ class Cache(BlueapiBaseModel):
     id_token: str
 
 
-class Health(str, Enum):
+class Health(StrEnum):
     OK = "ok"
 
 

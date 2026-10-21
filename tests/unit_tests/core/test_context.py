@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from inspect import Parameter
 from pathlib import Path
-from types import NoneType
-from typing import Generic, TypeVar, Union
-from unittest.mock import patch
+from types import ModuleType, NoneType
+from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import responses
 from bluesky.protocols import (
     Descriptor,
     Movable,
@@ -19,6 +21,8 @@ from bluesky.run_engine import RunEngine
 from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
 from ophyd_async.core import (
+    Device,
+    PathProvider,
     StandardDetector,
     StandardReadable,
     StaticPathProvider,
@@ -26,14 +30,26 @@ from ophyd_async.core import (
     init_devices,
 )
 from ophyd_async.epics.adaravis import AravisDetector
+from ophyd_async.epics.adcore import ADWriterFactory
 from ophyd_async.epics.motor import Motor
 from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
 
-from blueapi.config import EnvironmentConfig, MetadataConfig, Source, SourceKind
+from blueapi.config import (
+    ApplicationConfig,
+    DeviceManagerSource,
+    EnvironmentConfig,
+    MetadataConfig,
+    OIDCConfig,
+    PlanSource,
+    ServiceAccount,
+    TiledConfig,
+)
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.context import DefaultFactory, generic_bounds, qualified_name
+from blueapi.core.context import generic_bounds, qualified_name
+from blueapi.core.protocols import DeviceConnectResult, DeviceManager
+from blueapi.utils.invalid_config_error import InvalidConfigError
 
 SIM_MOTOR_NAME = "sim"
 ALT_MOTOR_NAME = "alt"
@@ -72,6 +88,10 @@ def has_some_params(foo: int = 42, bar: str = "bar") -> MsgGenerator:
     yield from ()
 
 
+def has_optional_parameter(foo: dict[str, Any] | None = None) -> MsgGenerator:
+    yield from ()
+
+
 def has_typeless_param(foo) -> MsgGenerator:
     yield from ()
 
@@ -106,14 +126,14 @@ def has_default_nested_reference(
 
 
 @pytest.fixture
-def sim_motor(RE: RunEngine) -> Motor:
+def sim_motor(run_engine: RunEngine) -> Motor:
     with init_devices(mock=True):
         sim = Motor("FOO:")
     return sim
 
 
 @pytest.fixture
-def alt_motor(RE: RunEngine) -> Motor:
+def alt_motor(run_engine: RunEngine) -> Motor:
     with init_devices(mock=True):
         alt = Motor("BAR:")
     return alt
@@ -123,7 +143,7 @@ def alt_motor(RE: RunEngine) -> Motor:
 def sim_detector(tmp_path: Path) -> StandardDetector:
     path_provider = StaticPathProvider(UUIDFilenameProvider(), tmp_path)
     with init_devices(mock=True):
-        sim_det = AravisDetector("DET:", path_provider)
+        sim_det = AravisDetector("DET:", ADWriterFactory.hdf(path_provider))
     return sim_det
 
 
@@ -173,7 +193,9 @@ def some_configurable() -> SomeConfigurable:
     return SomeConfigurable()
 
 
-@pytest.mark.parametrize("plan", [has_no_params, has_one_param, has_some_params])
+@pytest.mark.parametrize(
+    "plan", [has_no_params, has_one_param, has_some_params, has_optional_parameter]
+)
 def test_add_plan(empty_context: BlueskyContext, plan: PlanGenerator):
     empty_context.register_plan(plan)
     assert plan.__name__ in empty_context.plans
@@ -273,50 +295,27 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
 def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
 
 
-def test_add_failing_deivces_from_module(
+def test_add_failing_devices_from_module(
     caplog: LogCaptureFixture, empty_context: BlueskyContext
 ):
     import tests.unit_tests.core.fake_device_module_failing as device_module
 
     caplog.set_level(10)
-    empty_context.with_device_module(device_module)
+    empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
     logs = caplog.get_records("call")
 
-    assert any("TimeoutError: FooBar" in log.message for log in logs)
+    assert any("TimeoutError('FooBar')" in log.message for log in logs)
     assert len(empty_context.devices.keys()) == 0
-
-
-def test_extra_kwargs_in_with_dodal_module_passed_to_make_all_devices(
-    empty_context: BlueskyContext,
-):
-    """
-    Note that this functionality is currently used by hyperion.
-    """
-    import tests.unit_tests.core.fake_device_module as device_module
-
-    with patch(
-        "blueapi.core.context.make_all_devices",
-        return_value=({}, {}),
-    ) as mock_make_all_devices:
-        empty_context.with_dodal_module(
-            device_module, some_argument=1, another_argument="two"
-        )
-
-        mock_make_all_devices.assert_called_once_with(
-            device_module, some_argument=1, another_argument="two"
-        )
 
 
 @pytest.mark.parametrize(
@@ -337,7 +336,7 @@ def test_lookup_nonexistent_device_child(devicey_context: BlueskyContext):
 
 def test_lookup_non_device(devicey_context: BlueskyContext):
     with pytest.raises(ValueError):
-        devicey_context.find_device("sim._set_success")
+        devicey_context.find_device("sim.name")
 
 
 def test_add_non_plan(empty_context: BlueskyContext):
@@ -356,25 +355,21 @@ def test_add_devices_and_plans_from_modules_with_config(
     empty_context.with_config(
         EnvironmentConfig(
             sources=[
-                Source(
-                    kind=SourceKind.DEVICE_FUNCTIONS,
+                DeviceManagerSource(
                     module="tests.unit_tests.core.fake_device_module",
                 ),
-                Source(
-                    kind=SourceKind.PLAN_FUNCTIONS,
+                PlanSource(
                     module="tests.unit_tests.core.fake_plan_module",
                 ),
             ]
         )
     )
     assert {
-        "motor_x",
-        "motor_y",
-        "motor_bundle_a",
-        "motor_bundle_b",
+        "fake_motor_x",
+        "fake_motor_y",
+        "fake_motor_bundle_a",
+        "fake_motor_bundle_b",
         "device_a",
-        "ophyd_device",
-        "ophyd_async_device",
     } == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
@@ -391,12 +386,23 @@ def test_add_metadata_with_config(
         assert md in empty_context.run_engine.md.items()
 
 
-def test_function_spec(empty_context: BlueskyContext):
+def test_function_spec_with_some_params(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(has_some_params)
     assert spec["foo"][0] is int
-    assert spec["foo"][1].default_factory == DefaultFactory(42)
+    assert spec["foo"][1].default == 42
     assert spec["bar"][0] is str
-    assert spec["bar"][1].default_factory == DefaultFactory("bar")
+    assert spec["bar"][1].default == "bar"
+
+
+def test_function_spec_with_optional_params(empty_context: BlueskyContext):
+    spec = empty_context._type_spec_for_function(has_optional_parameter)
+    types = get_type_hints(has_optional_parameter)
+    arg_type = types.get("foo", Parameter.empty)
+
+    _type = SkipJsonSchema[empty_context._convert_type(arg_type, False)]
+    inner_type, *annotations = get_args(_type)
+    assert spec["foo"][0] == inner_type
+    assert spec["foo"][1].default_factory() is None  # type: ignore
 
 
 def test_basic_type_conversion(empty_context: BlueskyContext):
@@ -477,7 +483,7 @@ def test_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     movable_ref = empty_context._reference(Movable)
     assert spec["mov"][0] == movable_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 def test_generic_default_device_reference(empty_context: BlueskyContext):
@@ -487,7 +493,7 @@ def test_generic_default_device_reference(empty_context: BlueskyContext):
     spec = empty_context._type_spec_for_function(default_movable)
     motor_ref = empty_context._reference(Movable[float])
     assert spec["mov"][0] == motor_ref
-    assert spec["mov"][1].default_factory == DefaultFactory("demo")
+    assert spec["mov"][1].default == "demo"
 
 
 class ConcreteStoppable(Stoppable):
@@ -516,6 +522,20 @@ def test_concrete_method_annotation(empty_context: BlueskyContext):
     assert spec["named"][1].default_factory is None
 
 
+class PlainDevice(Device):
+    """Class that extends Device without any additional protocols"""
+
+
+def test_device_without_protocol_annotation(empty_context: BlueskyContext):
+    dev_ref = empty_context._reference(PlainDevice)
+
+    def demo_plan(dev: PlainDevice) -> MsgGenerator:
+        yield from []
+
+    spec = empty_context._type_spec_for_function(demo_plan)
+    assert spec["dev"][0] is dev_ref
+
+
 def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor: Motor):
     movable_ref = empty_context._reference(Movable)
     empty_context.register_device(sim_motor)
@@ -523,7 +543,7 @@ def test_str_default(empty_context: BlueskyContext, sim_motor: Motor, alt_motor:
 
     spec = empty_context._type_spec_for_function(has_default_reference)
     assert spec["m"][0] is movable_ref
-    assert (df := spec["m"][1].default_factory) and df() == SIM_MOTOR_NAME  # type: ignore
+    assert spec["m"][1].default == SIM_MOTOR_NAME
 
     assert has_default_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_reference.__name__].model
@@ -542,7 +562,7 @@ def test_nested_str_default(
 
     spec = empty_context._type_spec_for_function(has_default_nested_reference)
     assert spec["m"][0] == list[movable_ref]
-    assert (df := spec["m"][1].default_factory) and df() == [SIM_MOTOR_NAME]  # type: ignore
+    assert spec["m"][1].default == [SIM_MOTOR_NAME]
 
     assert has_default_nested_reference.__name__ in empty_context.plans
     model = empty_context.plans[has_default_nested_reference.__name__].model
@@ -688,6 +708,191 @@ def test_explicit_none_arg_generated_schema(
     empty_context.register_plan(demo_plan)
     schema = empty_context.plans["demo_plan"].model.model_json_schema()
     assert schema["properties"] == {
-        "foo": {"title": "Foo", "anyOf": [{"type": "integer"}, {"type": "null"}]}
+        "foo": {
+            "title": "Foo",
+            "anyOf": [{"type": "integer"}, {"type": "null"}],
+        }
     }
     assert "foo" in schema.get("required", [])
+
+
+@dataclass
+class StaticDeviceManager:
+    devices: dict[str, Any] = field(default_factory=dict)
+    build_errors: dict[str, Exception] = field(default_factory=dict)
+    connection_errors: dict[str, Exception] = field(default_factory=dict)
+
+    def build_and_connect(
+        self,
+        *,
+        mock: bool = False,
+        timeout: float | None = None,
+        fixtures: dict[str, Any] | None = None,
+    ) -> DeviceConnectResult:
+        return self
+
+
+def test_empty_device_manager(empty_context: BlueskyContext):
+    sdm = StaticDeviceManager()
+    empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+
+
+def test_single_device_manager(empty_context: BlueskyContext):
+    foo = Mock(spec=Device, name="foo")
+    foo.name = "foo"
+    sdm = StaticDeviceManager(devices={"foo": foo})
+    empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {"foo": foo}
+
+
+def test_device_manager_build_error(empty_context: BlueskyContext):
+    exc = ValueError("broken foo")
+    sdm = StaticDeviceManager(build_errors={"foo": exc})
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc}
+
+
+def test_device_manager_connection_error(empty_context: BlueskyContext):
+    exc = ValueError("broken foo")
+    sdm = StaticDeviceManager(connection_errors={"foo": exc})
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc}
+
+
+def test_device_manager_errors_are_combined(empty_context: BlueskyContext):
+    exc1 = ValueError("broken foo")
+    exc2 = ValueError("disconnected bar")
+    sdm = StaticDeviceManager(
+        build_errors={"foo": exc1}, connection_errors={"bar": exc2}
+    )
+    res = empty_context.with_device_manager(sdm)
+
+    assert empty_context.devices == {}
+    assert res[1] == {"foo": exc1, "bar": exc2}
+
+
+def test_mock_passed_to_device_manager(empty_context: BlueskyContext):
+    dm = MagicMock(spec=DeviceManager)
+    bc = dm.build_and_connect.return_value
+    bc.devices = {}
+    bc.build_errors = {}
+    bc.connection_errors = {}
+    empty_context.with_device_manager(dm, mock=True)
+
+    dm.build_and_connect.assert_called_once_with(mock=True, fixtures={})
+
+
+def test_path_provider_passed_to_device_manager(empty_context: BlueskyContext):
+    dm = MagicMock(spec=DeviceManager)
+    bc = dm.build_and_connect.return_value
+    bc.devices = {}
+    bc.build_errors = {}
+    bc.connection_errors = {}
+    pp = Mock(spec=PathProvider)
+    empty_context.path_provider = pp
+    empty_context.with_device_manager(dm)
+
+    dm.build_and_connect.assert_called_once_with(
+        mock=False, fixtures={"path_provider": pp}
+    )
+
+
+def test_device_manager_environment_source(empty_context: BlueskyContext):
+    foo = Mock(spec=Device, name="foo")
+    foo.name = "foo"
+    stm = StaticDeviceManager(devices={"foo": foo})
+    dev_mod = Mock(spec=ModuleType)
+    dev_mod.devices = stm
+    env = Mock(spec=EnvironmentConfig)
+    env.metadata = None
+    env.sources = [DeviceManagerSource(module="foo.bar", mock=True)]
+    with patch("blueapi.core.context.import_module") as imp_mod:
+        imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
+        empty_context.with_config(env)
+    assert empty_context.devices == {"foo": foo}
+
+
+def test_non_device_manager_errors(empty_context: BlueskyContext):
+    dev_mod = Mock(spec=ModuleType, name="dev_mod")
+    dev_mod.devices = "not-a-device-manager"
+    env = Mock(spec=EnvironmentConfig)
+    env.metadata = None
+    env.sources = [DeviceManagerSource(module="foo.bar", mock=True)]
+    with patch("blueapi.core.context.import_module") as imp_mod:
+        imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
+        with pytest.raises(ValueError, match="not a device manager"):
+            empty_context.with_config(env)
+
+
+def test_setup_without_tiled_not_makes_tiled_inserter():
+    config = TiledConfig(enabled=False)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf is None
+
+
+def test_setup_default_not_makes_tiled_inserter():
+    context = BlueskyContext(ApplicationConfig())
+    assert context.tiled_conf is None
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_setup_with_tiled_makes_tiled_inserter(api_key: str | None):
+    config = TiledConfig(enabled=True, authentication=api_key)
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+        )
+    )
+    assert context.tiled_conf == config
+
+
+@pytest.mark.parametrize("api_key", [None, "foo"])
+def test_must_have_instrument_set_for_tiled(api_key: str | None):
+    config = TiledConfig(enabled=True, authentication=api_key)
+    with pytest.raises(InvalidConfigError):
+        BlueskyContext(
+            ApplicationConfig(tiled=config, env=EnvironmentConfig(metadata=None))
+        )
+
+
+def test_must_have_oidc_config_for_tiled():
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+    with pytest.raises(
+        InvalidConfigError,
+        match="Tiled has been configured but oidc configuration is missing",
+    ):
+        BlueskyContext(
+            ApplicationConfig(
+                tiled=config,
+                env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+                oidc=None,
+            )
+        )
+
+
+def test_token_url_set_for_tiled(
+    mock_authn_server: responses.RequestsMock, oidc_config: OIDCConfig
+):
+    config = TiledConfig(enabled=True, authentication=ServiceAccount())
+
+    context = BlueskyContext(
+        ApplicationConfig(
+            tiled=config,
+            env=EnvironmentConfig(metadata=MetadataConfig(instrument="ixx")),
+            oidc=oidc_config,
+        )
+    )
+    assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint  # type:ignore

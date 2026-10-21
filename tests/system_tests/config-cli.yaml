@@ -1,0 +1,6 @@
+stomp:
+  enabled: true
+  auth:
+    username: guest
+    password: guest
+  url: tcp://localhost:61613

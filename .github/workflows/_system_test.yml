@@ -4,48 +4,44 @@ on:
 env:
   # https://github.com/pytest-dev/pytest/issues/2042
   PY_IGNORE_IMPORTMISMATCH: "1"
+  # test: sim IOCs and gateways from example-services, ci: the containerised blueapi server.
+  # Set here as --profile would replace COMPOSE_PROFILES=test from tests/system_tests/.env
+  COMPOSE_PROFILES: test,ci
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v7
         with:
-          # Need this to get version number from last tag
-          fetch-depth: 0
+          fetch-depth: 1
+          # Check out example services
+          submodules: true
 
-      - name: Install python packages
-        uses: ./.github/actions/install_requirements
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
-      - name: Checkout simulated devices
-        uses: actions/checkout@v4
-        with:
-          repository: epics-containers/example-services
-          path: example-services
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v2
 
-      - name: Run docker compose
-        uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
-        with:
-          compose-file: "./example-services/compose.yaml"
-          services: |
-            bl01t-di-cam-01
-            bl01t-mo-sim-01
-            ca-gateway
+      - name: Read dodal version from uv.lock
+        run: echo "DODAL_VERSION=$(grep -A1 '^name = "dls-dodal"$' uv.lock | sed -n 's/^version = "\(.*\)"$/\1/p')" >> "$GITHUB_ENV"
 
-      - name: Start RabbitMQ
-        uses: namoshek/rabbitmq-github-action@d1d4455f4a8f72db66111c24cb0dc5654047a975 # v1
-        with:
-          ports: "61613:61613"
-          plugins: rabbitmq_stomp
+      - name: Compose services
+        # Wait on blueapi only: --wait on everything fails on the one-shot init container exiting
+        run: |
+          docker compose -f tests/system_tests/compose.yaml up -d
+          docker compose -f tests/system_tests/compose.yaml up -d --wait --wait-timeout 600 blueapi
 
-      - name: Start Blueapi Server
-        env:
-          EPICS_CA_NAME_SERVERS: 127.0.0.1:5094
-          EPICS_PVA_NAME_SERVERS: 127.0.0.1:5095
-          EPICS_CA_ADDR_LIST: 127.0.0.1:5094
-        run: blueapi -c ${{ github.workspace }}/tests/system_tests/config.yaml serve &
+      - name: Install browser for device flow login
+        run: uv run --locked playwright install --with-deps chromium
 
       - name: Run tests
-        run: tox -e system-test
+        run: uv run --locked tox -e system-test
+
+      - name: Compose logs
+        if: failure()
+        run: docker compose -f tests/system_tests/compose.yaml logs

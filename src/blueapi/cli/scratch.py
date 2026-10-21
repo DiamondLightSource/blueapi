@@ -3,6 +3,7 @@ import logging
 import os
 import stat
 import textwrap
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from subprocess import Popen
 
@@ -14,6 +15,8 @@ from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, Source
 from blueapi.utils import get_owner_gid, is_sgid_set
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
+
+LOGGER = logging.getLogger(__name__)
 
 
 def setup_scratch(
@@ -30,7 +33,7 @@ def setup_scratch(
 
     _validate_root_directory(config.root, config.required_gid)
 
-    logging.info(f"Setting up scratch area: {config.root}")
+    LOGGER.info(f"Setting up scratch area: {config.root}")
 
     """ fail early """
     for repo in config.repositories:
@@ -44,13 +47,32 @@ def setup_scratch(
         That is to prevent namespace clashing with the blueapi application.
         """)
             )
-    for repo in config.repositories:
-        local_directory = config.root / repo.name
-        ensure_repo(repo.remote_url, local_directory)
-        scratch_install(local_directory, timeout=install_timeout)
+
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(
+                ensure_repo,
+                repo.remote_url,
+                config.root / repo.name,
+                repo.target_revision,
+            )
+            for repo in config.repositories
+        ]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as exc:
+                raise RuntimeError("Failed to clone repositories") from exc
+
+    scratch_install(
+        *(config.root / repo.name for repo in config.repositories),
+        timeout=install_timeout,
+    )
 
 
-def ensure_repo(remote_url: str, local_directory: Path) -> None:
+def ensure_repo(
+    remote_url: str, local_directory: Path, target_revision: str | None = None
+) -> None:
     """
     Ensure that a repository is checked out for use in the scratch area.
     Clone it if it isn't.
@@ -64,47 +86,59 @@ def ensure_repo(remote_url: str, local_directory: Path) -> None:
     os.umask(stat.S_IWOTH)
 
     if not local_directory.exists():
-        logging.info(f"Cloning {remote_url}")
-        Repo.clone_from(remote_url, local_directory)
-        logging.info(f"Cloned {remote_url} -> {local_directory}")
+        LOGGER.info(f"Cloning {remote_url}")
+        Repo.clone_from(
+            remote_url,
+            local_directory,
+            branch=target_revision,
+            filter="blob:none",
+        )
+        LOGGER.info(f"Cloned {remote_url} -> {local_directory}")
     elif local_directory.is_dir():
-        Repo(local_directory)
-        logging.info(f"Found {local_directory}")
+        repo = Repo(local_directory)
+        head = repo.head.commit
+        LOGGER.info("Found %s @ %s", local_directory, head.name_rev)
+        if target_revision:
+            if target_revision in repo.refs:
+                if repo.refs[target_revision].commit != head:
+                    LOGGER.warning(
+                        "Repository %s not at target revision: %r instead of %r",
+                        local_directory.name,
+                        head.name_rev,
+                        target_revision,
+                    )
+            else:
+                LOGGER.warning("Target revision %r not found", target_revision)
     else:
         raise KeyError(
-            f"Unable to open {local_directory} as a git repository because it is a file"
+            f"Unable to open {local_directory} as a git repository because it is not a "
+            "directory"
         )
 
 
-def scratch_install(path: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
+def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
     """
-    Install a scratch package. Make blueapi aware of a repository checked out in
-    the scratch area. Make it automatically follow code changes to that repository
-    (pending a restart). Do not install any of the package's dependencies as they
+    Install scratch packages. Make blueapi aware of repositories checked out in
+    the scratch area. Make it automatically follow code changes to those repositories
+    (pending a restart). Do not install any of the packages' dependencies as they
     may conflict with each other.
 
     Args:
-        path: Path to the checked out repository
+        paths: List of Paths to the checked out repositories
         timeout: Time to wait for installation subprocess
     """
-
-    _validate_directory(path)
-
-    logging.info(f"Installing {path}")
-    process = Popen(
-        [
-            "python",
-            "-m",
-            "pip",
-            "install",
-            "--no-deps",
-            "-e",
-            str(path),
-        ]
-    )
-    process.wait(timeout=timeout)
-    if process.returncode != 0:
-        raise RuntimeError(f"Failed to install {path}: Exit Code: {process.returncode}")
+    if not paths:
+        return
+    LOGGER.info("Installing packages")
+    for path in paths:
+        _validate_directory(path)
+        args = ["uv", "pip", "install", "-e", str(path)]
+        process = Popen(args)
+        process.wait(timeout=timeout)
+        if process.returncode != 0:
+            raise RuntimeError(
+                f"Failed to install packages: Exit Code: {process.returncode}"
+            )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

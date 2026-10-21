@@ -36,8 +36,7 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext: {} # fsGroup: 2000
 
 securityContext:
   # https://github.com/DiamondLightSource/blueapi/issues/1096
@@ -95,6 +94,9 @@ resources:
     cpu: 200m
     memory: 400Mi
 
+# -- Override resources for init container. By default copies resources of main container.
+initResources: {}
+
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 # -- Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively.
 # This is automatically disabled when in debug mode.
@@ -125,18 +127,21 @@ startupProbe:
   failureThreshold: 5
   periodSeconds: 10
 
-
-
 # -- Additional volumes on the output StatefulSet definition.
 # Define volumes from e.g. Secrets, ConfigMaps or the Filesystem
 volumes: []
+#  - name: dls-sw-bl
+#    hostPath:
+#      path: "/dls_sw/i23"
+#      type: Directory
 
 # -- Additional volumeMounts on the output StatefulSet definition.
 # Define how volumes are mounted to the container referenced by using the same name.
-volumeMounts:
-- name: worker-config
-  mountPath: "/config"
-  readOnly: true
+volumeMounts: []
+#  - name: dls-sw-bl
+#    mountPath: /dls_sw/i23
+#    readOnly: true
+#    mountPropagation: HostToContainer
 
 # -- May be required to run on specific nodes (e.g. the control machine)
 nodeSelector: {}
@@ -148,20 +153,21 @@ affinity: {}
 # blueapi specific fields
 
 # -- May be needed for EPICS depending on gateway configuration
-hostNetwork: false 
+hostNetwork: false
 
 # -- If enabled the blueapi pod will restart on changes to `worker`
 restartOnConfigChange: true
 
 # -- Additional envVars to mount to the pod
 extraEnvVars: []
-# - name: RABBITMQ_PASSWORD
+# - name: TILED_API_KEY
 #   valueFrom:
 #     secretKeyRef:
-#       name: rabbitmq-password
-#       key: rabbitmq-password
+#       name: tiled_api_key
+#       key: tiled_api_key
 
 # -- Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters
+# -- Exclude health probe requests from tracing by default to prevent spamming
 tracing:
   otlp:
     enabled: false
@@ -169,7 +175,10 @@ tracing:
     server:
       host: http://opentelemetry-collector.tracing
       port: 4318
+  fastapi:
+    excludedURLs: "/healthz"
 
+# @schema $ref: config_schema.json
 # -- Config for the worker goes here, will be mounted into a config file
 worker:
   api:
@@ -179,14 +188,14 @@ worker:
   env:
     # -- modules (must be installed in the venv) to fetch devices/plans from
     sources:
-      # - kind: dodal
+      # - kind: deviceManager
       #   module: dodal.beamlines.adsim
       - kind: planFunctions
         module: dodal.plans
       - kind: planFunctions
         module: dodal.plan_stubs.wrapped
   # -- Message bus configuration for returning status to GDA/forwarding documents downstream
-  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret 
+  # Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret
   stomp:
     enabled: false
     auth:
@@ -196,7 +205,7 @@ worker:
   # -- If initContainer is enabled the default branch of python projects in this section are installed
   # into the venv *without their dependencies*
   scratch:
-    root: /blueapi-plugins/scratch
+    root: /workspace
     repositories: []
     # - name: "dodal"
     #   remote_url: https://github.com/DiamondLightSource/dodal.git
@@ -214,10 +223,18 @@ initContainer:
     # -- Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem
     # If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container
     enabled: false
-    # -- May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
+    # -- Deprecated. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release
     existingClaimName: ""
+    # -- May be set to create or use a PVC named `ixx-blueapi-scratch-{customName}-a.b.c`
+    customName: ""
+    # -- Size of persistent volume
+    size: "1Gi"
 
 debug:
-  # -- If enabled, disables liveness and readiness probes, and does not start the service on startup
-  # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
+  # -- If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance
   enabled: false
+  # -- If enabled does not start the service on startup
+  # This allows connecting to the pod and starting the service manually to allow debugging on the cluster
+  suspend: false
+  # -- If enabled configures debugpy to use the option `--log-to-stderr`
+  log_to_stderr: false

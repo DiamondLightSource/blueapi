@@ -1,0 +1,1039 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueapi Helm chart schema",
+    "description": "Schema to allow validation of values passed to Blueapi Helm chart",
+    "type": "object",
+    "properties": {
+        "affinity": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
+            "type": "object"
+        },
+        "debug": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "If enabled, runs debugpy, allowing port-forwarding to expose port 5678 or attached vscode instance",
+                    "type": "boolean"
+                },
+                "log_to_stderr": {
+                    "description": "If enabled configures debugpy to use the option `--log-to-stderr`",
+                    "type": "boolean"
+                },
+                "suspend": {
+                    "description": "If enabled does not start the service on startup This allows connecting to the pod and starting the service manually to allow debugging on the cluster",
+                    "type": "boolean"
+                }
+            }
+        },
+        "extraEnvVars": {
+            "description": "Additional envVars to mount to the pod",
+            "type": "array"
+        },
+        "fullnameOverride": {
+            "type": "string"
+        },
+        "global": {
+            "description": "Global values shared between all subcharts",
+            "$comment": "Added automatically by 'helm schema' to allow this chart to be used as a Helm dependency, as the `additionalProperties` setting would otherwise collide with Helm's special 'global' values key.",
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "hostNetwork": {
+            "description": "May be needed for EPICS depending on gateway configuration",
+            "type": "boolean"
+        },
+        "image": {
+            "type": "object",
+            "properties": {
+                "pullPolicy": {
+                    "type": "string"
+                },
+                "repository": {
+                    "description": "To use a container image that extends the blueapi one, set it here",
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "imagePullSecrets": {
+            "type": "array"
+        },
+        "ingress": {
+            "description": "Configuring and enabling an ingress allows blueapi to be served at a nicer address, e.g. ixx-blueapi.diamond.ac.uk",
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "className": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "hosts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "host": {
+                                "type": "string"
+                            },
+                            "paths": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "pathType": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tls": {
+                    "type": "array"
+                }
+            }
+        },
+        "initContainer": {
+            "description": "Configure the initContainer that checks out the scratch configuration repositories",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "persistentVolume": {
+                    "type": "object",
+                    "properties": {
+                        "customName": {
+                            "description": "May be set to create or use a PVC named `ixx-blueapi-scratch-{customName}-a.b.c`",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "description": "Whether to use a persistent volume in the cluster or check out onto the mounted host filesystem If persistentVolume.enabled: False, mounts scratch.root as scratch.root in the container",
+                            "type": "boolean"
+                        },
+                        "existingClaimName": {
+                            "description": "Deprecated. May be set to an existing persistent volume claim to re-use the volume, else a new one is created for each blueapi release",
+                            "type": "string"
+                        },
+                        "size": {
+                            "description": "Size of persistent volume",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "initResources": {
+            "description": "Override resources for init container. By default copies resources of main container.",
+            "type": "object"
+        },
+        "livenessProbe": {
+            "description": "Liveness probe, if configured kubernetes will kill the pod and start a new one if failed consecutively. This is automatically disabled when in debug mode.",
+            "type": "object",
+            "properties": {
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "httpGet": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "nameOverride": {
+            "type": "string"
+        },
+        "nodeSelector": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
+            "type": "object"
+        },
+        "podAnnotations": {
+            "type": "object"
+        },
+        "podLabels": {
+            "type": "object"
+        },
+        "podSecurityContext": {
+            "type": "object"
+        },
+        "readinessProbe": {
+            "description": "Readiness probe, if configured kubernetes will not route traffic to this pod if failed consecutively. This could allow the service time to recover if it is being overwhelmed by traffic, but without the to ability to load balance or scale up/outwards, upstream services will need to know to back off. This is automatically disabled when in debug mode.",
+            "type": "object",
+            "properties": {
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "httpGet": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "resources": {
+            "description": "Sets the compute resources available to the pod. These defaults are appropriate when using debug mode or an internal PVC and therefore running VS Code server in the pod. In the Diamond cluster, requests must be \u003e= 0.1*limits When not using either of the above, the limits may be lowered. When idle but connected, blueapi consumes ~400MB of memory and 1% cpu and may struggle when allocated less.",
+            "type": "object",
+            "properties": {
+                "limits": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "requests": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "restartOnConfigChange": {
+            "description": "If enabled the blueapi pod will restart on changes to `worker`",
+            "type": "boolean"
+        },
+        "securityContext": {
+            "type": "object",
+            "properties": {
+                "runAsNonRoot": {
+                    "type": "boolean"
+                },
+                "runAsUser": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service": {
+            "type": "object",
+            "properties": {
+                "port": {
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "To make blueapi available on an IP outside of the cluster prior to an Ingress being created, change this to LoadBalancer",
+                    "type": "string"
+                }
+            }
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "automount": {
+                    "type": "boolean"
+                },
+                "create": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "startupProbe": {
+            "description": "A more lenient livenessProbe to allow the service to start fully. This is automatically disabled when in debug mode.",
+            "type": "object",
+            "properties": {
+                "failureThreshold": {
+                    "type": "integer"
+                },
+                "httpGet": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "periodSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tolerations": {
+            "description": "May be required to run on specific nodes (e.g. the control machine)",
+            "type": "array"
+        },
+        "tracing": {
+            "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
+            "type": "object",
+            "properties": {
+                "fastapi": {
+                    "type": "object",
+                    "properties": {
+                        "excludedURLs": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "otlp": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "protocol": {
+                            "type": "string"
+                        },
+                        "server": {
+                            "type": "object",
+                            "properties": {
+                                "host": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "volumeMounts": {
+            "description": "Additional volumeMounts on the output StatefulSet definition. Define how volumes are mounted to the container referenced by using the same name.",
+            "type": "array"
+        },
+        "volumes": {
+            "description": "Additional volumes on the output StatefulSet definition. Define volumes from e.g. Secrets, ConfigMaps or the Filesystem",
+            "type": "array"
+        },
+        "worker": {
+            "description": "Config for the worker goes here, will be mounted into a config file",
+            "$ref": "config_schema.json",
+            "type": "object",
+            "properties": {
+                "api": {
+                    "type": "object",
+                    "properties": {
+                        "url": {
+                            "description": "0.0.0.0 required to allow non-loopback traffic If using hostNetwork, the port must be free on the host",
+                            "type": "string"
+                        }
+                    }
+                },
+                "env": {
+                    "type": "object",
+                    "properties": {
+                        "sources": {
+                            "description": "modules (must be installed in the venv) to fetch devices/plans from",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "kind": {
+                                        "type": "string"
+                                    },
+                                    "module": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "logging": {
+                    "description": "Configures logging. Port 12231 is the `dodal` input on graylog which will be renamed `blueapi`",
+                    "type": "object",
+                    "properties": {
+                        "graylog": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "url": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "level": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "scratch": {
+                    "description": "If initContainer is enabled the default branch of python projects in this section are installed into the venv *without their dependencies*",
+                    "type": "object",
+                    "properties": {
+                        "repositories": {
+                            "type": "array"
+                        },
+                        "root": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "stomp": {
+                    "description": "Message bus configuration for returning status to GDA/forwarding documents downstream Password may be in the form ${ENV_VAR} to be fetched from an environment variable e.g. mounted from a SealedSecret",
+                    "type": "object",
+                    "properties": {
+                        "auth": {
+                            "type": "object",
+                            "properties": {
+                                "password": {
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "url": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "additionalProperties": false,
+    "$defs": {
+        "BasicAuthentication": {
+            "$id": "BasicAuthentication",
+            "title": "BasicAuthentication",
+            "description": "User credentials for basic authentication",
+            "type": "object",
+            "required": [
+                "username",
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "title": "Password",
+                    "description": "Password to verify user's identity",
+                    "type": "string"
+                },
+                "username": {
+                    "title": "Username",
+                    "description": "Unique identifier for user",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "CORSConfig": {
+            "$id": "CORSConfig",
+            "title": "CORSConfig",
+            "type": "object",
+            "required": [
+                "origins"
+            ],
+            "properties": {
+                "allow_credentials": {
+                    "title": "Allow Credentials",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "allow_headers": {
+                    "title": "Allow Headers",
+                    "default": [
+                        "*"
+                    ],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allow_methods": {
+                    "title": "Allow Methods",
+                    "default": [
+                        "*"
+                    ],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "origins": {
+                    "title": "Origins",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "DeviceManagerSource": {
+            "$id": "DeviceManagerSource",
+            "title": "DeviceManagerSource",
+            "type": "object",
+            "required": [
+                "module"
+            ],
+            "properties": {
+                "kind": {
+                    "title": "Kind",
+                    "default": "deviceManager",
+                    "const": "deviceManager"
+                },
+                "mock": {
+                    "title": "Mock",
+                    "description": "If true, ophyd_async device connections are mocked",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "module": {
+                    "title": "Module",
+                    "description": "Module to be imported",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "description": "Name of the device manager in the module",
+                    "default": "devices",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "EnvironmentConfig": {
+            "$id": "EnvironmentConfig",
+            "title": "EnvironmentConfig",
+            "description": "Config for the RunEngine environment",
+            "type": "object",
+            "properties": {
+                "events": {
+                    "$ref": "WorkerEventConfig"
+                },
+                "metadata": {
+                    "anyOf": [
+                        {
+                            "$ref": "MetadataConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "sources": {
+                    "title": "Sources",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "PlanSource"
+                            },
+                            {
+                                "$ref": "DeviceManagerSource"
+                            }
+                        ]
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "GraylogConfig": {
+            "$id": "GraylogConfig",
+            "title": "GraylogConfig",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "title": "Enabled",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "url": {
+                    "title": "Url",
+                    "default": "tcp://localhost:5555",
+                    "type": "string",
+                    "format": "uri",
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "LoggingConfig": {
+            "$id": "LoggingConfig",
+            "title": "LoggingConfig",
+            "type": "object",
+            "properties": {
+                "graylog": {
+                    "default": {
+                        "enabled": false,
+                        "url": "tcp://localhost:5555"
+                    },
+                    "$ref": "GraylogConfig"
+                },
+                "level": {
+                    "title": "Level",
+                    "default": "INFO",
+                    "type": "string",
+                    "enum": [
+                        "NOTSET",
+                        "DEBUG",
+                        "INFO",
+                        "WARNING",
+                        "ERROR",
+                        "CRITICAL"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "MetadataConfig": {
+            "$id": "MetadataConfig",
+            "title": "MetadataConfig",
+            "type": "object",
+            "required": [
+                "instrument"
+            ],
+            "properties": {
+                "instrument": {
+                    "title": "Instrument",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "NumtrackerConfig": {
+            "$id": "NumtrackerConfig",
+            "title": "NumtrackerConfig",
+            "type": "object",
+            "properties": {
+                "detector_file_template": {
+                    "title": "Detector File Template",
+                    "default": "{instrument}-{scan_id}-{device_name}",
+                    "type": "string"
+                },
+                "url": {
+                    "title": "Url",
+                    "default": "http://localhost:8406/graphql",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "OIDCConfig": {
+            "$id": "OIDCConfig",
+            "title": "OIDCConfig",
+            "type": "object",
+            "required": [
+                "client_id"
+            ],
+            "properties": {
+                "client_audience": {
+                    "title": "Client Audience",
+                    "description": "Client Audience(s)",
+                    "default": "blueapi",
+                    "type": "string"
+                },
+                "client_id": {
+                    "title": "Client Id",
+                    "description": "Client ID",
+                    "type": "string"
+                },
+                "issuer": {
+                    "title": "Issuer",
+                    "description": "URL of OIDC provider",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "logout_redirect_endpoint": {
+                    "title": "Logout Redirect Endpoint",
+                    "description": "The oidc endpoint required to logout",
+                    "default": "",
+                    "type": "string"
+                },
+                "well_known_url": {
+                    "title": "Well Known Url",
+                    "description": "URL to fetch OIDC config from the provider",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "OpaConfig": {
+            "$id": "OpaConfig",
+            "title": "OpaConfig",
+            "type": "object",
+            "properties": {
+                "admin_check": {
+                    "title": "Admin Check",
+                    "default": "admin/admin",
+                    "type": "string"
+                },
+                "audience": {
+                    "title": "Audience",
+                    "default": "account",
+                    "type": "string"
+                },
+                "root": {
+                    "title": "Root",
+                    "default": "http://localhost:8181/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                },
+                "submit_task_check": {
+                    "title": "Submit Task Check",
+                    "default": "blueapi/write_to_beamline_visit",
+                    "type": "string"
+                },
+                "tiled_service_account_check": {
+                    "title": "Tiled Service Account Check",
+                    "default": "blueapi/tiled_service_account_for_beamline",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "PlanSource": {
+            "$id": "PlanSource",
+            "title": "PlanSource",
+            "type": "object",
+            "required": [
+                "module"
+            ],
+            "properties": {
+                "kind": {
+                    "title": "Kind",
+                    "default": "planFunctions",
+                    "const": "planFunctions"
+                },
+                "module": {
+                    "title": "Module",
+                    "description": "Module to be imported",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "RestConfig": {
+            "$id": "RestConfig",
+            "title": "RestConfig",
+            "type": "object",
+            "properties": {
+                "cors": {
+                    "anyOf": [
+                        {
+                            "$ref": "CORSConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "url": {
+                    "title": "Url",
+                    "default": "http://localhost:8000/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "ScratchConfig": {
+            "$id": "ScratchConfig",
+            "title": "ScratchConfig",
+            "type": "object",
+            "properties": {
+                "repositories": {
+                    "title": "Repositories",
+                    "description": "Details of repositories to be cloned and imported into blueapi",
+                    "type": "array",
+                    "items": {
+                        "$ref": "ScratchRepository"
+                    }
+                },
+                "required_gid": {
+                    "title": "Required Gid",
+                    "description": "\nRequired owner GID for the scratch directory. If supplied, the setup-scratch\ncommand will check the scratch area ownership and raise an error if it is\nnot owned by \u003cGID\u003e, or if it does not have SGID permission bit set.\n",
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "root": {
+                    "title": "Root",
+                    "description": "The root directory of the scratch area, all repositories will be cloned under this directory.",
+                    "default": "/tmp/scratch/blueapi",
+                    "type": "string",
+                    "format": "path"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ScratchRepository": {
+            "$id": "ScratchRepository",
+            "title": "ScratchRepository",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "Unique name for this repository in the scratch directory",
+                    "default": "example",
+                    "type": "string"
+                },
+                "remote_url": {
+                    "title": "Remote Url",
+                    "description": "URL to clone from",
+                    "default": "https://github.com/example/example.git",
+                    "type": "string"
+                },
+                "target_revision": {
+                    "title": "Target Revision",
+                    "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ServiceAccount": {
+            "$id": "ServiceAccount",
+            "title": "ServiceAccount",
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "title": "Client Id",
+                    "description": "Service account client ID",
+                    "default": "",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "title": "Client Secret",
+                    "description": "Service account client secret",
+                    "writeOnly": true,
+                    "default": "",
+                    "type": "string",
+                    "format": "password"
+                }
+            },
+            "additionalProperties": false
+        },
+        "StompConfig": {
+            "$id": "StompConfig",
+            "title": "StompConfig",
+            "description": "Config for connecting to stomp broker",
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "description": "Auth information for communicating with STOMP broker, if required",
+                    "anyOf": [
+                        {
+                            "$ref": "BasicAuthentication"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "enabled": {
+                    "title": "Enabled",
+                    "description": "True if blueapi should connect to stomp for asynchronous event publishing",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "url": {
+                    "title": "Url",
+                    "default": "tcp://localhost:61613",
+                    "type": "string",
+                    "format": "uri",
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "TiledConfig": {
+            "$id": "TiledConfig",
+            "title": "TiledConfig",
+            "type": "object",
+            "properties": {
+                "authentication": {
+                    "title": "Authentication",
+                    "description": "Tiled Authentication can be API_KEY or OIDC Service account",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "$ref": "ServiceAccount"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "enabled": {
+                    "title": "Enabled",
+                    "description": "True if blueapi should forward data to a Tiled instance",
+                    "default": false,
+                    "type": "boolean"
+                },
+                "url": {
+                    "title": "Url",
+                    "default": "http://localhost:8407/",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2083,
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": false
+        },
+        "WorkerEventConfig": {
+            "$id": "WorkerEventConfig",
+            "title": "WorkerEventConfig",
+            "description": "Config for event broadcasting via the message bus",
+            "type": "object",
+            "properties": {
+                "broadcast_status_events": {
+                    "title": "Broadcast Status Events",
+                    "default": true,
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false
+        },
+        "config_schema.json": {
+            "$id": "config_schema.json",
+            "title": "ApplicationConfig",
+            "description": "Config for the worker application as a whole. Root of\nconfig tree.",
+            "type": "object",
+            "properties": {
+                "api": {
+                    "$ref": "RestConfig"
+                },
+                "auth_token_path": {
+                    "title": "Auth Token Path",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "path"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "env": {
+                    "$ref": "EnvironmentConfig"
+                },
+                "logging": {
+                    "$ref": "LoggingConfig"
+                },
+                "numtracker": {
+                    "anyOf": [
+                        {
+                            "$ref": "NumtrackerConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "oidc": {
+                    "anyOf": [
+                        {
+                            "$ref": "OIDCConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "opa": {
+                    "anyOf": [
+                        {
+                            "$ref": "OpaConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "scratch": {
+                    "anyOf": [
+                        {
+                            "$ref": "ScratchConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "stomp": {
+                    "$ref": "StompConfig"
+                },
+                "tiled": {
+                    "$ref": "TiledConfig"
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

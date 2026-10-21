@@ -1,10 +1,11 @@
 import logging
+import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from enum import Enum
 from typing import Annotated
 
 import jwt
+from bluesky._vendor.super_state_machine.errors import TransitionError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -14,29 +15,58 @@ from fastapi import (
     HTTPException,
     Request,
     Response,
+    WebSocket,
+    WebSocketDisconnect,
     status,
 )
+from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.requests import HTTPConnection
+from fastapi.responses import RedirectResponse, StreamingResponse
 from observability_utils.tracing import (
     add_span_attributes,
     get_tracer,
     start_as_current_span,
 )
-from opentelemetry.context import attach
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.propagate import get_global_textmap
 from opentelemetry.trace import get_tracer_provider
 from pydantic import ValidationError
-from pydantic.json_schema import SkipJsonSchema
 from starlette.responses import JSONResponse
-from super_state_machine.errors import TransitionError
+from starlette.status import WS_1007_INVALID_FRAME_PAYLOAD_DATA, WS_1013_TRY_AGAIN_LATER
 
-from blueapi.config import ApplicationConfig, OIDCConfig
-from blueapi.service import interface
+from blueapi.config import ApplicationConfig, OIDCConfig, Tag
+from blueapi.core.bluesky_types import DataEvent
+from blueapi.service import interface, protocol
+from blueapi.service.authentication import (
+    Fedid,
+    build_access_token_check,
+)
+from blueapi.service.middleware import (
+    ObservabilityContextPropagator,
+    VersionHeaders,
+    WebsocketOriginCheck,
+    WebsocketTracing,
+)
+from blueapi.service.protocol import (
+    InvalidArgs,
+    PlanNotFound,
+    ServerBusy,
+    Submit,
+    Unauthorized,
+    Update,
+)
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
+from blueapi.worker.task import TaskParameterError
+from blueapi.worker.worker_errors import WorkerBusyError
 
+from .authorization import (
+    OpaClient,
+    OpaUserClient,
+    opa,
+    submit_permission,
+    validate_tiled_config,
+)
 from .model import (
     DeviceModel,
     DeviceResponse,
@@ -55,37 +85,13 @@ from .model import (
 )
 from .runner import WorkerDispatcher
 
-#: API version to publish in OpenAPI schema
-REST_API_VERSION = "1.0.2"
-
-LICENSE_INFO: dict[str, str] = {
-    "name": "Apache 2.0",
-    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
-}
 RUNNER: WorkerDispatcher | None = None
 
 LOGGER = logging.getLogger(__name__)
-CONTEXT_HEADER = "traceparent"
-VENDOR_CONTEXT_HEADER = "tracestate"
-AUTHORIZAITON_HEADER = "authorization"
-PROPAGATED_HEADERS = {CONTEXT_HEADER, VENDOR_CONTEXT_HEADER, AUTHORIZAITON_HEADER}
+TRACER = get_tracer("interface")
 
 
-class Tag(str, Enum):
-    TASK = "Task"
-    PLAN = "Plan"
-    DEVICE = "Device"
-    ENV = "Environment"
-    META = "Meta"
-
-
-TAG_METADATA: list[dict[str, str]] = [
-    {"name": Tag.TASK, "description": "Endpoints related to tasks"},
-    {"name": Tag.PLAN, "description": "Endpoints to get plans"},
-    {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
-    {"name": Tag.ENV, "description": "Endpoints related to server environment"},
-    {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
-]
+AnyEvent = WorkerEvent | DataEvent | ProgressEvent
 
 
 def _runner() -> WorkerDispatcher:
@@ -117,40 +123,50 @@ def teardown_runner():
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
+        meta = config.env.metadata
         setup_runner(config)
-        yield
+        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
+            app.state.authz = opa
+            await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
+            yield
         teardown_runner()
 
     return inner
 
 
-secure_router = APIRouter()
 open_router = APIRouter()
+secure_router = APIRouter(deprecated=True)
+secure_router_v1 = APIRouter(prefix="/api/v1")
+secure_router_v2 = APIRouter(prefix="/api/v2")
 
 
 def get_app(config: ApplicationConfig):
     app = FastAPI(
-        docs_url="/docs",
+        docs_url=ApplicationConfig.DOCS_ENDPOINT,
         title="BlueAPI Control",
         summary="BlueAPI wraps bluesky plans and devices and "
         "exposes endpoints to send commands/receive data",
         lifespan=lifespan(config),
-        version=REST_API_VERSION,
-        license_info=LICENSE_INFO,
-        openapi_tags=TAG_METADATA,
+        version=ApplicationConfig.REST_API_VERSION,
+        license_info=ApplicationConfig.LICENSE_INFO,
+        openapi_tags=ApplicationConfig.TAG_METADATA,
     )
     dependencies = []
     if config.oidc:
-        dependencies.append(Depends(verify_access_token(config.oidc)))
+        dependencies.append(Depends(build_access_token_check(config.oidc)))
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
     app.include_router(open_router)
+    app.include_router(secure_router_v1, dependencies=dependencies)
+    app.include_router(secure_router_v2, dependencies=dependencies)
     app.include_router(secure_router, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
-    app.middleware("http")(add_api_version_header)
-    app.middleware("http")(inject_propagated_observability_context)
+
+    app.add_middleware(ObservabilityContextPropagator)
+    app.add_middleware(VersionHeaders)
+    app.add_middleware(WebsocketTracing)
     app.middleware("http")(log_request_details)
     if config.api.cors:
         app.add_middleware(
@@ -160,32 +176,42 @@ def get_app(config: ApplicationConfig):
             allow_methods=config.api.cors.allow_methods,
             allow_headers=config.api.cors.allow_headers,
         )
+        app.add_middleware(
+            WebsocketOriginCheck,
+            allow_origins=config.api.cors.origins,
+        )
     return app
 
 
-def verify_access_token(config: OIDCConfig):
-    jwkclient = jwt.PyJWKClient(config.jwks_uri)
-    oauth_scheme = OAuth2AuthorizationCodeBearer(
-        authorizationUrl=config.authorization_endpoint,
-        tokenUrl=config.token_endpoint,
-        refreshUrl=config.token_endpoint,
-    )
+async def access_task_permission(
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
+    task_id: str,
+    fedid: Fedid,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    task = runner.run(interface.get_task_by_id, task_id)
 
-    def inner(access_token: str = Depends(oauth_scheme)):
-        signing_key = jwkclient.get_signing_key_from_jwt(access_token)
-        jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=config.id_token_signing_alg_values_supported,
-            verify=True,
-            audience=config.client_audience,
-            issuer=config.issuer,
+    if (
+        opa
+        and not await opa.admin()
+        and (task and fedid != task.task.metadata.get("user"))
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+# start_task_permission is used when there is WorkerTask
+async def start_task_permission(
+    task: WorkerTask,
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    fedid: Fedid,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+):
+    if not task.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="No task id provided",
         )
-
-    return inner
-
-
-TRACER = get_tracer("interface")
+    await access_task_permission(opa, task.task_id, fedid, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -203,6 +229,16 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
+@secure_router.get("/", include_in_schema=False)
+def root_redirect() -> RedirectResponse:
+    """Redirect to docs url"""
+    return RedirectResponse(
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        url=ApplicationConfig.DOCS_ENDPOINT,
+    )
+
+
+@secure_router_v1.get("/environment", tags=[Tag.ENV])
 @secure_router.get("/environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER, "runner")
 def get_environment(
@@ -212,6 +248,7 @@ def get_environment(
     return runner.state
 
 
+@secure_router_v1.delete("/environment", tags=[Tag.ENV])
 @secure_router.delete("/environment", tags=[Tag.ENV])
 async def delete_environment(
     background_tasks: BackgroundTasks,
@@ -242,6 +279,7 @@ def get_oidc_config(
     return config
 
 
+@secure_router_v1.get("/plans", tags=[Tag.PLAN])
 @secure_router.get("/plans", tags=[Tag.PLAN])
 @start_as_current_span(TRACER)
 def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
@@ -250,6 +288,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
     return PlanResponse(plans=plans)
 
 
+@secure_router_v1.get("/plans/{name}", tags=[Tag.PLAN])
 @secure_router.get("/plans/{name}", tags=[Tag.PLAN])
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
@@ -259,6 +298,7 @@ def get_plan_by_name(
     return runner.run(interface.get_plan, name)
 
 
+@secure_router_v1.get("/devices", tags=[Tag.DEVICE])
 @secure_router.get("/devices", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER)
 def get_devices(
@@ -269,6 +309,7 @@ def get_devices(
     return DeviceResponse(devices=devices)
 
 
+@secure_router_v1.get("/devices/{name}", tags=[Tag.DEVICE])
 @secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
@@ -285,6 +326,7 @@ example_task_request = TaskRequest(
 )
 
 
+@secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
 @start_as_current_span(
     TRACER,
@@ -296,15 +338,17 @@ example_task_request = TaskRequest(
 def submit_task(
     request: Request,
     response: Response,
-    task_request: Annotated[TaskRequest, Body(..., example=example_task_request)],
+    task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
+    _: Annotated[None, Depends(submit_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    fedid: Fedid,
 ) -> TaskResponse:
     """Submit a task to the worker."""
     try:
-        task_id: str = runner.run(interface.submit_task, task_request)
+        task_id: str = runner.run(interface.submit_task, task_request, {"user": fedid})
         response.headers["Location"] = f"{request.url}/{task_id}"
         return TaskResponse(task_id=task_id)
-    except ValidationError as e:
+    except TaskParameterError as e:
         # Add body/params context to location and ensure that all required
         # fields defined in the generated schema are present
         errors = [
@@ -315,61 +359,57 @@ def submit_task(
                 # Input is not listed as required but is useful to have if available
                 "input": err.get("input", None),
             }
-            for err in e.errors()
+            for err in e.errors
         ]
 
+        LOGGER.info("Error submitting task: %s - %s", task_request, e)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=errors,
         ) from e
 
 
+@secure_router_v1.delete(
+    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
+)
 @secure_router.delete(
     "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
 )
 @start_as_current_span(TRACER, "task_id")
 def delete_submitted_task(
     task_id: str,
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TaskResponse:
     return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
 
 
-@start_as_current_span(TRACER, "v")
-def validate_task_status(v: str) -> TaskStatusEnum:
-    v_upper = v.upper()
-    if v_upper not in TaskStatusEnum.__members__:
-        raise ValueError("Invalid status query parameter")
-    return TaskStatusEnum(v_upper)
-
-
+@secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
-def get_tasks(
+async def get_tasks(
+    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    task_status: str | SkipJsonSchema[None] = None,
+    opa: Annotated[OpaUserClient, Depends(opa)],
+    task_status: TaskStatusEnum | None = None,
 ) -> TasksListResponse:
     """
     Retrieve tasks based on their status.
-    The status of a newly created task is 'unstarted'.
+    The status of a newly created task is PENDING.
     """
-    tasks = []
-    if task_status:
-        add_span_attributes({"status": task_status})
-        try:
-            desired_status = validate_task_status(task_status)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status query parameter",
-            ) from e
+    tasks = runner.run(interface.get_tasks, task_status)
 
-        tasks = runner.run(interface.get_tasks_by_status, desired_status)
-    else:
-        tasks = runner.run(interface.get_tasks)
+    if opa and not await opa.admin():
+        tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
+
     return TasksListResponse(tasks=tasks)
 
 
+@secure_router_v1.put(
+    "/worker/task",
+    responses={status.HTTP_409_CONFLICT: {}},
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/task",
     responses={status.HTTP_409_CONFLICT: {}},
@@ -379,6 +419,7 @@ def get_tasks(
 def set_active_task(
     request: Request,
     task: WorkerTask,
+    _: Annotated[None, Depends(start_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerTask:
     """Set a task to active status, the worker should begin it as soon as possible.
@@ -396,18 +437,20 @@ def set_active_task(
     return task
 
 
-def get_passthrough_headers(request: Request) -> dict[str, str]:
+def get_passthrough_headers(request: HTTPConnection) -> dict[str, str]:
     return {
         key: value
         for key, value in request.headers.items()
-        if key.casefold() in PROPAGATED_HEADERS
+        if key.casefold() in ApplicationConfig.PROPAGATED_HEADERS
     }
 
 
+@secure_router_v1.get("/tasks/{task_id}", tags=[Tag.TASK])
 @secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
 @start_as_current_span(TRACER, "task_id")
 def get_task(
     task_id: str,
+    _: Annotated[None, Depends(access_task_permission)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> TrackableTask:
     """Retrieve a task"""
@@ -417,6 +460,10 @@ def get_task(
     return task
 
 
+@secure_router_v1.get(
+    "/worker/task",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/task",
     tags=[Tag.TASK],
@@ -430,6 +477,10 @@ def get_active_task(
     return WorkerTask(task_id=task_id)
 
 
+@secure_router_v1.get(
+    "/worker/state",
+    tags=[Tag.TASK],
+)
 @secure_router.get(
     "/worker/state",
     tags=[Tag.TASK],
@@ -455,6 +506,15 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 }
 
 
+@secure_router_v1.put(
+    "/worker/state",
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {},
+        status.HTTP_202_ACCEPTED: {},
+    },
+    tags=[Tag.TASK],
+)
 @secure_router.put(
     "/worker/state",
     status_code=status.HTTP_202_ACCEPTED,
@@ -465,9 +525,11 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
     tags=[Tag.TASK],
 )
 @start_as_current_span(TRACER, "state_change_request.new_state")
-def set_state(
+async def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
+    fedid: Fedid,
+    opa: Annotated[OpaUserClient, Depends(opa)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:
     """
@@ -494,6 +556,19 @@ def set_state(
         current_state in _ALLOWED_TRANSITIONS
         and new_state in _ALLOWED_TRANSITIONS[current_state]
     ):
+        active = runner.run(interface.get_active_task)
+
+        if (
+            opa
+            and not await opa.admin()
+            and active
+            and active.task.metadata.get("user") != fedid
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to set worker state",
+            )
+
         if new_state == WorkerState.PAUSED:
             runner.run(interface.pause_worker, state_change_request.defer)
         elif new_state == WorkerState.RUNNING:
@@ -505,14 +580,24 @@ def set_state(
                     state_change_request.new_state is WorkerState.ABORTING,
                     state_change_request.reason,
                 )
-            except TransitionError:
-                response.status_code = status.HTTP_400_BAD_REQUEST
+            except TransitionError as e:
+                suffix = f" - {e}" if str(e) else ""
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Error while transitioning from {current_state} "
+                        f"to {new_state}{suffix}"
+                    ),
+                ) from e
     else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(f"Cannot transition from {current_state} to {new_state}"),
+        )
     return runner.run(interface.get_worker_state)
 
 
+@secure_router_v1.get("/python_environment", tags=[Tag.ENV])
 @secure_router.get("/python_environment", tags=[Tag.ENV])
 @start_as_current_span(TRACER)
 def get_python_environment(
@@ -534,18 +619,112 @@ def health_probe() -> HealthProbeResponse:
     return HealthProbeResponse(status=Health.OK)
 
 
+@secure_router_v1.get("/logout", include_in_schema=False)
+@secure_router.get("/logout", include_in_schema=False)
+def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
+    """Redirect to logout url"""
+    config = runner.run(interface.get_oidc_config)
+    if config is None or not config.logout_redirect_endpoint:
+        raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
+
+    encoded_url = urllib.parse.quote_plus(config.end_session_endpoint)
+    return RedirectResponse(
+        status_code=status.HTTP_308_PERMANENT_REDIRECT,
+        url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
+    )
+
+
+@secure_router_v2.websocket("/run_plan")
+async def run_plan(
+    ws: WebSocket,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    user: Fedid,
+    opa: Annotated[OpaUserClient | None, Depends(opa)],
+):
+    LOGGER.info("Starting WS plan as %s", user)
+    await ws.accept()
+    rq = await ws.receive_text()
+    try:
+        task_request = Submit.model_validate_json(rq)
+    except ValidationError:
+        LOGGER.info("Failed to deserialize request: %r", rq, exc_info=True)
+        await ws.close(
+            code=WS_1007_INVALID_FRAME_PAYLOAD_DATA, reason="Invalid Request"
+        )
+        return
+    LOGGER.info("Plan request: %s", task_request)
+
+    if opa:
+        try:
+            await opa.can_submit_task(task_request.task)
+        except Exception as e:
+            LOGGER.info(
+                "User %s does not have permission to run task", user, exc_info=e
+            )
+            await ws.send_text(Unauthorized().model_dump_json())
+            await ws.close(code=protocol.AUTHZ_ERROR, reason="Unauthorized")
+            return
+
+    try:
+        task_id: str = runner.run(
+            interface.submit_task, task_request.task, {"user": user}
+        )
+        LOGGER.info("Task ID: %s", task_id)
+    except TaskParameterError as tpe:
+        LOGGER.info("Plan args not valid: %s - %s", task_request, tpe)
+        await ws.send_text(InvalidArgs.from_parameter_error(tpe).model_dump_json())
+        await ws.close(code=protocol.INVALID_ARGS, reason="Invalid Args")
+        return
+    except KeyError as ke:
+        LOGGER.info("Plan %r not recognised", ke.args[0])
+        await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
+        await ws.close(code=protocol.UNKNOWN_PLAN, reason="Unknown Plan")
+        return
+
+    try:
+        with runner.event_pipe() as events:
+            active_task = runner.run(interface.get_active_task)
+            if active_task is not None and not active_task.is_complete:
+                raise WorkerBusyError("Task already running")
+            runner.run(
+                interface.begin_task,
+                task=WorkerTask(task_id=task_id),
+                pass_through_headers=get_passthrough_headers(ws),
+            )
+            async for evt in events:
+                if evt.task_id != task_id:
+                    continue
+                LOGGER.debug("Event: %s", evt)
+                await ws.send_text(Update(data=evt).model_dump_json())
+                if isinstance(evt, WorkerEvent) and evt.is_complete():
+                    LOGGER.debug("End of stream")
+                    break
+    except WorkerBusyError:
+        LOGGER.error("Worker was busy")
+        await ws.send_text(ServerBusy().model_dump_json())
+        await ws.close(code=WS_1013_TRY_AGAIN_LATER, reason="Worker busy")
+    except WebSocketDisconnect:
+        LOGGER.info("Client disconnected")
+        runner.run(
+            interface.cancel_active_task, failure=True, reason="Client disconnected"
+        )
+    else:
+        LOGGER.info("Plan complete")
+        await ws.close()
+
+
 @start_as_current_span(TRACER, "config")
 def start(config: ApplicationConfig):
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 
-    LOGGING_CONFIG["formatters"]["default"]["fmt"] = (
-        "%(asctime)s %(levelprefix)s %(message)s"
-    )
+    # Enable propagation and disable default handlers, so that blueapi handles all logs
+    LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = []
     LOGGING_CONFIG["formatters"]["access"]["fmt"] = (
         "%(asctime)s %(levelprefix)s %(client_addr)s"
         + " - '%(request_line)s' %(status_code)s"
     )
+    LOGGING_CONFIG["loggers"]["uvicorn"]["propagate"] = True
     app = get_app(config)
 
     FastAPIInstrumentor().instrument_app(
@@ -557,42 +736,30 @@ def start(config: ApplicationConfig):
     app.state.config = config
     assert config.api.url.host is not None, "API URL missing host"
     assert config.api.url.port is not None, "API URL missing port"
-    uvicorn.run(app, host=config.api.url.host, port=config.api.url.port)
-
-
-async def add_api_version_header(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    response = await call_next(request)
-    response.headers["X-API-Version"] = REST_API_VERSION
-    return response
+    uvicorn.run(
+        app, host=config.api.url.host, port=config.api.url.port, access_log=False
+    )
 
 
 async def log_request_details(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    request: Request, call_next: Callable[[Request], Awaitable[StreamingResponse]]
 ) -> Response:
-    msg = f"method: {request.method} url: {request.url} body: {await request.body()}"
-    if request.url.path == "/healthz":
-        LOGGER.debug(msg)
-    else:
-        LOGGER.info(msg)
+    """Middleware to log request's host, method, path, status and request and
+    body
+
+    Logs GET as debug, all else as info."""
+    log = LOGGER.debug if request.method == "GET" else LOGGER.info
+    request_body = await request.body()
+    client = request.client or Address("Unknown", -1)
+    log_message = f"{client.host}:{client.port} {request.method} {request.url.path}"
+    extra = {
+        "request_body": request_body,
+    }
+    if request.method != "GET":
+        log(log_message, extra=extra)
+
     response = await call_next(request)
-    return response
+    log_message += f" {response.status_code}"
+    log(log_message, extra=extra)
 
-
-async def inject_propagated_observability_context(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    """Middleware to extract any propagated observability context from the
-    HTTP headers and attach it to the local one.
-    """
-    headers = request.headers
-    if CONTEXT_HEADER in headers:
-        carrier = {CONTEXT_HEADER: headers[CONTEXT_HEADER]}
-        if VENDOR_CONTEXT_HEADER in headers:
-            carrier[VENDOR_CONTEXT_HEADER] = headers[VENDOR_CONTEXT_HEADER]
-        ctx = get_global_textmap().extract(carrier)
-
-        attach(ctx)
-    response = await call_next(request)
     return response

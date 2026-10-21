@@ -3,3 +3,12 @@ scratch:
   repositories:
     - name: dodal
       remote_url: https://github.com/DiamondLightSource/dodal.git
+    - name: with_target
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      target_revision: demo
+    - name: with_branch
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      branch: demo_branch
+    - name: with_tag
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      tag: demo_tag

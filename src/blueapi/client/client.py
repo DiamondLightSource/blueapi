@@ -1,16 +1,26 @@
+import itertools
+import logging
 import time
+from collections.abc import Iterable
 from concurrent.futures import Future
+from contextlib import suppress
+from functools import cached_property
+from pathlib import Path
+from typing import Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
-from observability_utils.tracing import (
-    get_tracer,
-    start_as_current_span,
-)
+from observability_utils.tracing import get_tracer, start_as_current_span
+from pydantic import HttpUrl
 
-from blueapi.config import ApplicationConfig, MissingStompConfiguration
+from blueapi.config import (
+    ApplicationConfig,
+    ConfigLoader,
+    MissingStompConfigurationError,
+    RestConfig,
+)
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import SessionManager
+from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -25,20 +35,40 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
+from blueapi.utils import deprecated
+from blueapi.worker import WorkerEvent, WorkerState
 from blueapi.worker.event import ProgressEvent, TaskStatus
+from blueapi.worker.task_worker import TrackableTask
 
-from .event_bus import AnyEvent, BlueskyStreamingError, EventBusClient, OnAnyEvent
-from .rest import BlueapiRestClient, BlueskyRemoteControlError
+from .device_cache import DeviceCache
+from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
+from .plan_cache import PlanCache
+from .protocols import ClientProtocol
+from .rest import (
+    BlueapiRestClient,
+    BlueskyRemoteControlError,
+    BlueskyRequestError,
+    ServiceUnavailableError,
+)
 
 TRACER = get_tracer("client")
 
 
-class BlueapiClient:
+log = logging.getLogger(__name__)
+
+
+class MissingInstrumentSessionError(Exception):
+    pass
+
+
+class BlueapiClient(ClientProtocol):
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
     _events: EventBusClient | None
+    _instrument_session: str | None = None
+    _callbacks: dict[int, OnAnyEvent]
+    _callback_id: itertools.count
 
     def __init__(
         self,
@@ -47,9 +77,17 @@ class BlueapiClient:
     ):
         self._rest = rest
         self._events = events
+        self._callbacks = {}
+        self._callback_id = itertools.count()
 
     @classmethod
-    def from_config(cls, config: ApplicationConfig) -> "BlueapiClient":
+    def from_config_file(cls, config_file: str) -> Self:
+        conf = ConfigLoader(ApplicationConfig)
+        conf.use_values_from_yaml(Path(config_file))
+        return cls.from_config(conf.load())
+
+    @classmethod
+    def from_config(cls, config: ApplicationConfig) -> Self:
         session_manager: SessionManager | None = None
         try:
             session_manager = SessionManager.from_cache(config.auth_token_path)
@@ -71,7 +109,41 @@ class BlueapiClient:
         else:
             return cls(rest)
 
+    @classmethod
+    def for_host(cls, host: str | None = None) -> Self:
+        if host:
+            conf = ApplicationConfig(api=RestConfig(url=HttpUrl(host)))
+        else:
+            conf = ApplicationConfig()
+        return cls.from_config(conf)
+
+    @cached_property
     @start_as_current_span(TRACER)
+    def plans(self) -> PlanCache:
+        return PlanCache(self, self._rest.get_plans().plans)
+
+    @cached_property
+    @start_as_current_span(TRACER)
+    def devices(self) -> DeviceCache:
+        return DeviceCache(self._rest)
+
+    @property
+    def instrument_session(self) -> str:
+        if self._instrument_session is None:
+            raise MissingInstrumentSessionError()
+        return self._instrument_session
+
+    @instrument_session.setter
+    def instrument_session(self, session: str):
+        log.debug("Setting instrument_session to %s", session)
+        self._instrument_session = session
+
+    def with_instrument_session(self, session: str) -> Self:
+        self.instrument_session = session
+        return self
+
+    @start_as_current_span(TRACER)
+    @deprecated("plans property")
     def get_plans(self) -> PlanResponse:
         """
         List plans available
@@ -82,6 +154,7 @@ class BlueapiClient:
         return self._rest.get_plans()
 
     @start_as_current_span(TRACER, "name")
+    @deprecated("plans[name]")
     def get_plan(self, name: str) -> PlanModel:
         """
         Get details of a single plan
@@ -94,7 +167,13 @@ class BlueapiClient:
         """
         return self._rest.get_plan(name)
 
+    def print_plans(self) -> None:
+        """Print all available plans."""
+        for name in self.plans:
+            print(name)
+
     @start_as_current_span(TRACER)
+    @deprecated("devices property")
     def get_devices(self) -> DeviceResponse:
         """
         List devices available
@@ -105,7 +184,20 @@ class BlueapiClient:
 
         return self._rest.get_devices()
 
+    def add_callback(self, callback: OnAnyEvent) -> int:
+        cb_id = next(self._callback_id)
+        self._callbacks[cb_id] = callback
+        return cb_id
+
+    def remove_callback(self, id: int):
+        self._callbacks.pop(id)
+
+    @property
+    def callbacks(self) -> Iterable[OnAnyEvent]:
+        return self._callbacks.values()
+
     @start_as_current_span(TRACER, "name")
+    @deprecated("devices[name]")
     def get_device(self, name: str) -> DeviceModel:
         """
         Get details of a single device
@@ -119,8 +211,14 @@ class BlueapiClient:
 
         return self._rest.get_device(name)
 
+    def print_devices(self) -> None:
+        """Print all available devices."""
+        for name in self.devices:
+            print(name)
+
+    @property
     @start_as_current_span(TRACER)
-    def get_state(self) -> WorkerState:
+    def state(self) -> WorkerState:
         """
         Get current state of the blueapi worker
 
@@ -129,6 +227,18 @@ class BlueapiClient:
         """
 
         return self._rest.get_state()
+
+    @start_as_current_span(TRACER)
+    @deprecated("state property")
+    def get_state(self) -> WorkerState:
+        """
+        Get current state of the blueapi worker
+
+        Returns:
+            WorkerState: Current state
+        """
+
+        return self.state
 
     @start_as_current_span(TRACER, "defer")
     def pause(self, defer: bool = False) -> WorkerState:
@@ -159,7 +269,8 @@ class BlueapiClient:
         return self._rest.set_state(WorkerState.RUNNING, defer=False)
 
     @start_as_current_span(TRACER, "task_id")
-    def get_task(self, task_id: str) -> TrackableTask[Task]:
+    @deprecated("rest client")
+    def get_task(self, task_id: str) -> TrackableTask:
         """
         Get a task stored by the worker
 
@@ -167,12 +278,13 @@ class BlueapiClient:
             task_id: Unique ID for the task
 
         Returns:
-            TrackableTask[Task]: Task details
+            TrackableTask: Task details
         """
         assert task_id, "Task ID not provided!"
         return self._rest.get_task(task_id)
 
     @start_as_current_span(TRACER)
+    @deprecated("rest client")
     def get_all_tasks(self) -> TasksListResponse:
         """
         Get a list of all task stored by the worker
@@ -183,8 +295,9 @@ class BlueapiClient:
 
         return self._rest.get_all_tasks()
 
+    @property
     @start_as_current_span(TRACER)
-    def get_active_task(self) -> WorkerTask:
+    def active_task(self) -> WorkerTask:
         """
         Get the currently active task, if any
 
@@ -195,13 +308,61 @@ class BlueapiClient:
 
         return self._rest.get_active_task()
 
-    @start_as_current_span(TRACER, "task", "timeout")
+    @start_as_current_span(TRACER)
+    @deprecated("active_task property")
+    def get_active_task(self) -> WorkerTask:
+        """
+        Get the currently active task, if any
+
+        Returns:
+            WorkerTask: The currently active task, the task the worker
+            is executing right now.
+        """
+
+        return self.active_task
+
+    @start_as_current_span(TRACER, "task")
     def run_task(
         self,
         task: TaskRequest,
         on_event: OnAnyEvent | None = None,
         timeout: float | None = None,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
+        if self._events:
+            return self.run_stomp(task, on_event)
+        else:
+            return self.run_blocking(task, on_event)
+
+    @start_as_current_span(TRACER, "task")
+    def run_blocking(
+        self, task: TaskRequest, on_event: OnAnyEvent | None = None
+    ) -> TaskStatus:
+        log.debug("Running plan via websocket")
+        for event in self._rest.run_blocking(task):
+            if on_event is not None:
+                on_event(event)
+            for cb in self._callbacks.values():
+                try:
+                    cb(event)
+                except Exception as e:
+                    log.error(f"Callback ({cb}) failed for event: {event}", exc_info=e)
+            if isinstance(event, WorkerEvent) and event.is_complete():
+                # task_status will always be present if event is complete
+                if event.task_status is None:  # pragma: no cover
+                    raise BlueskyRemoteControlError(
+                        "Server completed without task status"
+                    )
+                return event.task_status
+        raise BlueskyRemoteControlError("Connection closed before plan completed.")
+
+    @start_as_current_span(TRACER, "task", "timeout")
+    def run_stomp(
+        self,
+        task: TaskRequest,
+        on_event: OnAnyEvent | None = None,
+        timeout: float | None = None,
+    ) -> TaskStatus:
+        log.debug("Running plan via stomp")
         """
         Synchronously run a task, requires a message bus connection
 
@@ -217,14 +378,14 @@ class BlueapiClient:
         """
 
         if self._events is None:
-            raise MissingStompConfiguration(
+            raise MissingStompConfigurationError(
                 "Stomp configuration required to run plans is missing or disabled"
             )
 
-        task_response = self.create_task(task)
+        task_response = self._rest.create_task(task)
         task_id = task_response.task_id
 
-        complete: Future[WorkerEvent] = Future()
+        complete: Future[TaskStatus] = Future()
 
         def inner_on_event(event: AnyEvent, ctx: MessageContext) -> None:
             match event:
@@ -239,23 +400,30 @@ class BlueapiClient:
             if relates_to_task:
                 if on_event is not None:
                     on_event(event)
-                if isinstance(event, WorkerEvent) and (
-                    (event.is_complete()) and (ctx.correlation_id == task_id)
+                for cb in self._callbacks.values():
+                    try:
+                        cb(event)
+                    except Exception as e:
+                        log.error(
+                            f"Callback ({cb}) failed for event: {event}", exc_info=e
+                        )
+                if (
+                    isinstance(event, WorkerEvent)
+                    and (event.is_complete())
+                    and (ctx.correlation_id == task_id)
                 ):
-                    if event.task_status is not None and event.task_status.task_failed:
+                    if event.task_status is None:
                         complete.set_exception(
-                            BlueskyStreamingError(
-                                "\n".join(event.errors)
-                                if len(event.errors) > 0
-                                else "Unknown error"
+                            BlueskyRemoteControlError(
+                                "Server completed without task status"
                             )
                         )
                     else:
-                        complete.set_result(event)
+                        complete.set_result(event.task_status)
 
         with self._events:
             self._events.subscribe_to_all_events(inner_on_event)
-            self.start_task(WorkerTask(task_id=task_id))
+            self._rest.update_worker_task(WorkerTask(task_id=task_id))
             return complete.result(timeout=timeout)
 
     @start_as_current_span(TRACER, "task")
@@ -271,8 +439,10 @@ class BlueapiClient:
             TaskResponse: Acknowledgement of request
         """
 
-        response = self.create_task(task)
-        worker_response = self.start_task(WorkerTask(task_id=response.task_id))
+        response = self._rest.create_task(task)
+        worker_response = self._rest.update_worker_task(
+            WorkerTask(task_id=response.task_id)
+        )
         if worker_response.task_id == response.task_id:
             return response
         else:
@@ -282,6 +452,7 @@ class BlueapiClient:
             )
 
     @start_as_current_span(TRACER, "task")
+    @deprecated("rest client")
     def create_task(self, task: TaskRequest) -> TaskResponse:
         """
         Create a new task, does not start execution
@@ -296,6 +467,7 @@ class BlueapiClient:
         return self._rest.create_task(task)
 
     @start_as_current_span(TRACER)
+    @deprecated("rest client")
     def clear_task(self, task_id: str) -> TaskResponse:
         """
         Delete a stored task on the worker
@@ -310,6 +482,7 @@ class BlueapiClient:
         return self._rest.clear_task(task_id)
 
     @start_as_current_span(TRACER, "task")
+    @deprecated("rest client")
     def start_task(self, task: WorkerTask) -> WorkerTask:
         """
         Instruct the worker to start a stored task immediately
@@ -358,7 +531,15 @@ class BlueapiClient:
 
         return self._rest.cancel_current_task(WorkerState.STOPPING)
 
+    @property
     @start_as_current_span(TRACER)
+    def environment(self) -> EnvironmentResponse:
+        """Details of the worker environment"""
+
+        return self._rest.get_environment()
+
+    @start_as_current_span(TRACER)
+    @deprecated("environment property")
     def get_environment(self) -> EnvironmentResponse:
         """
         Get details of the worker environment
@@ -368,7 +549,7 @@ class BlueapiClient:
             environment.
         """
 
-        return self._rest.get_environment()
+        return self.environment
 
     @start_as_current_span(TRACER, "timeout", "polling_interval")
     def reload_environment(
@@ -390,9 +571,18 @@ class BlueapiClient:
             EnvironmentResponse: Details of the new worker
             environment.
         """
-
         try:
             status = self._rest.delete_environment()
+            # clear the cached plans/devices as they may have changed
+            with suppress(AttributeError):
+                del self.plans
+            with suppress(AttributeError):
+                del self.devices
+        except (
+            BlueskyRequestError,
+            ServiceUnavailableError,
+        ):
+            raise
         except Exception as e:
             raise BlueskyRemoteControlError(
                 "Failed to tear down the environment"
@@ -433,7 +623,15 @@ class BlueapiClient:
             "seconds, a server restart is recommended"
         )
 
+    @property
     @start_as_current_span(TRACER)
+    def oidc_config(self) -> OIDCConfig | None:
+        """OIDC config from the server"""
+
+        return self._rest.get_oidc_config()
+
+    @start_as_current_span(TRACER)
+    @deprecated("oidc_config property")
     def get_oidc_config(self) -> OIDCConfig | None:
         """
         Get oidc config from the server
@@ -442,7 +640,7 @@ class BlueapiClient:
             OIDCConfig: Details of the oidc Config
         """
 
-        return self._rest.get_oidc_config()
+        return self.oidc_config
 
     @start_as_current_span(TRACER)
     def get_python_env(
@@ -457,3 +655,24 @@ class BlueapiClient:
         """
 
         return self._rest.get_python_environment(name=name, source=source)
+
+    def login(self, token_path: Path | None = None):
+        try:
+            auth: SessionManager = SessionManager.from_cache(token_path)
+            access_token = auth.get_valid_access_token()
+            assert access_token
+            print("Logged in")
+        except Exception:
+            if oidc := self.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(token_path)
+                )
+                auth.start_device_flow()
+                self._rest.session_manager = auth
+            else:
+                print("Server is not configured to use authentication!")
+
+    def logout(self):
+        if sm := self._rest.session_manager:
+            sm.logout()
+            self._rest.session_manager = None

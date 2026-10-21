@@ -1,32 +1,44 @@
+import logging
 import os
 import re
 import textwrap
 from collections.abc import Mapping
-from enum import Enum
+from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
 from bluesky_stomp.models import BasicAuthentication
 from pydantic import (
+    AliasChoices,
     AnyUrl,
     BaseModel,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     UrlConstraints,
     ValidationError,
+    WebsocketUrl,
     field_validator,
+    model_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
+
+LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 FORBIDDEN_OWN_REMOTE_URL = "https://github.com/DiamondLightSource/blueapi.git"
+
+CONFIG_SCHEMA_LOCATION = (
+    Path(__file__).parents[2] / "helm" / "blueapi" / "config_schema.json"
+)
 
 
 def _expand_env(loader: yaml.Loader, node: yaml.ScalarNode) -> str:
@@ -39,15 +51,33 @@ yaml.Loader.add_implicit_resolver("!expand", re.compile(r".*\$.*"), None)
 yaml.Loader.add_constructor("!expand", _expand_env)
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     PLAN_FUNCTIONS = "planFunctions"
-    DEVICE_FUNCTIONS = "deviceFunctions"
-    DODAL = "dodal"
+    DEVICE_MANAGER = "deviceManager"
 
 
 class Source(BlueapiBaseModel):
-    kind: SourceKind
-    module: Path | str
+    module: str = Field(description="Module to be imported")
+
+
+class PlanSource(Source):
+    kind: Literal[SourceKind.PLAN_FUNCTIONS] = Field(
+        SourceKind.PLAN_FUNCTIONS, init=False
+    )
+
+
+class DeviceManagerSource(Source):
+    kind: Literal[SourceKind.DEVICE_MANAGER] = Field(
+        SourceKind.DEVICE_MANAGER, init=False
+    )
+    mock: bool = Field(
+        description="If true, ophyd_async device connections are mocked", default=False
+    )
+    name: str = Field(
+        default="devices",
+        description="Name of the device manager in the module",
+        exclude_if=lambda v: v == "devices",
+    )
 
 
 class TcpUrl(AnyUrl):
@@ -71,6 +101,28 @@ class StompConfig(BlueapiBaseModel):
     )
 
 
+class ServiceAccount(BlueapiBaseModel):
+    client_id: str = Field(description="Service account client ID", default="")
+    client_secret: SecretStr = Field(
+        description="Service account client secret", default=SecretStr("")
+    )
+    token_url: SkipJsonSchema[str] = Field(
+        description="Field overridden by OIDCConfig.token_endpoint", default=""
+    )
+
+
+class TiledConfig(BlueapiBaseModel):
+    enabled: bool = Field(
+        description="True if blueapi should forward data to a Tiled instance",
+        default=False,
+    )
+    url: HttpUrl = HttpUrl("http://localhost:8407")
+    authentication: str | ServiceAccount | None = Field(
+        description="Tiled Authentication can be API_KEY or OIDC Service account",
+        default=os.environ.get("TILED_SINGLE_USER_API_KEY", None),
+    )
+
+
 class WorkerEventConfig(BlueapiBaseModel):
     """
     Config for event broadcasting via the message bus
@@ -88,10 +140,12 @@ class EnvironmentConfig(BlueapiBaseModel):
     Config for the RunEngine environment
     """
 
-    sources: list[Source] = [
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plans"),
-        Source(kind=SourceKind.PLAN_FUNCTIONS, module="dodal.plan_stubs.wrapped"),
-    ]
+    sources: list[
+        Annotated[
+            PlanSource | DeviceManagerSource,
+            Field(discriminator="kind"),
+        ]
+    ] = Field(default=[])
     events: WorkerEventConfig = Field(default_factory=WorkerEventConfig)
     metadata: MetadataConfig | None = Field(default=None)
 
@@ -117,6 +171,22 @@ class RestConfig(BlueapiBaseModel):
     url: HttpUrl = HttpUrl("http://localhost:8000")
     cors: CORSConfig | None = None
 
+    @property
+    def ws_address(self) -> WebsocketUrl:
+        api = self.url
+        if api.host is None:
+            # type hints say it could be None but not possible to construct
+            # HttpUrl without host
+            raise ValueError("No host configured")  # pragma: no cover
+        scheme = "ws" if api.scheme == "http" else "wss"
+
+        # HttpUrl adds "/" to the start of paths, even if none was specified so
+        # remove existing leading '/' to prevent duplication
+        path = (api.path or "").removeprefix("/")
+        return WebsocketUrl.build(
+            scheme=scheme, host=api.host, port=api.port, path=path
+        )
+
 
 class ScratchRepository(BlueapiBaseModel):
     name: str = Field(
@@ -126,6 +196,18 @@ class ScratchRepository(BlueapiBaseModel):
     remote_url: str = Field(
         description="URL to clone from",
         default="https://github.com/example/example.git",
+    )
+    target_revision: str | SkipJsonSchema[None] = Field(
+        description=(
+            "Revision (branch or tag) to check out when cloning - defaults to "
+            "remote's HEAD. If a tag is used, the repo will be left in a "
+            "'detached head' state."
+        ),
+        validation_alias=AliasChoices("branch", "tag", "target_revision"),
+        exclude_if=lambda f: f is None,
+        # using default_factory instead of default means the schema doesn't
+        # include an invalid value
+        default_factory=lambda: None,
     )
 
     @field_validator("remote_url")
@@ -157,15 +239,41 @@ class ScratchConfig(BlueapiBaseModel):
 
 
 class OIDCConfig(BlueapiBaseModel):
-    well_known_url: str = Field(
-        description="URL to fetch OIDC config from the provider"
+    well_known_url: str | None = Field(
+        description="URL to fetch OIDC config from the provider",
+        deprecated=True,
+        default=None,
     )
+    issuer: str | None = Field(description="URL of OIDC provider", default=None)
     client_id: str = Field(description="Client ID")
     client_audience: str = Field(description="Client Audience(s)", default="blueapi")
+    logout_redirect_endpoint: str = Field(
+        description="The oidc endpoint required to logout", default=""
+    )
+
+    @model_validator(mode="after")
+    def check_urls(self) -> Self:
+        if self.issuer is None and self.__dict__.get("well_known_url") is None:
+            raise ValueError("Please provide 'OIDCConfig.issuer'")
+        if self.__dict__.get("well_known_url"):
+            LOGGER.warning(
+                "OIDCConfig.well_known_url is deprecated, Please use OIDCConfig.issuer"
+            )
+        return self
+
+    @cached_property
+    def _well_known_url(self) -> str:
+        if self.issuer:
+            if self.__dict__.get("well_known_url"):
+                LOGGER.warning(
+                    "well_known_url and issuer are both set. Defaulting to issuer URL"
+                )
+            return self.issuer + "/.well-known/openid-configuration"
+        return cast(str, self.well_known_url)
 
     @cached_property
     def _config_from_oidc_url(self) -> dict[str, Any]:
-        response: requests.Response = requests.get(self.well_known_url)
+        response = requests.get(self._well_known_url)
         response.raise_for_status()
         return response.json()
 
@@ -178,10 +286,6 @@ class OIDCConfig(BlueapiBaseModel):
     @cached_property
     def token_endpoint(self) -> str:
         return cast(str, self._config_from_oidc_url.get("token_endpoint"))
-
-    @cached_property
-    def issuer(self) -> str:
-        return cast(str, self._config_from_oidc_url.get("issuer"))
 
     @cached_property
     def authorization_endpoint(self) -> str:
@@ -204,7 +308,24 @@ class OIDCConfig(BlueapiBaseModel):
 
 
 class NumtrackerConfig(BlueapiBaseModel):
-    url: HttpUrl = HttpUrl("http://localhost:8002/graphql")
+    url: HttpUrl = HttpUrl("http://localhost:8406/graphql")
+    detector_file_template: str = "{instrument}-{scan_id}-{device_name}"
+
+
+class Tag(StrEnum):
+    TASK = "Task"
+    PLAN = "Plan"
+    DEVICE = "Device"
+    ENV = "Environment"
+    META = "Meta"
+
+
+class OpaConfig(BlueapiBaseModel):
+    root: HttpUrl = HttpUrl("http://localhost:8181")
+    audience: str = "account"
+    tiled_service_account_check: str = "blueapi/tiled_service_account_for_beamline"
+    submit_task_check: str = "blueapi/write_to_beamline_visit"
+    admin_check: str = "admin/admin"
 
 
 class ApplicationConfig(BlueapiBaseModel):
@@ -213,7 +334,32 @@ class ApplicationConfig(BlueapiBaseModel):
     config tree.
     """
 
+    #: API version to publish in OpenAPI schema
+    REST_API_VERSION: ClassVar[str] = "1.5.0"
+
+    LICENSE_INFO: ClassVar[dict[str, str]] = {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    }
+    CONTEXT_HEADER: ClassVar[str] = "traceparent"
+    VENDOR_CONTEXT_HEADER: ClassVar[str] = "tracestate"
+    AUTHORIZAITON_HEADER: ClassVar[str] = "authorization"
+    PROPAGATED_HEADERS: ClassVar[set[str]] = {
+        CONTEXT_HEADER,
+        VENDOR_CONTEXT_HEADER,
+        AUTHORIZAITON_HEADER,
+    }
+    DOCS_ENDPOINT: ClassVar[str] = "/docs"
+    TAG_METADATA: ClassVar[list[dict[str, str]]] = [
+        {"name": Tag.TASK, "description": "Endpoints related to tasks"},
+        {"name": Tag.PLAN, "description": "Endpoints to get plans"},
+        {"name": Tag.DEVICE, "description": "Endpoints to get devices"},
+        {"name": Tag.ENV, "description": "Endpoints related to server environment"},
+        {"name": Tag.META, "description": "Endpoints used for auxiliary functions"},
+    ]
+
     stomp: StompConfig = Field(default_factory=StompConfig)
+    tiled: TiledConfig = Field(default_factory=TiledConfig)
     env: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     api: RestConfig = Field(default_factory=RestConfig)
@@ -221,14 +367,21 @@ class ApplicationConfig(BlueapiBaseModel):
     oidc: OIDCConfig | None = None
     auth_token_path: Path | None = None
     numtracker: NumtrackerConfig | None = None
+    opa: OpaConfig | None = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ApplicationConfig):
             return (
                 (self.stomp == other.stomp)
+                & (self.tiled == other.tiled)
                 & (self.env == other.env)
                 & (self.logging == other.logging)
                 & (self.api == other.api)
+                & (self.scratch == other.scratch)
+                & (self.oidc == other.oidc)
+                & (self.auth_token_path == other.auth_token_path)
+                & (self.numtracker == other.numtracker)
+                & (self.opa == other.opa)
             )
         return False
 
@@ -272,9 +425,9 @@ class ConfigLoader(Generic[C]):
 
         recursively_update_map(self._values, values)
 
-    def use_values_from_yaml(self, path: Path) -> None:
+    def use_values_from_yaml(self, *paths: Path) -> None:
         """
-        Use all values provided in a YAML/JSON file in the
+        Use all values provided in a YAML/JSON files in the
         config, override any defaults and values set by
         previous calls into this class.
 
@@ -282,9 +435,9 @@ class ConfigLoader(Generic[C]):
             path (Path): Path to YAML/JSON file
         """
 
-        with path.open("r") as stream:
-            values = yaml.load(stream, yaml.Loader)
-        self.use_values(values)
+        for path in paths:
+            with path.open("r") as stream:
+                self.use_values(yaml.load(stream, yaml.Loader))
 
     def load(self) -> C:
         """
@@ -304,5 +457,45 @@ class ConfigLoader(Generic[C]):
             ) from exc
 
 
-class MissingStompConfiguration(Exception):
+class MissingStompConfigurationError(Exception):
     pass
+
+
+# https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0
+def __getattr__(name: str):
+    import warnings
+
+    renames = {
+        "MissingStompConfiguration": MissingStompConfigurationError,
+    }
+    rename = renames.get(name)
+    if rename is not None:
+        warnings.warn(
+            DeprecationWarning(
+                f"{name!r} is deprecated, use {rename.__name__!r} instead"
+            ),
+            stacklevel=2,
+        )
+        return rename
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def generate_config_schema() -> dict[str, Any]:
+    """
+    Generate a JSON schema from the ApplicationConfig Pydantic model.
+
+    This schema is used to create config_schema.json, which is consumed by the
+    helm-values-schema plugin for validation.
+    """
+    from pydantic.json_schema import GenerateJsonSchema
+
+    class _GenerateJsonSchema(GenerateJsonSchema):
+        def generate(self, schema, mode="validation"):
+            json_schema = super().generate(schema, mode=mode)
+            for i in json_schema["$defs"]:
+                json_schema["$defs"][i]["$id"] = i
+            return json_schema
+
+    return ApplicationConfig.model_json_schema(
+        by_alias=False, schema_generator=_GenerateJsonSchema, ref_template="{model}"
+    )

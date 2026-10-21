@@ -9,31 +9,34 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky[plotting]>=1.13.1",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
-    "ophyd-async",
+    "tiled[client]==0.2.18",
+    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
+    "ophyd-async>=0.13.5",
     "aioca",
     "pydantic>=2.0",
-    "scanspec>=0.8.0",
     "pydantic-settings",
     "stomp-py",
     "PyYAML>=6.0.2",
     "click>=8.2.0",
     "fastapi>=0.112.0",
-    "uvicorn",
+    "uvicorn>=0.52.1",
     "requests",
-    "dls-dodal>=1.51.0",
-    "super-state-machine",                           # https://github.com/DiamondLightSource/blueapi/issues/553
-    "GitPython",
-    "event-model==1.23",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p
+    "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
     "opentelemetry-distro>=0.48b0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
     "tomlkit",
+    "graypy>=2.1.0",
+    "httpx>=0.28.1",
+    "aiohttp>=3.13.5",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -41,16 +44,21 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
+demo = ["dls-dodal>=3.0.2", "ophyd-async[sim]"]
+
+[dependency-groups]
 dev = [
+    "ophyd_async[sim]",
     "copier",
-    "myst-parser>=4.0.0",
-    "pipdeptree",
-    "pre-commit>=3.8.0",
+    "dls-dodal>=3.0.2",
+    "myst-parser",
+    "prek",
     "pydata-sphinx-theme>=0.15.4",
     "pytest",
-    "pyright",
+    "pyright!=1.1.407",             # https://github.com/bluesky/scanspec/issues/190
     "pytest-cov",
     "pytest-asyncio",
+    "pytest-httpx>=0.35.0",
     "responses",
     "ruff",
     "semver",
@@ -59,7 +67,7 @@ dev = [
     "sphinx-click",
     "sphinx-design",
     "sphinxcontrib-openapi",
-    "tox-direct",
+    "tox-uv",
     "types-mock",
     "types-PyYAML",
     "types-requests",
@@ -67,6 +75,10 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
+    "respx",
+    "pytest-xdist[psutil]",
+    "httpx2>=2.5.0",
+    "playwright>=1.63.0",
 ]
 
 [project.scripts]
@@ -79,7 +91,6 @@ GitHub = "https://github.com/DiamondLightSource/blueapi"
 email = "callum.forrester@diamond.ac.uk"
 name = "Callum Forrester"
 
-
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"
 
@@ -89,48 +100,122 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
-addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
-    --ignore=src/blueapi/startup
-    """
+addopts = '--tb=native -vv --doctest-modules --doctest-glob="*.rst" --ignore=tests/system_tests/services'
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 asyncio_mode = "auto"
-
 [tool.coverage.run]
+patch = ["subprocess"]
 data_file = "/tmp/blueapi.coverage"
-omit = ["src/blueapi/startup/**/*"]
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
 
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-skipsdist=True
+skipsdist = true
+# envs to runs automatically with tox -p
+env_list = ["pre-commit", "type-checking", "tests", "docs"]
 
-[testenv:{pre-commit,type-checking,tests,docs,system-test}]
-# Don't create a virtualenv for the command, requires tox-direct plugin
-direct = True
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    pyright
-    sphinx-build
-    sphinx-autobuild
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: pyright src tests {posargs}
-    tests: pytest --cov=blueapi --cov-report term --cov-report xml:cov.xml tests/unit_tests {posargs}
-    docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
-    system-test: pytest tests/system_tests {posargs}
-"""
+[tool.tox.env_run_base]
+# Pass all environment variables to the test environments
+passenv = ["*"]
+
+[tool.tox.env.pre-commit]
+description = "Run pre-commit (prek) on all files"
+commands = [
+    [
+        "uv",
+        "run",
+        "prek",
+        "run",
+        "--all-files",
+        "--show-diff-on-failure",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.type-checking]
+description = "Run pyright"
+commands = [
+    [
+        "pyright",
+        "--pythonpath",
+        "{env:VIRTUAL_ENV}/bin/python",
+        "src",
+        "tests",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.tests]
+description = "Run unit tests with coverage"
+commands = [
+    [
+        "pytest",
+        "-n",
+        "logical",
+        { replace = "posargs", default = [
+            "tests/unit_tests",
+        ], extend = true },
+        "--cov=blueapi",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+    ],
+]
+
+[tool.tox.env.system-test]
+description = "Run system tests with coverage"
+commands = [
+    [
+        "pytest",
+        "tests/system_tests",
+        "--cov=blueapi",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs]
+description = "Run docs build with clean environment"
+commands = [
+    [
+        "sphinx-build",
+        "--fresh-env",
+        "--show-traceback",
+        "--fail-on-warning",
+        "--keep-going",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.docs-autobuild]
+description = "Run docs with autobuild on change"
+commands = [
+    [
+        "sphinx-autobuild",
+        "--show-traceback",
+        "--watch",
+        "README.md",
+        "docs",
+        "build/html",
+        { replace = "posargs", default = [
+        ], extend = true },
+    ],
+]
 
 [tool.ruff]
 src = ["src", "tests"]
@@ -140,6 +225,7 @@ lint.select = [
     "C4",   # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "E",    # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
     "F",    # pyflakes rules - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "N",    # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
     "W",    # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
     "I",    # isort - https://docs.astral.sh/ruff/rules/#isort-i
     "UP",   # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up

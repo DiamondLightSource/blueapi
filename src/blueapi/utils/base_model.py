@@ -1,4 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+)
 
 # Pydantic config for blueapi API models with common config.
 BlueapiModelConfig = ConfigDict(

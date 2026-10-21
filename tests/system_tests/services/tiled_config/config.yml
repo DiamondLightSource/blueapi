@@ -1,0 +1,27 @@
+authentication:
+  providers:
+    - provider: keycloak_oidc
+      authenticator: tiled.authenticators:ProxiedOIDCAuthenticator
+      args:
+        audience: account
+        client_id: tiled
+        device_flow_client_id: tiled-cli
+        well_known_uri: "http://localhost:8081/realms/master/.well-known/openid-configuration"
+        confirmation_message: "You have logged in with authn.diamond.ac.uk as {id}."
+        scopes_map:
+          read: ["read:metadata", "read:data"]
+          write: ["write:metadata", "write:data", "create:node", "register"]
+trees:
+  - path: /
+    tree: catalog
+    args:
+      uri: "sqlite:////storage/catalog.db"
+      writable_storage: "sqlite:////storage/catalog.db"
+      init_if_not_exists: true
+
+access_control:
+  access_policy: "dls_tiled.policy:DiamondOpenPolicyAgentAuthorizationPolicy"
+  args:
+    authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
+    token_audience: account
+    empty_access_blob_public: true

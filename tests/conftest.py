@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import time
-from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
@@ -20,33 +19,32 @@ from observability_utils.tracing import JsonObjectSpanExporter, setup_tracing
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import get_tracer_provider
-from responses.matchers import json_params_matcher
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
 
 
 @pytest.fixture(scope="function")
-def RE(request):
+def run_engine(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
-    RE = RunEngine({}, call_returns_result=True, loop=loop)
+    run_engine = RunEngine({}, call_returns_result=True, loop=loop)
 
     def clean_event_loop():
-        if RE.state not in ("idle", "panicked"):
+        if run_engine.state not in ("idle", "panicked"):
             try:
-                RE.halt()
+                run_engine.halt()
             except TransitionError:
                 pass
         loop.call_soon_threadsafe(loop.stop)
-        RE._th.join()
+        run_engine._th.join()
         loop.close()
 
     request.addfinalizer(clean_event_loop)
-    return RE
+    return run_engine
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def exporter() -> JsonObjectSpanExporter:
     setup_tracing("test", False)
     exporter = JsonObjectSpanExporter()
@@ -56,26 +54,25 @@ def exporter() -> JsonObjectSpanExporter:
     return exporter
 
 
-@pytest.fixture
-def oidc_url() -> str:
-    return (
-        "https://auth.example.com/realms/master/oidc/.well-known/openid-configuration"
-    )
+ISSUER = "https://auth.example.com/realms/master"
 
 
 @pytest.fixture
-def oidc_config(oidc_url: str) -> OIDCConfig:
-    return OIDCConfig(
-        well_known_url=oidc_url, client_id="blueapi-cli", client_audience="blueapi"
-    )
+def oidc_config() -> OIDCConfig:
+    return OIDCConfig(issuer=ISSUER, client_id="blueapi-cli", client_audience="blueapi")
 
 
 CACHE_FILE = "blueapi_cache"
 
 
 @pytest.fixture
-def config_with_auth(tmp_path: Path) -> str:
-    config = ApplicationConfig(auth_token_path=tmp_path / CACHE_FILE)
+def token_cache_file(tmp_path: Path) -> Path:
+    return tmp_path / CACHE_FILE
+
+
+@pytest.fixture
+def config_with_auth(token_cache_file: Path, tmp_path: Path) -> str:
+    config = ApplicationConfig(auth_token_path=token_cache_file)
     config_path = tmp_path / "auth_config.yaml"
     with open(config_path, mode="w") as valid_auth_config_file:
         valid_auth_config_file.write(yaml.dump(config.model_dump()))
@@ -88,7 +85,7 @@ def oidc_well_known() -> dict[str, Any]:
         "device_authorization_endpoint": "https://example.com/device_authorization",
         "authorization_endpoint": "https://example.com/authorization",
         "token_endpoint": "https://example.com/token",
-        "issuer": "https://example.com",
+        "issuer": ISSUER,
         "jwks_uri": "https://example.com/realms/master/protocol/openid-connect/certs",
         "end_session_endpoint": "https://example.com/end_session",
         "id_token_signing_alg_values_supported": ["RS256"],
@@ -97,7 +94,7 @@ def oidc_well_known() -> dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def json_web_keyset() -> JWK:
-    return JWK.generate(kty="RSA", size=1024, kid="secret", use="sig", alg="RS256")
+    return JWK.generate(kty="RSA", size=2048, kid="secret", use="sig", alg="RS256")
 
 
 @pytest.fixture(scope="session")
@@ -112,6 +109,7 @@ def _make_token(
     rsa_private_key: str,
     jwt_access_token: bool = False,
     valid_audience: bool = True,
+    issuer: str = ISSUER,
 ) -> dict[str, str]:
     now = time.time()
 
@@ -119,7 +117,7 @@ def _make_token(
         "aud": "blueapi" if valid_audience else "invalid_audience",
         "exp": now + expires_in,
         "iat": now + issued_in,
-        "iss": "https://example.com",
+        "iss": issuer,
         "sub": "jd1",
         "name": "Jane Doe",
         "fedid": "jd1",
@@ -141,7 +139,7 @@ def _make_token(
 
 @pytest.fixture
 def cached_valid_refresh(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -149,14 +147,14 @@ def cached_valid_refresh(
         refresh_token=expired_token["refresh_token"],
         id_token=expired_token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture
 def cached_expired_refresh(
-    tmp_path: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path, expired_token: dict[str, Any], oidc_config: OIDCConfig
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -164,14 +162,16 @@ def cached_expired_refresh(
         refresh_token="expired_refresh",
         id_token=expired_token["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture
 def cached_valid_token(
-    tmp_path: Path, valid_token_with_jwt: dict[str, Any], oidc_config: OIDCConfig
+    token_cache_file: Path,
+    valid_token_with_jwt: dict[str, Any],
+    oidc_config: OIDCConfig,
 ) -> Path:
     cache = Cache(
         oidc_config=oidc_config,
@@ -179,14 +179,21 @@ def cached_valid_token(
         refresh_token=valid_token_with_jwt["refresh_token"],
         id_token=valid_token_with_jwt["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
+
+
+@pytest.fixture
+def cached_valid_token_value(
+    valid_token_with_jwt: dict[str, Any],
+) -> str:
+    return valid_token_with_jwt["access_token"]
 
 
 @pytest.fixture
 def cache_with_invalid_audience(
-    tmp_path: Path,
+    token_cache_file: Path,
     oidc_config: OIDCConfig,
     valid_token_with_jwt_invalid_audience: dict[str, Any],
 ) -> Path:
@@ -196,9 +203,9 @@ def cache_with_invalid_audience(
         refresh_token=valid_token_with_jwt_invalid_audience["refresh_token"],
         id_token=valid_token_with_jwt_invalid_audience["id_token"],
     )
-    with open(cache_path := tmp_path / CACHE_FILE, "xb") as cache_file:
+    with open(token_cache_file, "xb") as cache_file:
         cache_file.write(base64.b64encode(cache.model_dump_json().encode("utf-8")))
-    return cache_path
+    return token_cache_file
 
 
 @pytest.fixture
@@ -244,7 +251,6 @@ def device_code() -> str:
 
 @pytest.fixture
 def mock_authn_server(
-    oidc_url: str,
     oidc_well_known: dict[str, Any],
     oidc_config: OIDCConfig,
     valid_token: dict[str, Any],
@@ -258,7 +264,9 @@ def mock_authn_server(
         json=oidc_config.model_dump(),
     )
     # Fetch well-known OIDC flow URLs from server
-    requests_mock.get(oidc_url, json=oidc_well_known)
+    requests_mock.get(
+        ISSUER + "/.well-known/openid-configuration", json=oidc_well_known
+    )
     # When device flow begins, return a device_code
     requests_mock.post(
         oidc_well_known["device_authorization_endpoint"],
@@ -335,12 +343,9 @@ def mock_jwks_fetch(json_web_keyset: JWK):
     return patch("jwt.PyJWKClient.fetch_data", mock)
 
 
-NOT_CONFIGURED_INSTRUMENT = "p100"
-
-
-@pytest.fixture(scope="module")
-def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
-    query_working = {
+@pytest.fixture
+def nt_query() -> dict[str, str]:
+    return {
         "query": dedent("""
             mutation{
                 scan(
@@ -358,94 +363,11 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
             """)
     }
-    query_400 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p47",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_500 = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p48",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_key_error = {
-        "query": dedent("""
-            mutation{
-                scan(
-                    instrument: "p49",
-                    instrumentSession: "ab123"
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """)
-    }
-    query_200_with_errors = {
-        "query": dedent(f"""
-            mutation{{
-                scan(
-                    instrument: "{NOT_CONFIGURED_INSTRUMENT}",
-                    instrumentSession: "ab123"
-                    ) {{
-                    directory{{
-                        instrumentSession
-                        instrument
-                        path
-                    }}
-                    scanFile
-                    scanNumber
-                }}
-            }}
-            """)
-    }
 
-    response_with_errors = {
-        "data": None,
-        "errors": [
-            {
-                "message": (
-                    "No configuration available for instrument "
-                    f'"{NOT_CONFIGURED_INSTRUMENT}"'
-                ),
-                "locations": [{"line": 3, "column": 5}],
-                "path": ["scan"],
-            }
-        ],
-    }
 
-    working_response = {
+@pytest.fixture
+def nt_response() -> dict[str, Any]:
+    return {
         "data": {
             "scan": {
                 "scanFile": "p46-11",
@@ -458,42 +380,3 @@ def mock_numtracker_server() -> Iterable[responses.RequestsMock]:
             }
         }
     }
-    empty_response = {}
-
-    with responses.RequestsMock(assert_all_requests_are_fired=False) as requests_mock:
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_working)],
-            status=200,
-            json=working_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_400)],
-            status=400,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_500)],
-            status=500,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            url="https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_key_error)],
-            status=200,
-            json=empty_response,
-        )
-        requests_mock.add(
-            responses.POST,
-            "https://numtracker-example.com/graphql",
-            match=[json_params_matcher(query_200_with_errors)],
-            status=200,
-            json=response_with_errors,
-        )
-        yield requests_mock

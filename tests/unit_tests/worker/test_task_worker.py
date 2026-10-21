@@ -1,26 +1,28 @@
+import dataclasses
 import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
-from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
 
+import pydantic
 import pytest
-from bluesky.protocols import Movable, Status
+from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
 )
 from ophyd_async.core import AsyncStatus
 
-from blueapi.config import EnvironmentConfig, Source, SourceKind
+from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.service.model import PlanModel
+from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
     Task,
     TaskStatus,
@@ -31,7 +33,7 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import TaskStatusEnum
+from blueapi.worker.event import TaskResult, TaskStatusEnum
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -53,12 +55,9 @@ _TASK_WITH_METADATA = Task(
 class FakeDevice(Movable[float]):
     event: threading.Event
 
-    @property
-    def name(self) -> str:
-        return "fake_device"
-
-    def __init__(self) -> None:
+    def __init__(self, name: str = "fake_device") -> None:
         self.event = threading.Event()
+        self.name = name
 
     def set(self, value: float) -> Status:
         def when_done(_: Status):
@@ -78,20 +77,60 @@ def failing_plan() -> MsgGenerator:
     raise KeyError("I failed")
 
 
+@dataclasses.dataclass
+class ComplexReturn:
+    foo: int
+    bar: list[str]
+
+
+class ModelReturn(pydantic.BaseModel):
+    foo: int
+    bar: list[str]
+
+
+class Unreturnable:
+    def __init__(self, foo: int, bar: list[str]):
+        self.foo = foo
+        self.bar = bar
+
+
 @pytest.fixture
 def fake_device() -> FakeDevice:
     return FakeDevice()
 
 
 @pytest.fixture
-def context(fake_device: FakeDevice) -> BlueskyContext:
+def second_fake_device() -> FakeDevice:
+    return FakeDevice("second_fake_device")
+
+
+@pytest.fixture
+def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyContext:
     ctx = BlueskyContext()
-    ctx_config = EnvironmentConfig()
-    ctx_config.sources.append(
-        Source(kind=SourceKind.DEVICE_FUNCTIONS, module="devices")
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
     )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
+    ctx.register_device(second_fake_device)
+    ctx.with_config(ctx_config)
+    return ctx
+
+
+@pytest.fixture
+def context_without_devices() -> BlueskyContext:
+    ctx = BlueskyContext()
+    ctx_config = EnvironmentConfig(
+        sources=[
+            PlanSource(module="dodal.plans"),
+            PlanSource(module="dodal.plan_stubs.wrapped"),
+        ]
+    )
+    ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.with_config(ctx_config)
     return ctx
 
@@ -245,6 +284,52 @@ def test_begin_task_blocks_until_current_task_set(worker: TaskWorker) -> None:
     assert active_task.task == _SIMPLE_TASK
 
 
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+@patch("blueapi.worker.task_worker.TaskWorker._submit_trackable_task")
+def test_begin_task_uses_plan_name_filter(
+    submit_trackable_task_mock: Mock, filter_mock: Mock, inert_worker: TaskWorker
+) -> None:
+    task_id = inert_worker.submit_task(_SIMPLE_TASK)
+    inert_worker.begin_task(task_id)
+    filter_mock.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "result,serial,type_name",
+    [
+        (None, None, "NoneType"),
+        (42, 42, "int"),
+        ("helloWorld", "helloWorld", "str"),
+        (ComplexReturn(34, ["foo"]), {"foo": 34, "bar": ["foo"]}, "ComplexReturn"),
+        (
+            ModelReturn(foo=42, bar=["helloWorld"]),
+            {"foo": 42, "bar": ["helloWorld"]},
+            "ModelReturn",
+        ),
+        (Unreturnable(17, ["fizzbuzz"]), None, "Unreturnable"),
+    ],
+)
+def test_plan_result_serialized(
+    worker: TaskWorker, result: Any, serial: Any, type_name: str
+):
+    def result_plan() -> MsgGenerator:
+        yield from []
+        return result
+
+    worker._ctx.register_plan(result_plan)
+    task_id = worker.submit_task(Task(name="result_plan"))
+    events = begin_task_and_wait_until_complete(worker, task_id)
+    ts = events[-1].task_status
+    assert ts is not None
+    assert ts.result == TaskResult(result=serial, type=type_name)
+
+    assert ts.model_dump()["result"] == {
+        "outcome": "success",
+        "result": serial,
+        "type": type_name,
+    }
+
+
 def test_plan_failure_recorded_in_active_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_FAILING_TASK)
     events_future: Future[list[WorkerEvent]] = take_events(
@@ -289,7 +374,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.RUNNING,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=False, task_failed=False
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+                result=None,
             ),
             errors=[],
             warnings=[],
@@ -297,7 +385,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=False, task_failed=False
+                task_id=task_id,
+                task_complete=False,
+                task_failed=False,
+                result=None,
             ),
             errors=[],
             warnings=[],
@@ -305,7 +396,10 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
         WorkerEvent(
             state=WorkerState.IDLE,
             task_status=TaskStatus(
-                task_id=task_id, task_complete=True, task_failed=False
+                task_id=task_id,
+                task_complete=True,
+                task_failed=False,
+                result=TaskResult.from_result(None),
             ),
             errors=[],
             warnings=[],
@@ -314,7 +408,7 @@ def _sleep_events(task_id: str) -> list[WorkerEvent]:
 
 
 @patch("queue.Queue.put_nowait")
-def test_full_queue_raises_WorkerBusyError(put_nowait: MagicMock, worker: TaskWorker):
+def test_full_queue_raises(put_nowait: MagicMock, worker: TaskWorker):
     def raise_full(item):
         raise Full()
 
@@ -364,24 +458,16 @@ def begin_task_and_wait_until_complete(
 #
 
 
-@pytest.fixture
-def path_provider(tmp_path: Path):
-    # Prevents issue with leftover state from beamline tests
-    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
-        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
-        mock.return_value.data_session.return_value = "foo"
-        yield
-
-
-def test_worker_and_data_events_produce_in_order(
-    worker: TaskWorker, path_provider
-) -> None:
+def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
                 state=WorkerState.RUNNING,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+                    task_id="count",
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
                 errors=[],
                 warnings=[],
@@ -393,7 +479,10 @@ def test_worker_and_data_events_produce_in_order(
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=False, task_failed=False
+                    task_id="count",
+                    task_complete=False,
+                    task_failed=False,
+                    result=None,
                 ),
                 errors=[],
                 warnings=[],
@@ -401,7 +490,10 @@ def test_worker_and_data_events_produce_in_order(
             WorkerEvent(
                 state=WorkerState.IDLE,
                 task_status=TaskStatus(
-                    task_id="count", task_complete=True, task_failed=False
+                    task_id="count",
+                    task_complete=True,
+                    task_failed=False,
+                    result=TaskResult.from_result(None),
                 ),
                 errors=[],
                 warnings=[],
@@ -417,7 +509,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
     task: Task | None = None,
     timeout: float = 5.0,
 ) -> None:
-    default_task = Task(name="count", params={"detectors": {"motor"}, "num": 1})
+    default_task = Task(name="count", params={"detectors": ["motor"], "num": 1})
     task = task or default_task
 
     event_streams: list[EventStream[Any, int]] = [
@@ -523,7 +615,7 @@ def take_events_from_streams(
         (TaskStatusEnum.COMPLETE, ["task3"]),
     ],
 )
-def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
+def test_get_tasks(worker: TaskWorker, status, expected_task_ids):
     worker._pending_tasks = {
         "task1": TrackableTask(
             task_id="task1",
@@ -553,7 +645,7 @@ def test_get_tasks_by_status(worker: TaskWorker, status, expected_task_ids):
         ),
     }
 
-    result = worker.get_tasks_by_status(status)
+    result = worker.get_tasks(status)
     result_ids = [task.task_id for task in result]
 
     assert result_ids == expected_task_ids
@@ -636,6 +728,20 @@ def test_injected_devices_are_found(
     assert params["dev"] == fake_device
 
 
+def test_injected_devices_plan_model(
+    fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    def injected_device_plan(
+        dev: FakeDevice = inject(fake_device.name),
+    ) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(injected_device_plan)
+    plan = context.plans["injected_device_plan"]
+    PlanModel.from_plan(plan)
+
+
 def test_missing_injected_devices_fail_early(
     context: BlueskyContext,
 ):
@@ -643,5 +749,203 @@ def test_missing_injected_devices_fail_early(
         yield from ()
 
     context.register_plan(missing_injection)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Device does_not_exist cannot be found"):
         Task(name="missing_injection").prepare_params(context)
+
+
+def test_invalid_injected_devices_fail_early(
+    context: BlueskyContext,
+):
+    def invalid_injection(dev: Readable = inject("fake_device")) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(invalid_injection)
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Device fake_device \(test_task_worker.FakeDevice\) "
+            "is not of type bluesky.protocols.Readable"
+        ),
+    ):
+        Task(name="invalid_injection").prepare_params(context)
+
+
+@patch("blueapi.worker.task_worker.plan_tag_filter_context")
+def test_worker_uses_plan_tag_filter_context(
+    mock_context: Mock, inert_worker: TaskWorker
+):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+    mock_context.assert_not_called()
+    inert_worker._cycle()
+    mock_context.assert_called_once()
+
+
+@patch("blueapi.worker.task_worker.LOGGER")
+def test_cycle_without_otel_context(mock_logger: Mock, inert_worker: TaskWorker):
+    task = TrackableTask(task_id="0", task=_SIMPLE_TASK)
+    inert_worker._task_channel.put_nowait(task)
+    inert_worker._pending_tasks["0"] = task
+
+    inert_worker._cycle()
+    assert inert_worker._current_task_otel_context is None
+    # Bad way to tell that this branch has been run, but I can't think of a better way
+    # Have to set these values to match output
+    task.is_complete = False
+    task.is_pending = True
+    mock_logger.info.assert_called_with(
+        "Task ran successfully - returned: %s", None, extra={"task_id": "0"}
+    )
+
+
+class MyComposite(BlueapiBaseModel):
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
+@pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
+class MyPydanticDataClassComposite:
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
+
+
+@dataclasses.dataclass()
+class MyStandardDataClassComposite:
+    fake_device: FakeDevice
+    second_fake_device: FakeDevice
+
+
+def injected_device_plan(composite: MyComposite = inject("")) -> MsgGenerator:
+    yield from ()
+
+
+def injected_dataclass_device_plan(
+    composite: MyPydanticDataClassComposite = inject(""),
+) -> MsgGenerator:
+    yield from ()
+
+
+def injected_standard_dataclass_device_plan(
+    composite: MyStandardDataClassComposite = inject(""),
+) -> MsgGenerator:
+    yield from ()
+
+
+def test_injected_composite_devices_are_found(
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    context.register_plan(injected_device_plan)
+    params = Task(name="injected_device_plan").prepare_params(context)
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_injected_composite_devices_plan_model(
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+    context: BlueskyContext,
+):
+    context.register_plan(injected_device_plan)
+    plan = context.plans["injected_device_plan"]
+    PlanModel.from_plan(plan)
+
+
+def test_injected_composite_with_pydantic_dataclass(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context.register_plan(injected_dataclass_device_plan)
+    params = Task(name="injected_dataclass_device_plan").prepare_params(context)
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_injected_composite_with_standard_dataclass(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context.register_plan(injected_standard_dataclass_device_plan)
+    params = Task(name="injected_standard_dataclass_device_plan").prepare_params(
+        context
+    )
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
+    context_without_devices: BlueskyContext,
+    fake_device: FakeDevice,
+    second_fake_device: FakeDevice,
+):
+    context_without_devices.register_plan(injected_device_plan)
+    context_without_devices.register_device(fake_device)
+    context_without_devices.register_device(second_fake_device)
+    params = Task(name="injected_device_plan").prepare_params(context_without_devices)
+    assert params["composite"].fake_device == fake_device
+    assert params["composite"].second_fake_device == second_fake_device
+
+
+@pytest.mark.parametrize(
+    "plan_result,task_result,type_name",
+    (
+        (Unreturnable(foo=1, bar=[]), None, "Unreturnable"),
+        ((Unreturnable(foo=2, bar=[]),), None, "tuple"),
+        (ComplexReturn(foo=3, bar=["a"]), {"foo": 3, "bar": ["a"]}, "ComplexReturn"),
+        ((ComplexReturn(foo=4, bar=["b"]),), [{"foo": 4, "bar": ["b"]}], "tuple"),
+        (ModelReturn(foo=5, bar=["c"]), {"foo": 5, "bar": ["c"]}, "ModelReturn"),
+        ((ModelReturn(foo=6, bar=["d"]),), [{"foo": 6, "bar": ["d"]}], "tuple"),
+        (42, 42, "int"),
+        ((1, 2), [1, 2], "tuple"),
+    ),
+)
+def test_task_result_serialization(plan_result, task_result, type_name):
+    res = TaskResult.from_result(plan_result)
+    assert res.result == task_result
+    assert res.type == type_name
+
+
+@pytest.mark.parametrize(
+    "status,complete",
+    [
+        (None, False),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=False, task_failed=False
+            ),
+            False,
+        ),
+        (
+            TaskStatus(
+                task_id="foo", result=None, task_complete=True, task_failed=False
+            ),
+            True,
+        ),
+    ],
+)
+def test_worker_event_complete(status: TaskStatus | None, complete: bool):
+    event = WorkerEvent(
+        state=WorkerState.IDLE, task_status=status
+    )  # state is not used in check
+    assert event.is_complete() == complete
+
+
+def test_worker_event_task_id():
+    event = WorkerEvent(
+        state=WorkerState.RUNNING,
+        task_status=TaskStatus(
+            task_id="foo", result=None, task_complete=False, task_failed=False
+        ),
+    )
+    assert event.task_id == "foo"
+
+
+def test_worker_event_no_task_id():
+    event = WorkerEvent(state=WorkerState.IDLE, task_status=None)
+    assert event.task_id is None

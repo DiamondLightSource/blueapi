@@ -10,4 +10,7 @@ jobs:
   linkcheck:
     uses: ./.github/workflows/_tox.yml
     with:
-      tox: docs build -- -b linkcheck
+      tox: docs -- -b linkcheck
+
+  trivy:
+    uses: ./.github/workflows/_trivy.yml

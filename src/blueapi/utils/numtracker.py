@@ -1,0 +1,124 @@
+import logging
+from collections.abc import Mapping
+from pathlib import Path
+from textwrap import dedent
+
+import httpx
+from pydantic import Field, HttpUrl
+
+from blueapi.utils import BlueapiBaseModel
+
+LOGGER = logging.getLogger(__name__)
+
+
+class DirectoryPath(BlueapiBaseModel):
+    """
+    Directory location and associated metadata
+    """
+
+    instrument: str
+    instrument_session: str = Field(alias="instrumentSession")
+    path: Path
+
+
+class ScanPaths(BlueapiBaseModel):
+    """
+    Description of where to write scan data
+    """
+
+    scan_file: str = Field(alias="scanFile")
+    scan_number: int = Field(alias="scanNumber")
+    directory: DirectoryPath
+
+
+class NumtrackerScanMutationResponse(BlueapiBaseModel):
+    """
+    Response from numtracker server when creating a new scan
+    """
+
+    scan: ScanPaths
+
+
+class NumtrackerClient:
+    """
+    Client for numtracker: https://github.com/DiamondLightSource/numtracker
+    Can be used to assign new scan numbers.
+    """
+
+    def __init__(
+        self,
+        url: HttpUrl,
+    ) -> None:
+        self._url = url
+        self._headers: Mapping[str, str] = {}
+
+    def set_headers(self, headers: Mapping[str, str]) -> None:
+        """
+        Set default HTTP headers
+
+        Args:
+            headers: headers to embed in every request.
+        """
+
+        self._headers = headers
+
+    async def create_scan(
+        self, instrument_session: str, instrument: str
+    ) -> NumtrackerScanMutationResponse:
+        """
+        Create a new scan with numtracker.
+
+        Args:
+            instrument_session: The proposal number, proposal code and visit ID
+            e.g. cm12345-1
+
+            instrument: The instrument to write data on e.g. i22
+        """
+
+        query = {
+            "query": dedent(f"""
+            mutation{{
+                scan(
+                    instrument: "{instrument}",
+                    instrumentSession: "{instrument_session}"
+                    ) {{
+                    directory{{
+                        instrumentSession
+                        instrument
+                        path
+                    }}
+                    scanFile
+                    scanNumber
+                }}
+            }}
+            """)
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self._url.unicode_string(),
+                headers=self._headers,
+                json=query,
+            )
+
+        response.raise_for_status()
+        json = response.json()
+
+        if json.get("errors") is not None:
+            for error in json["errors"]:
+                code = error.get("extensions", {}).get("code")
+                match code:
+                    case "AUTH_FAILED":
+                        raise RuntimeError(
+                            f"Not authorised to create a scan number for "
+                            f"{instrument} and {instrument_session}"
+                        )
+                    case "AUTH_MISSING":
+                        raise RuntimeError("Numtracker authentication missing")
+                    case "AUTH_SERVER_ERROR":
+                        raise RuntimeError("Numtracker server authentication error")
+            raise RuntimeError(f"Numtracker error: {json['errors']}")
+
+        new_collection = NumtrackerScanMutationResponse.model_validate(json["data"])
+        LOGGER.debug("New NumtrackerNewScan: %s", new_collection)
+        return new_collection

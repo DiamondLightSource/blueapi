@@ -1,4 +1,6 @@
-from collections.abc import Callable, Mapping
+import json
+import logging
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Literal, TypeVar
 
 import requests
@@ -9,8 +11,14 @@ from observability_utils.tracing import (
     start_as_current_span,
 )
 from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic_core import PydanticSerializationError
+from websockets.exceptions import InvalidStatus
+from websockets.sync.client import connect
 
+from blueapi import __version__
+from blueapi.client.protocols import ClientObjectRef
 from blueapi.config import RestConfig
+from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import JWTAuth, SessionManager
 from blueapi.service.model import (
     DeviceModel,
@@ -26,27 +34,65 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker import Task, TrackableTask, WorkerState
+from blueapi.service.protocol import (
+    ControlResponse,
+    InvalidArgs,
+    PlanNotFound,
+    ServerBusy,
+    Submit,
+    Unauthorized,
+    Update,
+)
+from blueapi.worker import TrackableTask, WorkerState
+from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 
 TRACER = get_tracer("rest")
 
+LOGGER = logging.getLogger(__name__)
 
-class UnauthorisedAccess(Exception):
+USER_AGENT = f"blueapi cli {__version__}"
+
+
+class BlueskyRequestError(Exception):
+    """An error response from the blueapi server."""
+
+    def __init__(self, code: int | None = None, message: str = "") -> None:
+        super().__init__(code, message)
+
+
+class UnauthorisedAccessError(BlueskyRequestError):
+    """Request was rejected due to missing or invalid credentials (401/403)."""
+
+    pass
+
+
+class NotFoundError(BlueskyRequestError):
+    """Requested something that couldn't be found (404)."""
+
+    pass
+
+
+class UnknownPlanError(BlueskyRequestError):
+    """Plan '{name}' was not recognised"""
+
     pass
 
 
 class BlueskyRemoteControlError(Exception):
+    """Unexpected or failed response from the blueapi server."""
+
     pass
 
 
-class BlueskyRequestError(Exception):
-    def __init__(self, code: int, message: str) -> None:
-        super().__init__(message, code)
+class NonJsonResponseError(Exception):
+    """Server returned a response that could not be parsed as JSON."""
+
+    pass
 
 
-class NoContent(Exception):
+class NoContentError(Exception):
     """Request returned 204 (No Content): handle if None is allowed"""
 
     def __init__(self, target_type: type) -> None:
@@ -55,8 +101,8 @@ class NoContent(Exception):
 
 class ParameterError(BaseModel):
     loc: list[str | int]
-    msg: str
-    type: str
+    msg: str | None
+    type: str | None
     input: Any
 
     def field(self):
@@ -74,7 +120,7 @@ class ParameterError(BaseModel):
                 )
 
 
-class InvalidParameters(Exception):
+class InvalidParametersError(Exception):
     def __init__(self, errors: list[ParameterError]):
         self.errors = errors
 
@@ -96,18 +142,25 @@ class InvalidParameters(Exception):
         )
 
 
-class UnknownPlan(Exception):
-    pass
-
-
 def _exception(response: requests.Response) -> Exception | None:
     code = response.status_code
     if code < 400:
         return None
+    elif code in (401, 403):
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return KeyError(str(response.json()))
+        return NotFoundError(code, response.text)
     else:
-        return BlueskyRemoteControlError(code, str(response))
+        try:
+            body = _response_json(response)
+            message = (
+                body.get("detail", response.text)
+                if isinstance(body, dict)
+                else response.text
+            )
+        except NonJsonResponseError:
+            message = response.text
+        return BlueskyRemoteControlError(code, message)
 
 
 def _create_task_exceptions(response: requests.Response) -> Exception | None:
@@ -115,13 +168,13 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
     if code < 400:
         return None
     elif code == 401 or code == 403:
-        return UnauthorisedAccess()
+        return UnauthorisedAccessError(code, response.text)
     elif code == 404:
-        return UnknownPlan()
+        return UnknownPlanError(code, response.text)
     elif code == 422:
         try:
-            content = response.json()
-            return InvalidParameters(
+            content = _response_json(response)
+            return InvalidParametersError(
                 TypeAdapter(list[ParameterError]).validate_python(
                     content.get("detail", [])
                 )
@@ -134,8 +187,22 @@ def _create_task_exceptions(response: requests.Response) -> Exception | None:
         return BlueskyRequestError(code, response.text)
 
 
+def _response_json(response: requests.Response) -> Any:
+    try:
+        return response.json()
+    except json.decoder.JSONDecodeError as exc:
+        LOGGER.debug(
+            f"Invalid json response from <{response.request.url}>: <{response.content}>"
+        )
+        raise NonJsonResponseError(
+            "Response does not contain a valid JSON object"
+        ) from exc
+
+
 class BlueapiRestClient:
     _config: RestConfig
+    session_manager: SessionManager | None
+    _pool: requests.Session
 
     def __init__(
         self,
@@ -143,13 +210,17 @@ class BlueapiRestClient:
         session_manager: SessionManager | None = None,
     ) -> None:
         self._config = config or RestConfig()
-        self._session_manager = session_manager
+        self.session_manager = session_manager
+        self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
 
     def get_plan(self, name: str) -> PlanModel:
-        return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        try:
+            return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+        except NotFoundError as e:
+            raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 
     def get_devices(self) -> DeviceResponse:
         return self._request_and_deserialize("/devices", DeviceResponse)
@@ -172,8 +243,8 @@ class BlueapiRestClient:
             data={"new_state": state, "defer": defer},
         )
 
-    def get_task(self, task_id: str) -> TrackableTask[Task]:
-        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask[Task])
+    def get_task(self, task_id: str) -> TrackableTask:
+        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask)
 
     def get_all_tasks(self) -> TasksListResponse:
         return self._request_and_deserialize("/tasks", TasksListResponse)
@@ -187,7 +258,7 @@ class BlueapiRestClient:
             TaskResponse,
             method="POST",
             get_exception=_create_task_exceptions,
-            data=task.model_dump(),
+            data=task.model_dump(mode="json", fallback=_task_model_fallback),
         )
 
     def clear_task(self, task_id: str) -> TaskResponse:
@@ -226,7 +297,7 @@ class BlueapiRestClient:
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
             return self._request_and_deserialize("/config/oidc", OIDCConfig)
-        except NoContent:
+        except NoContentError:
             # Server is not using authentication
             return None
 
@@ -251,19 +322,115 @@ class BlueapiRestClient:
     ) -> T:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
-        carr = get_context_propagator()
-        response = requests.request(
-            method,
-            url,
-            json=data,
-            params=params,
-            headers=carr,
-            auth=JWTAuth(self._session_manager),
-        )
+        headers = get_context_propagator()
+        headers["User-Agent"] = USER_AGENT
+        try:
+            response = self._pool.request(
+                method,
+                url,
+                json=data,
+                params=params,
+                headers=headers,
+                auth=JWTAuth(self.session_manager),
+            )
+        except requests.exceptions.ConnectionError as ce:
+            raise ServiceUnavailableError() from ce
         exception = get_exception(response)
         if exception is not None:
             raise exception
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            raise NoContent(target_type)
-        deserialized = TypeAdapter(target_type).validate_python(response.json())
+            raise NoContentError(target_type)
+        if (server_version := response.headers.get("x-blueapi-version")) is not None:
+            from packaging.version import Version
+
+            if (server_version := Version(server_version).base_version) != (
+                client_version := Version(__version__).base_version
+            ):
+                LOGGER.warning(
+                    f"Version mismatch: Blueapi server version is {server_version} "
+                    f"but client version is {client_version}. "
+                    f"Some features may not work as expected."
+                )
+        deserialized = TypeAdapter(target_type).validate_python(
+            _response_json(response)
+        )
         return deserialized
+
+    def run_blocking(
+        self, req: TaskRequest
+    ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
+        url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
+        headers = get_context_propagator()
+        if self.session_manager:
+            auth = self.session_manager.get_valid_access_token()
+            headers["Authorization"] = f"Bearer {auth}"
+        try:
+            with connect(
+                url,
+                additional_headers=headers,
+                user_agent_header=USER_AGENT,
+            ) as ws:
+                ws.send(Submit(task=req).model_dump_json(fallback=_task_model_fallback))
+                for message in ws:
+                    event = ControlResponse.validate_json(message)
+                    match event:
+                        case Update(data=data):
+                            yield data
+                        case InvalidArgs(errors=errors):
+                            raise InvalidParametersError(
+                                [
+                                    ParameterError(
+                                        loc=e.loc, msg=e.msg, type=e.type, input=e.input
+                                    )
+                                    for e in errors
+                                ]
+                            )
+                        case PlanNotFound(plan_name=name):
+                            raise UnknownPlanError(message=name)
+                        case ServerBusy():
+                            raise BlueskyRemoteControlError(409, "Server is busy")
+                        case Unauthorized():
+                            raise UnauthorisedAccessError(
+                                403, "Not authorized to submit task"
+                            )
+        except InvalidStatus as istat:
+            match istat.response.status_code:
+                case 401 | 403:
+                    raise UnauthorisedAccessError() from None
+                case _:
+                    raise BlueskyRemoteControlError() from istat
+        except ConnectionRefusedError as cre:
+            raise ServiceUnavailableError() from cre
+
+
+# https://github.com/DiamondLightSource/blueapi/issues/1256 - remove before 2.0
+def __getattr__(name: str):
+    import warnings
+
+    renames = {
+        "InvalidParameters": InvalidParametersError,
+        "NoContent": NoContentError,
+        "UnauthorisedAccess": UnauthorisedAccessError,
+        "UnknownPlan": UnknownPlanError,
+    }
+    rename = renames.get(name)
+    if rename is not None:
+        warnings.warn(
+            DeprecationWarning(
+                f"{name!r} is deprecated, use {rename.__name__!r} instead"
+            ),
+            stacklevel=2,
+        )
+        return rename
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+class ServiceUnavailableError(Exception):
+    pass
+
+
+def _task_model_fallback(obj: Any) -> Any:
+    """Fallback method for serializing TaskRequests"""
+    if isinstance(obj, ClientObjectRef):
+        return obj.name
+    raise PydanticSerializationError(f"Object of type {type(obj)} not serializable")

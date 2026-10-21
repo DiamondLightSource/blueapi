@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import os
 import tempfile
 from collections.abc import Generator, Iterable, Mapping
@@ -11,9 +12,16 @@ import pytest
 import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, WebsocketUrl
 
-from blueapi.config import ApplicationConfig, ConfigLoader, OIDCConfig
+from blueapi.config import (
+    CONFIG_SCHEMA_LOCATION,
+    ApplicationConfig,
+    ConfigLoader,
+    OIDCConfig,
+    RestConfig,
+    generate_config_schema,
+)
 from blueapi.utils import InvalidConfigError
 
 
@@ -184,6 +192,10 @@ def is_subset(subset: Mapping[str, Any], superset: Mapping[str, Any]) -> bool:
         if isinstance(value, dict) and isinstance(superset_value, dict):
             if not is_subset(value, superset_value):
                 return False
+        elif isinstance(value, list) and isinstance(superset_value, list):
+            for sub_val, sup_val in zip(value, superset_value, strict=True):
+                if not is_subset(sub_val, sup_val):
+                    return False
         # Check equality for non-dict values, ignoring None in superset
         elif superset_value is not None and value != superset_value:
             return False
@@ -199,17 +211,12 @@ def temp_yaml_config_file(
     config_data = request.param
 
     # Create a temporary YAML file with the configuration
-    with tempfile.NamedTemporaryFile(
-        suffix=".yaml", mode="w", delete=False
-    ) as temp_yaml_file:
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w") as temp_yaml_file:
         yaml.dump(config_data, temp_yaml_file)
         temp_yaml_file_path = temp_yaml_file.name
 
-    # Provide the path and the config data
-    yield Path(temp_yaml_file_path), config_data
-
-    # Cleanup after test execution
-    os.remove(temp_yaml_file_path)
+        # Provide the path and the config data
+        yield Path(temp_yaml_file_path), config_data
 
 
 # Parameterized test to run with different configurations
@@ -220,7 +227,8 @@ def temp_yaml_config_file(
         {
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.ixx", "name": "manager"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
@@ -231,7 +239,7 @@ def temp_yaml_config_file(
             "stomp": {"enabled": True},
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
@@ -277,6 +285,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "tcp://localhost:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "tiled": {
+                "authentication": None,
+                "enabled": False,
+                "url": "http://localhost:8407/",
+            },
             "auth_token_path": None,
             "env": {
                 "events": {
@@ -286,9 +299,12 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     "instrument": "p01",
                 },
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim", "mock": True},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
+                    {
+                        "kind": "planFunctions",
+                        "module": "dodal.plan_stubs.wrapped",
+                    },
                 ],
             },
             "api": {
@@ -304,9 +320,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "well_known_url": None,
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
+                "logout_redirect_endpoint": "",
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -318,6 +336,13 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     }
                 ],
             },
+            "opa": {
+                "root": "http://opa.example.com/",
+                "audience": "account",
+                "tiled_service_account_check": "v1/tiled_service_account",
+                "submit_task_check": "v1/submit_task",
+                "admin_check": "v1/admin_check",
+            },
         },
         {
             "stomp": {
@@ -325,12 +350,20 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "url": "tcp://rabbitmq.diamond.ac.uk:61613/",
                 "auth": {"username": "guest", "password": "guest"},
             },
+            "tiled": {
+                "authentication": None,
+                "enabled": False,
+                "url": "http://localhost:8407/",
+            },
             "auth_token_path": None,
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim", "mock": False},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
+                    {
+                        "kind": "planFunctions",
+                        "module": "dodal.plan_stubs.wrapped",
+                    },
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {
@@ -350,9 +383,11 @@ def test_config_yaml_parsed(temp_yaml_config_file):
             },
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "well_known_url": None,
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
+                "logout_redirect_endpoint": "",
             },
             "scratch": {
                 "root": "/tmp/scratch/blueapi",
@@ -364,6 +399,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     }
                 ],
             },
+            "opa": None,
         },
     ],
     indirect=True,
@@ -405,7 +441,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
             "auth_token_path": None,
             "env": {
                 "sources": [
-                    {"kind": "dodal", "module": "dodal.adsim"},
+                    {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
                     {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
@@ -418,7 +454,7 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
             "api": {"host": "0.0.0.0", "port": 8001, "protocol": "http"},
             "numtracker": None,
             "oidc": {
-                "well_known_url": "https://auth.example.com/realms/sample/.well-known/openid-configuration",
+                "issuer": "https://auth.example.com/realms/sample",
                 "client_id": "blueapi-client",
                 "client_audience": "aud",
             },
@@ -470,7 +506,6 @@ def test_oauth_config_model_post_init(
         oidc_config.authorization_endpoint == oidc_well_known["authorization_endpoint"]
     )
     assert oidc_config.token_endpoint == oidc_well_known["token_endpoint"]
-    assert oidc_config.issuer == oidc_well_known["issuer"]
     assert oidc_config.jwks_uri == oidc_well_known["jwks_uri"]
     assert oidc_config.end_session_endpoint == oidc_well_known["end_session_endpoint"]
 
@@ -497,3 +532,50 @@ def validate_field_annotations(model_class: Any, model_field: str) -> None:
             check_no_extra_fields(annotation)
     else:
         check_no_extra_fields(extracted_annotations)
+
+
+@pytest.mark.skipif(
+    not CONFIG_SCHEMA_LOCATION.exists(),
+    reason="If the schema file does not exist, the test is being run"
+    " with a non-editable install",
+)
+def test_config_schema_updated() -> None:
+    with CONFIG_SCHEMA_LOCATION.open("r") as stream:
+        config_schema = json.load(stream)
+    assert config_schema == generate_config_schema(), (
+        f"ApplicationConfig model is out of date with schema at \
+            {CONFIG_SCHEMA_LOCATION}. You may need to run `blueapi config-schema -u`"
+    )
+
+
+def test_oidc_config_validation_error():
+    with pytest.raises(ValueError, match="Please provide 'OIDCConfig.issuer'"):
+        ApplicationConfig(
+            oidc=OIDCConfig(well_known_url=None, issuer=None, client_id="blueapi")
+        )
+
+
+def test_oidc_config_support_well_known_url():
+    oidc = OIDCConfig(well_known_url="url", issuer=None, client_id="blueapi")
+    assert oidc._well_known_url == "url"
+
+
+def test_issuer_url_preferred_over_well_known_url(caplog):
+    oidc = OIDCConfig(well_known_url="url", issuer="issuer_url", client_id="blueapi")
+    with caplog.at_level(logging.WARN):
+        assert (
+            oidc._well_known_url == "issuer_url" + "/.well-known/openid-configuration"
+        )
+    assert "well_known_url and issuer are both set" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "url,ws_url",
+    [
+        ("http://localhost:8000", "ws://localhost:8000"),
+        ("https://localhost:8000", "wss://localhost:8000"),
+    ],
+)
+def test_ws_address(url: str, ws_url: str):
+    conf = RestConfig.model_validate({"url": url})
+    assert conf.ws_address == WebsocketUrl(ws_url)

@@ -8,26 +8,28 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeGuard, TypeVar, cast
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
+from click.core import Context, Parameter
 from click.exceptions import ClickException
+from click.types import ParamType
 from observability_utils.tracing import setup_tracing
-from pydantic import ValidationError
-from requests.exceptions import ConnectionError
 
 from blueapi import __version__, config
 from blueapi.cli.format import OutputFormat
-from blueapi.client.client import BlueapiClient
+from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
 from blueapi.client.rest import (
     BlueskyRemoteControlError,
-    InvalidParameters,
-    UnauthorisedAccess,
-    UnknownPlan,
+    InvalidParametersError,
+    NonJsonResponseError,
+    ServiceUnavailableError,
+    UnauthorisedAccessError,
+    UnknownPlanError,
 )
 from blueapi.config import (
     ApplicationConfig,
@@ -36,11 +38,43 @@ from blueapi.config import (
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import SessionCacheManager, SessionManager
-from blueapi.service.model import SourceInfo, TaskRequest
+from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.worker.event import TaskError, TaskResult
 
 from .scratch import setup_scratch
 from .updates import CliEventRenderer
+
+LOGGER = logging.getLogger(__name__)
+
+TaskParameters = dict[str, Any]
+
+
+class ParametersType(ParamType):
+    """CLI input parameter to accept a JSON object as an argument"""
+
+    name = "TaskParameters"
+
+    def convert(
+        self,
+        value: str | dict[str, Any] | None,
+        param: Parameter | None,
+        ctx: Context | None,
+    ) -> TaskParameters:
+        if isinstance(value, str):
+            try:
+                params = json.loads(value)
+                if is_str_dict(params):
+                    return params
+                self.fail("Parameters must be a JSON object with string keys")
+            except json.JSONDecodeError as jde:
+                self.fail(f"Parameters are not valid JSON: {jde}")
+        else:
+            return super().convert(value, param, ctx)
+
+
+def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
+    return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
 @click.group(
@@ -48,29 +82,62 @@ from .updates import CliEventRenderer
 )
 @click.version_option(version=__version__, prog_name="blueapi")
 @click.option(
+    "-h",
+    "--host",
+    type=str,
+    help=textwrap.dedent(
+        """
+        Hostname for the blueapi instance to use
+
+        Value should be the full URL including scheme (and port if non-default),
+        eg `--host http://localhost:8000`
+        """
+    ),
+)
+@click.option(
     "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
 )
+@click.option(
+    "-v",
+    "--verbose",
+    "log_level",
+    flag_value="DEBUG",
+    help="Include DEBUG level logging output",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    "log_level",
+    flag_value="ERROR",
+    help="Reduce logging noise to only show errors",
+)
 @click.pass_context
-def main(ctx: click.Context, config: Path | None | tuple[Path, ...]) -> None:
+def main(
+    ctx: click.Context,
+    config: tuple[Path, ...],
+    host: str | None = None,
+    log_level: str | None = None,
+) -> None:
     # if no command is supplied, run with the options passed
 
     # Set umask to DLS standard
     os.umask(stat.S_IWOTH)
 
     config_loader = ConfigLoader(ApplicationConfig)
-    if config is not None:
-        configs = (config,) if isinstance(config, Path) else config
-        for path in configs:
-            if path.exists():
-                config_loader.use_values_from_yaml(path)
-            else:
-                raise FileNotFoundError(f"Cannot find file: {path}")
+    try:
+        config_loader.use_values_from_yaml(*config)
+    except FileNotFoundError as fnfe:
+        raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
+    if host:
+        config_loader.use_values({"api": {"url": host}})
+    if log_level:
+        config_loader.use_values({"logging": {"level": log_level}})
 
-    ctx.ensure_object(dict)
     loaded_config: ApplicationConfig = config_loader.load()
 
     set_up_logging(loaded_config.logging)
 
+    ctx.ensure_object(dict)
     ctx.obj["config"] = loaded_config
 
     if ctx.invoked_subcommand is None:
@@ -106,6 +173,31 @@ def schema(output: Path | None = None, update: bool = False) -> None:
         write_schema_as_yaml(output, schema)
     else:
         print_schema_as_yaml(schema)
+
+
+@click.option(
+    "-o", "--output", type=Path, help="Path to file to save the config schema"
+)
+@click.option(
+    "-u",
+    "--update",
+    type=bool,
+    is_flag=True,
+    help="[Development only] update the config schema in the documentation",
+)
+@main.command(name="config-schema")
+def config_schema(output: Path | None = None, update: bool = False) -> None:
+    from blueapi.config import generate_config_schema
+
+    schema = generate_config_schema()
+    if update:
+        output = config.CONFIG_SCHEMA_LOCATION
+    if output is not None:
+        with output.open("w") as stream:
+            json.dump(schema, stream, indent=4)
+            stream.write("\n")
+    else:
+        print(json.dumps(schema))
 
 
 @main.command(name="serve")
@@ -158,17 +250,14 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
-        except ConnectionError as ce:
+        except ServiceUnavailableError as ce:
             raise ClickException(
                 "Failed to establish connection to blueapi server."
             ) from ce
-        except BlueskyRemoteControlError as e:
-            if str(e) == "<Response [401]>":
-                raise ClickException(
-                    "Access denied. Please check your login status and try again."
-                ) from e
-            else:
-                raise e
+        except UnauthorisedAccessError as e:
+            raise ClickException(
+                "Access denied. Please check your login status and try again."
+            ) from e
 
     return wrapper
 
@@ -179,7 +268,7 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
 def get_plans(obj: dict) -> None:
     """Get a list of plans available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_plans())
+    obj["fmt"].display(PlanResponse(plans=[p.model for p in client.plans]))
 
 
 @controller.command(name="devices")
@@ -188,7 +277,7 @@ def get_plans(obj: dict) -> None:
 def get_devices(obj: dict) -> None:
     """Get a list of devices available for the worker to use"""
     client: BlueapiClient = obj["client"]
-    obj["fmt"].display(client.get_devices())
+    obj["fmt"].display(DeviceResponse(devices=[dev.model for dev in client.devices]))
 
 
 @controller.command(name="listen")
@@ -231,7 +320,23 @@ def listen_to_events(obj: dict) -> None:
 
 @controller.command(name="run")
 @click.argument("name", type=str)
-@click.argument("parameters", type=str, required=False)
+@click.argument("parameters", type=ParametersType(), default={}, required=False)
+@click.option(
+    "--ws/--stomp",
+    type=bool,
+    is_flag=True,
+    default=None,  # the classic three-state boolean
+    help=textwrap.dedent("""
+        Method used to monitor the progress of plans when run in the foreground.
+        --stomp requires stomp configuration, --ws uses the (currently experimental)
+        websocket connection.
+
+        If neither is specified, stomp is used if configuration is present and
+        websockets are used if not.
+
+        Has no effect if --bg is also passed as the plan will not be monitored.
+        """),
+)
 @click.option(
     "--foreground/--background", "--fg/--bg", type=bool, is_flag=True, default=True
 )
@@ -257,29 +362,23 @@ def listen_to_events(obj: dict) -> None:
 def run_plan(
     obj: dict,
     name: str,
-    parameters: str | None,
     timeout: float | None,
     foreground: bool,
+    ws: bool | None,
     instrument_session: str,
+    parameters: TaskParameters,
 ) -> None:
-    """Run a plan with parameters"""
-    client: BlueapiClient = obj["client"]
+    """Run a plan with parameters
 
-    parameters = parameters or "{}"
-    try:
-        parsed_params = json.loads(parameters) if isinstance(parameters, str) else {}
-    except json.JSONDecodeError as jde:
-        raise ClickException(f"Parameters are not valid JSON: {jde}") from jde
+    To run in the foreground and block until it is complete, stomp
+    configuration or the experimental --ws flag is required. Without stomp
+    configuration, '--bg' can be used to start a plan in the background.
+    """
 
-    try:
-        task = TaskRequest(
-            name=name,
-            params=parsed_params,
-            instrument_session=instrument_session,
-        )
-    except ValidationError as ve:
-        ip = InvalidParameters.from_validation_error(ve)
-        raise ClickException(ip.message()) from ip
+    client = cast(BlueapiClient, obj["client"])
+    task = TaskRequest(
+        name=name, params=parameters, instrument_session=instrument_session
+    )
 
     try:
         if foreground:
@@ -292,23 +391,41 @@ def run_plan(
                 elif isinstance(event, DataEvent):
                     callback(event.name, event.doc)
 
-            resp = client.run_task(task, on_event=on_event)
+            client.add_callback(on_event)
 
-            if resp.task_status is not None and not resp.task_status.task_failed:
-                print("Plan Succeeded")
+            if ws is None:
+                # no preference was given so use whichever we have config for
+                resp = client.run_task(task)
+            elif ws:
+                resp = client.run_blocking(task)
+            else:
+                resp = client.run_stomp(task)
+
+            match resp.result:
+                case TaskResult(result=None, type="NoneType"):
+                    print("Plan succeeded")
+                case TaskResult(result=None, type=t):
+                    print(
+                        f"Plan succeeded but returned "
+                        f"unserializable result of type '{t}'"
+                    )
+                case TaskResult(result=r):
+                    print(f"Plan succeeded: {r}")
+                case TaskError(type=exc, message=m):
+                    print(f"Plan failed: {exc}: {m}")
         else:
             server_task = client.create_and_start_task(task)
             click.echo(server_task.task_id)
-    except config.MissingStompConfiguration as mse:
+    except config.MissingStompConfigurationError as mse:
         raise ClickException(*mse.args) from mse
-    except UnknownPlan as up:
+    except UnknownPlanError as up:
         raise ClickException(f"Plan '{name}' was not recognised") from up
-    except UnauthorisedAccess as ua:
-        raise ClickException("Unauthorised request") from ua
-    except InvalidParameters as ip:
+    except InvalidParametersError as ip:
         raise ClickException(ip.message()) from ip
-    except (BlueskyRemoteControlError, BlueskyStreamingError) as e:
-        raise ClickException(f"server error with this message: {e}") from e
+    except BlueskyStreamingError as se:
+        raise ClickException(f"Streaming error: {se}") from se
+    except BlueskyRemoteControlError as e:
+        raise ClickException(f"Remote control error: {e.args[0]}") from e
     except ValueError as ve:
         raise ClickException(f"task could not run: {ve}") from ve
 
@@ -320,7 +437,7 @@ def get_state(obj: dict) -> None:
     """Print the current state of the worker"""
 
     client: BlueapiClient = obj["client"]
-    print(client.get_state().name)
+    print(client.state.name)
 
 
 @controller.command(name="pause")
@@ -403,7 +520,7 @@ def env(
         status = client.reload_environment(timeout=timeout)
         print("Environment is initialized")
     else:
-        status = client.get_environment()
+        status = client.environment
     print(status)
 
 
@@ -445,14 +562,16 @@ def login(obj: dict) -> None:
         print("Logged in")
     except Exception:
         client = BlueapiClient.from_config(config)
-        oidc_config = client.get_oidc_config()
-        if oidc_config is None:
-            print("Server is not configured to use authentication!")
-            return
-        auth = SessionManager(
-            oidc_config, cache_manager=SessionCacheManager(config.auth_token_path)
-        )
-        auth.start_device_flow()
+        try:
+            if oidc := client.oidc_config:
+                auth = SessionManager(
+                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
+                )
+                auth.start_device_flow()
+            else:
+                print("Server is not configured to use authentication!")
+        except NonJsonResponseError as e:
+            print(str(e))
 
 
 @main.command(name="logout")
@@ -468,7 +587,7 @@ def logout(obj: dict) -> None:
     except FileNotFoundError:
         print("Logged out")
     except ValueError as e:
-        logging.debug("Invalid login token: %s", e)
+        LOGGER.debug("Invalid login token: %s", e)
         raise ClickException(
             "Login token is not valid - remove before trying again"
         ) from e

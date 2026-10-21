@@ -27,7 +27,7 @@ from blueapi.client.rest import (
     BlueskyRequestError,
     ServiceUnavailableError,
 )
-from blueapi.config import MissingStompConfigurationError
+from blueapi.config import MissingStompConfigurationError, RestConfig
 from blueapi.core import DataEvent
 from blueapi.service.model import (
     DeviceModel,
@@ -63,6 +63,16 @@ def test_client_from_config():
         "tests/unit_tests/valid_example_config/client.yaml"
     )
     assert bc._rest._config.url == HttpUrl("http://example.com:8082")
+
+
+def test_client_for_host():
+    bc = BlueapiClient.for_host("http://custom.example.com:1234")
+    assert bc._rest._config.url == HttpUrl("http://custom.example.com:1234")
+
+
+def test_client_default_for_host():
+    bc = BlueapiClient.for_host()
+    assert bc._rest._config.url == RestConfig().url
 
 
 def test_get_plans(client: BlueapiClient):
@@ -348,15 +358,15 @@ def test_resume(
     )
 
 
-def test_cannot_run_task_without_message_bus(client: BlueapiClient):
+def test_cannot_run_stomp_without_message_bus(client: BlueapiClient):
     with pytest.raises(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        client.run_task(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
+        client.run_stomp(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
 
 
-def test_run_task_sets_up_control(
+def test_run_stomp_sets_up_control(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -367,7 +377,7 @@ def test_run_task_sets_up_control(
     ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1")
     )
     mock_rest.create_task.assert_called_once_with(
@@ -376,7 +386,7 @@ def test_run_task_sets_up_control(
     mock_rest.update_worker_task.assert_called_once_with(WorkerTask(task_id="foo"))
 
 
-def test_run_task_fails_on_failing_event(
+def test_run_stomp_fails_on_failing_event(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -389,7 +399,7 @@ def test_run_task_fails_on_failing_event(
     mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
-    outcome = client_with_events.run_task(
+    outcome = client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1"),
         on_event=on_event,
     )
@@ -418,7 +428,7 @@ def test_run_task_fails_on_failing_event(
         DataEvent(name="start", doc={}, task_id="0000-1111"),
     ],
 )
-def test_run_task_calls_event_callback(
+def test_run_stomp_calls_event_callback(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -437,7 +447,7 @@ def test_run_task_calls_event_callback(
     mock_events.subscribe_to_all_events = callback  # type: ignore
 
     mock_on_event = Mock()
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1"),
         on_event=mock_on_event,
     )
@@ -461,7 +471,7 @@ def test_run_task_calls_event_callback(
         object(),
     ],
 )
-def test_run_task_ignores_non_matching_events(
+def test_run_stomp_ignores_non_matching_events(
     client_with_events: BlueapiClient,
     mock_rest: Mock,
     mock_events: MagicMock,
@@ -480,7 +490,7 @@ def test_run_task_ignores_non_matching_events(
     mock_events.subscribe_to_all_events = callback
 
     mock_on_event = Mock()
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1"),
         on_event=mock_on_event,
     )
@@ -519,6 +529,19 @@ def test_scripting_interface_raises_exceptions():
     )
     with pytest.raises(PlanFailedError, match="Plan failed"):
         demo_plan()
+
+
+@pytest.mark.parametrize(
+    "events,method", [(None, "run_blocking"), (EventBusClient(Mock()), "run_stomp")]
+)
+def test_run_test_implementation_switching(events: EventBusClient | None, method: str):
+    client = Mock()
+    client._events = events
+
+    task = Mock()
+    BlueapiClient.run_task(client, task)
+
+    getattr(client, method).assert_called_once_with(task, None)
 
 
 def test_oidc_config_property(client, mock_rest):
@@ -634,8 +657,8 @@ def test_cannot_run_task_span_ok(
         MissingStompConfigurationError,
         match="Stomp configuration required to run plans is missing or disabled",
     ):
-        with asserting_span_exporter(exporter, "grun_task"):
-            client.run_task(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
+        with asserting_span_exporter(exporter, "run_stomp"):
+            client.run_stomp(TaskRequestV2(name="foo", instrument_session="cm12345-1"))
 
 
 def test_instrument_session_required(client):
@@ -643,7 +666,7 @@ def test_instrument_session_required(client):
         _ = client.instrument_session
 
 
-def test_setting_instrument_session(client):
+def test_setting_instrument_session(client: BlueapiClient):
     # This looks like a completely pointless test but instrument_session is a
     # property with some logic so it's not purely to get coverage up
     client.instrument_session = "cm12345-4"
@@ -702,7 +725,7 @@ def test_client_callbacks(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1")
     )
 
@@ -732,7 +755,7 @@ def test_client_callback_failures(
 
     mock_events.subscribe_to_all_events = subscribe  # type: ignore
 
-    client_with_events.run_task(
+    client_with_events.run_stomp(
         TaskRequestV2(name="foo", instrument_session="cm12345-1")
     )
 

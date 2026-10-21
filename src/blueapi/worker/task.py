@@ -1,9 +1,9 @@
 import logging
 from collections.abc import Mapping, Sequence
 from inspect import Parameter, signature
-from typing import Any
+from typing import Any, Self, TypedDict
 
-from pydantic import Field, TypeAdapter
+from pydantic import Field, TypeAdapter, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
@@ -109,10 +109,44 @@ class Task(BlueapiBaseModel):
             f"metadata {self.metadata} for all runs"
         )
         plan = ctx.plan_functions[self.name]
-        prepared_args, prepared_kwargs = self.prepare_params(ctx)
+        try:
+            args, kwargs = self.prepare_params(ctx)
+        except ValidationError as ve:
+            raise TaskParameterError.from_validation_error(ve) from None
         ctx.run_engine.md.update(self.metadata)
-        result = ctx.run_engine(plan(*prepared_args, **prepared_kwargs))
+        result = ctx.run_engine(plan(*args, **kwargs))
         if isinstance(result, tuple):  # pragma: no cover
             # this is never true if the run_engine is configured correctly
             return None
         return result.plan_result
+
+
+class InvalidTaskParameter(TypedDict):
+    loc: tuple[str | int, ...]
+    msg: str | None
+    type: str | None
+    input: Any | None
+
+
+class TaskParameterError(ValueError):
+    errors: list[InvalidTaskParameter]
+
+    def __init__(self, message: str, errors: list[InvalidTaskParameter]):
+        super().__init__(message)
+        self.errors = errors
+
+    @classmethod
+    def from_validation_error(cls, error: ValidationError) -> Self:
+        errors = [
+            InvalidTaskParameter(
+                loc=e.get("loc", []),
+                msg=e.get("msg", None),
+                type=e.get("type", None),
+                input=e.get("input", None),
+            )
+            for e in error.errors()
+        ]
+        return cls(str(error), errors)
+
+    def __reduce__(self):
+        return (self.__class__, (*self.args, self.errors))

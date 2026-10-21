@@ -1,0 +1,8 @@
+# Overlay on config.yaml for the containerised server in CI (compose profile "ci").
+# dodal is not in the image, so setup-scratch installs it; DODAL_VERSION is read from uv.lock.
+scratch:
+  root: /tmp/scratch/blueapi
+  repositories:
+    - name: dodal
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      target_revision: ${DODAL_VERSION} # unquoted, blueapi only expands env vars in plain scalars

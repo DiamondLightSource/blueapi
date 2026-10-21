@@ -27,6 +27,8 @@ class PlanFailedError(Exception):
 
 
 class PlanCache:
+    """Collection of plans that can be accessed by name or attribute."""
+
     def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
         self._cache = {
             model.name: Plan(name=model.name, model=model, client=client)
@@ -53,7 +55,7 @@ class PlanCache:
 class Plan:
     """Callable client-side reference to a registered BlueAPI plan."""
 
-    def __init__(self, name, model: PlanModel, client: ClientProtocol):
+    def __init__(self, name: str, model: PlanModel, client: ClientProtocol):
         self.name = name
         self.model = model
         self._client = client

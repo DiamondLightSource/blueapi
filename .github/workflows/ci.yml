@@ -36,7 +36,7 @@ jobs:
 
   container:
     needs: test
-    if: always()
+    if: ${{ !cancelled() }}
     uses: ./.github/workflows/_container.yml
     with:
       publish: ${{ needs.test.result == 'success' }}

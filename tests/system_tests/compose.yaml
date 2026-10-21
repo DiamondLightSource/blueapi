@@ -65,10 +65,10 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/bluesky/tiled:0.2.12
+    image: ghcr.io/diamondlightsource/dls-tiled:0.5.0
     network_mode: host # Port 8407
     environment:
-      - PYTHONPATH=/deploy/
+      - VITE_LOGIN_REDIRECT=false
     volumes:
       - ./services/tiled_config:/deploy/config
     command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]
@@ -79,7 +79,7 @@ services:
       - label=disable
 
   opa:
-    image: openpolicyagent/opa:edge-static-debug
+    image: openpolicyagent/opa:1.21.2-static-debug  # debug: entrypoint.sh needs a shell
     network_mode: host # Port 8181
     volumes:
       - "./services/opa_config:/mnt"

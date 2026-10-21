@@ -1,5 +1,5 @@
 import logging
-from collections import deque
+import queue
 from threading import Event, Thread
 
 from blueapi.core.bluesky_types import DataEvent
@@ -12,7 +12,7 @@ AnyEvent = WorkerEvent | DataEvent | ProgressEvent
 
 
 class EventCache:
-    cache: deque[tuple[str | None, AnyEvent]]
+    cache: queue.Queue[tuple[str | None, AnyEvent]]
 
     _shutdown: Event
     _broadcast_thread: Thread
@@ -22,7 +22,7 @@ class EventCache:
     data_events: EventPublisher[DataEvent]
 
     def __init__(self) -> None:
-        self.cache = deque()
+        self.cache = queue.Queue()
 
         self.worker_events = EventPublisher()
         self.progress_events = EventPublisher()
@@ -34,12 +34,13 @@ class EventCache:
         self._broadcast_thread.start()
 
     def push(self, task_id: str | None, event: AnyEvent) -> None:
-        self.cache.append((task_id, event))
+        self.cache.put((task_id, event), block=True)
 
     def _cycle(self) -> None:
+        q = self.cache
         while not self._shutdown.is_set():
-            while len(self.cache) > 0:
-                (_id, event) = self.cache.popleft()
+            while q.not_empty:
+                (_id, event) = q.get(block=True)
 
                 match event:
                     case WorkerEvent():
@@ -53,7 +54,7 @@ class EventCache:
         """If the cache isn't clear, dump it to disk."""
 
         self._shutdown.set()
-        if len(self.cache) != 0:
+        if self.cache.not_empty:
             # dump it somewhere
             LOGGER.info("Cache not cleared, dumping to disk")
             raise NotImplementedError("Sort outbackups")
@@ -65,3 +66,7 @@ class EventCache:
 
         """
         ...
+
+
+
+

@@ -1,0 +1,17 @@
+api:
+  url: http://0.0.0.0:8007
+env:
+  metadata:
+    instrument: demo
+  sources:
+    - kind: deviceManager
+      module: blueapi.tutorial.devices
+    - kind: planFunctions
+      module: dodal.plans
+    - kind: planFunctions
+      module: dodal.plan_stubs.wrapped
+    # - kind: planFunctions
+    #   module: blueapi.tutorial.plans
+stomp:
+  enabled: true
+  url: tcp://localhost:61613/

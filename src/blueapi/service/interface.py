@@ -11,7 +11,13 @@ from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from tiled.client import from_uri
 
 from blueapi.cli.scratch import get_python_environment
-from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
+from blueapi.config import (
+    ApplicationConfig,
+    OIDCConfig,
+    ServiceAccount,
+    StompConfig,
+    TiledConfig,
+)
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
@@ -25,6 +31,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
+from blueapi.tiled import TiledManager
 from blueapi.utils.serialization import access_blob
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
@@ -61,6 +68,15 @@ def worker() -> TaskWorker:
     )
     worker.start()
     return worker
+
+
+@cache
+def tiled() -> TiledManager:
+    tiled = TiledManager(config())
+
+    task_worker = worker()
+
+    return tiled
 
 
 @cache
@@ -101,6 +117,7 @@ def setup(config: ApplicationConfig) -> None:
     # Eagerly initialize worker and messaging connection
     worker()
     stomp_client()
+    tiled()
 
 
 def teardown() -> None:
@@ -110,6 +127,7 @@ def teardown() -> None:
     context.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
+    tiled.cache_clear()
 
 
 def _publish_event_streams(
@@ -161,13 +179,13 @@ def submit_task(
         metadata = {}
 
     metadata["instrument_session"] = task_request.instrument_session
-    if context().tiled_conf is not None:
-        md = config().env.metadata
-        # We raise an InvalidConfigError on setting tiled_conf if this isn't set
-        assert md
-        metadata["tiled_access_tags"] = [
-            access_blob(task_request.instrument_session, md.instrument)
-        ]
+    # if context().tiled_conf is not None:
+    #     md = config().env.metadata
+    #     # We raise an InvalidConfigError on setting tiled_conf if this isn't set
+    #     assert md
+    #     metadata["tiled_access_tags"] = [
+    #         access_blob(task_request.instrument_session, md.instrument)
+    #     ]
     task = Task(
         name=task_request.name,
         params=task_request.params,

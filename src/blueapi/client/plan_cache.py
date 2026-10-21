@@ -76,7 +76,8 @@ class Plan:
         """
         req = TaskRequest(
             name=self.name,
-            params=self._build_args(*args, **kwargs),
+            args=args,
+            params=kwargs,
             instrument_session=self._client.instrument_session,
         )
         match self._client.run_task(req):
@@ -96,47 +97,6 @@ class Plan:
     @property
     def required(self) -> list[str]:
         return self.model.parameter_schema.get("required", [])
-
-    def _build_args(self, *args, **kwargs) -> dict[str, Any]:
-        """Build a parameter mapping from positional and keyword arguments.
-
-        Positional arguments are assigned to parameters according to their
-        order in the plan's parameter schema. Keyword arguments are then
-        added by name.
-
-        Raises:
-            TypeError: If too many positional arguments, unexpected keyword
-                arguments, duplicate arguments, or required arguments are
-                supplied incorrectly.
-        """
-        log.info(
-            "Building args for %s, using %s and %s",
-            "[" + ",".join(self.properties) + "]",
-            args,
-            kwargs,
-        )
-
-        if len(args) > len(self.properties):
-            raise TypeError(f"{self.name} got too many arguments")
-        if extra := {k for k in kwargs if k not in self.properties}:
-            raise TypeError(f"{self.name} got unexpected arguments: {extra}")
-
-        params = {}
-        # Initially fill parameters using positional args assuming the order
-        # from the parameter_schema
-        for req, arg in zip(self.properties, args, strict=False):
-            params[req] = arg
-
-        # Then append any values given via kwargs
-        for key, value in kwargs.items():
-            # If we've already assumed a positional arg was this value, bail out
-            if key in params:
-                raise TypeError(f"{self.name} got multiple values for {key}")
-            params[key] = value
-
-        if missing := {k for k in self.required if k not in params}:
-            raise TypeError(f"Missing argument(s) for {missing}")
-        return params
 
     def __repr__(self) -> str:
         """Return a signature-like representation of the plan.

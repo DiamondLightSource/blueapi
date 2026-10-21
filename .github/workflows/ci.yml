@@ -15,12 +15,15 @@ on:
     types: [checks_requested]
 
 jobs:
+  # Jobs below skip pushes to main: merge_group already ran them on the same commit
   lint:
+    if: github.event_name != 'push' || github.ref_type == 'tag'
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
 
   test:
+    if: github.event_name != 'push' || github.ref_type == 'tag'
     strategy:
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
@@ -32,11 +35,12 @@ jobs:
       python-version: ${{ matrix.python-version }}
 
   system-test:
+    if: github.event_name != 'push' || github.ref_type == 'tag'
     uses: ./.github/workflows/_system_test.yml
 
   container:
     needs: test
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'push' || github.ref_type == 'tag') }}
     uses: ./.github/workflows/_container.yml
     with:
       publish: ${{ needs.test.result == 'success' }}
@@ -53,6 +57,7 @@ jobs:
       html-dir: build/html
 
   dist:
+    if: github.event_name != 'push' || github.ref_type == 'tag'
     uses: ./.github/workflows/_dist.yml
 
   pypi:

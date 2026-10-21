@@ -6,9 +6,9 @@ from functools import cache
 from multiprocessing.connection import Connection
 from typing import Any
 
-from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from bluesky_tiled_plugins import TiledWriter
 from fastapi import status
 from tiled.client import from_uri
 from tiled.client.utils import ClientError

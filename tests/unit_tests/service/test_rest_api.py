@@ -12,8 +12,7 @@ from bluesky.protocols import Stoppable
 from fastapi import FastAPI, HTTPException, WebSocketDisconnect, status
 from fastapi.testclient import TestClient
 from httpx2 import Headers
-from pydantic import BaseModel, ValidationError
-from pydantic_core import InitErrorDetails
+from pydantic import BaseModel
 from starlette.testclient import WebSocketDenialResponse
 from starlette.types import Message, Receive, Scope, Send
 
@@ -47,7 +46,12 @@ from blueapi.service.model import (
 )
 from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import Task, TaskParametersV2
+from blueapi.worker.task import (
+    InvalidTaskParameter,
+    Task,
+    TaskParameterError,
+    TaskParametersV2,
+)
 from blueapi.worker.task_worker import TrackableTask
 
 
@@ -363,21 +367,24 @@ def test_create_task_inserts_auth_metadata(
     task_id = str(uuid.uuid4())
 
     # mock_runner.run.side_effect = [task_id]
-    mock_runner.run.return_value = [task_id]
+    mock_runner.run.return_value = task_id
 
     client_with_auth.post("/tasks", json=task.model_dump())
 
     mock_runner.run.assert_called_with(submit_task, task, {"user": "jd1"})
 
 
-def test_create_task_validation_error(mock_runner: Mock, client: TestClient) -> None:
+def test_create_task_parameter_error(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.side_effect = [
-        ValidationError.from_exception_data(
-            title="ValueError",
-            line_errors=[
-                InitErrorDetails(
-                    type="missing", loc=("id",), msg="value is required for Identifier"
-                )  # type: ignore
+        TaskParameterError(
+            "ValueError",
+            [
+                InvalidTaskParameter(
+                    type="missing",
+                    loc=("id",),
+                    msg="Field required",
+                    input=None,
+                )
             ],
         ),
     ]
@@ -1137,7 +1144,7 @@ def test_websocket_run_plan_invalid_request(
             "Unknown Plan",
         ),
         (
-            ValidationError("Not valid", []),
+            TaskParameterError("Not valid", []),
             {"kind": "invalid_args", "errors": []},
             4002,
             "Invalid Args",

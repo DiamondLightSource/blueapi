@@ -18,7 +18,9 @@ from blueapi.client.rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
     BlueskyRequestError,
+    InvalidParametersError,
     NotFoundError,
+    ParameterError,
     ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
@@ -38,6 +40,7 @@ from blueapi.service.model import (
     TaskResponse,
     WorkerTask,
 )
+from blueapi.utils import INSTRUMENT_SESSION_RE
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -356,7 +359,7 @@ def test_task_metadata_propagated(
         "user": User.alice,
         "instrument_session": VALID_INSTRUMENT_SESSION[User.alice],
         "tiled_access_tags": [
-            '{"proposal": 12345, "visit": 1, "beamline": "adsim"}',
+            '{"proposal": "cm12345", "visit": 1, "beamline": "adsim"}',
         ],
         "blueapi_task_id": response.task_id,
     }
@@ -705,7 +708,14 @@ def test_plan_runs(
     assert stream_resource["run_start"] == start_doc["uid"]
     assert stream_resource["uri"] == f"file://localhost/tmp/adsim-{scan_id}-det.h5"
 
-    tiled_url = f"http://localhost:8407/api/v1/metadata/{start_doc['uid']}"
+    match = INSTRUMENT_SESSION_RE.match(start_doc["instrument_session"])
+    assert match
+    proposal = match["proposal"]
+    tiled_url = (
+        "http://localhost:8407/api/v1/metadata/"
+        f"{start_doc['instrument']}/{proposal}/{start_doc['instrument_session']}/"
+        f"{start_doc['uid']}"
+    )
     response = requests.get(
         tiled_url, headers={"authorization": "Bearer " + get_access_token(user)}
     )
@@ -768,6 +778,77 @@ def test_stub_runs(client_with_stomp: BlueapiClient, task: TaskRequestV2):
     assert isinstance(final_event.result, TaskResult)
     assert final_event.task_complete
     assert not final_event.task_failed
+
+
+@pytest.mark.parametrize(
+    "task,param_error,user",
+    [
+        (
+            TaskRequestV2(
+                name="count",
+                params=TaskParametersV2(
+                    kwargs={"detectors": "det", "num": 3}
+                ),  # detectors should be list
+                instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
+            ),
+            ParameterError(
+                loc=["body", "params", "detectors"],
+                msg="'str' instances are not allowed as a Sequence value",
+                type="sequence_str",
+                input="det",
+            ),
+            User.alice,
+        ),
+        (
+            TaskRequestV2(
+                name="spec_scan",
+                params=TaskParametersV2(
+                    kwargs={
+                        "detectors": ["det"],
+                        "spec": {
+                            "axis": "missing",  # doesn't exist
+                            "start": 0.0,
+                            "stop": 0.4,
+                            "num": 2,
+                            "type": "Linspace",
+                        },
+                    },
+                ),
+                instrument_session=VALID_INSTRUMENT_SESSION[User.bob],
+            ),
+            ParameterError(
+                loc=["body", "params", "spec", "Linspace", "axis"],
+                msg="Value error, Device missing cannot be found",
+                type="value_error",
+                input="missing",
+            ),
+            User.bob,
+        ),
+    ],
+)
+@pytest.mark.parametrize("run_method", ["run_task", "run_blocking"])
+def test_invalid_parameters_fail_cleanly(
+    client_with_stomp: BlueapiClient,
+    task: TaskRequestV2,
+    user: ValidUser,
+    param_error: ParameterError,
+    run_method: str,
+):
+    resource = Queue(maxsize=1)
+    start = Queue(maxsize=1)
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent):
+            if event.name == "start":
+                start.put_nowait(event.doc)
+            if event.name == "stream_resource":
+                resource.put_nowait(event.doc)
+
+    runner = getattr(client_with_stomp, run_method)
+    with pytest.raises(InvalidParametersError) as ipe:
+        runner(task, on_event)
+
+    assert ipe.value.errors == [param_error]
 
 
 # Regression test for #1480
@@ -1006,7 +1087,6 @@ def test_run_blocking_requires_auth(
 
 # Kept last: installs packages into the environment, so it must not run
 # before (and potentially disturb) the tests above.
-@pytest.mark.timeout(600)
 @pytest.mark.parametrize(
     "repos,expected_location_name,expected_version",
     [

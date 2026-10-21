@@ -15,12 +15,16 @@ on:
     types: [checks_requested]
 
 jobs:
+  # Check jobs skip pushes to main: merge_group already ran them on the same commit.
+  # docs still runs there because publish.yml deploys the main docs from it.
   lint:
+    if: github.ref != 'refs/heads/main'
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
 
   test:
+    if: github.ref != 'refs/heads/main'
     strategy:
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
@@ -32,11 +36,12 @@ jobs:
       python-version: ${{ matrix.python-version }}
 
   system-test:
+    if: github.ref != 'refs/heads/main'
     uses: ./.github/workflows/_system_test.yml
 
   container:
     needs: test
-    if: always()
+    if: ${{ !cancelled() && github.ref != 'refs/heads/main' }}
     uses: ./.github/workflows/_container.yml
     with:
       publish: ${{ needs.test.result == 'success' }}
@@ -53,6 +58,7 @@ jobs:
       html-dir: build/html
 
   dist:
+    if: github.ref != 'refs/heads/main'
     uses: ./.github/workflows/_dist.yml
 
   pypi:

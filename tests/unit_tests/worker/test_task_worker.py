@@ -35,6 +35,7 @@ from blueapi.worker import (
     WorkerState,
 )
 from blueapi.worker.event import TaskResult, TaskStatusEnum
+from blueapi.worker.task import TaskParameterError
 
 _SIMPLE_TASK = Task(name="sleep", params=TaskParametersV2(kwargs={"time": 0.0}))
 _LONG_TASK = Task(name="sleep", params=TaskParametersV2(kwargs={"time": 1.0}))
@@ -434,7 +435,7 @@ def test_do_task_with_invalid_parameters_raises_validation_error(
     task = Task(name="sleep", params=TaskParametersV2())
     # Required as this is the error that blueapi/service/main:submit_task is expecting
     # to catch.
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(TaskParameterError):
         task.do_task(context)
 
 

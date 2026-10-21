@@ -1,9 +1,9 @@
 import logging
 from collections.abc import Mapping, Sequence
 from inspect import Parameter, signature
-from typing import Any
+from typing import Any, Self, TypedDict
 
-from pydantic import Field, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
@@ -51,50 +51,54 @@ class Task(BlueapiBaseModel):
             tuple[list[Any], Mapping[str, Any]]: The prepared *args and **kwargs
                                                  parameters for the plan.
         """
-        plan = ctx.plans[self.name]
-        func = ctx.plan_functions[self.name]
+        try:
+            plan = ctx.plans[self.name]
+            func = ctx.plan_functions[self.name]
 
-        sig = signature(func)
-        bound = sig.bind_partial(*self.params.args, **self.params.kwargs)
+            sig = signature(func)
+            bound = sig.bind_partial(*self.params.args, **self.params.kwargs)
 
-        # Only validate explicitly supplied arguments. This allows Pydantic's
-        # default/default_factory to provide injected defaults.
-        adapter = TypeAdapter(plan.model)
-        validated = adapter.validate_python(bound.arguments)
+            # Only validate explicitly supplied arguments. This allows Pydantic's
+            # default/default_factory to provide injected defaults.
+            adapter = TypeAdapter(plan.model)
+            validated = adapter.validate_python(bound.arguments)
 
-        args: list[Any] = []
-        kwargs: dict[str, Any] = {}
+            args: list[Any] = []
+            kwargs: dict[str, Any] = {}
 
-        for name, parameter in sig.parameters.items():
-            supplied = name in bound.arguments
+            for name, parameter in sig.parameters.items():
+                supplied = name in bound.arguments
 
-            if supplied:
-                value = getattr(validated, name)
+                if supplied:
+                    value = getattr(validated, name)
 
-                match parameter.kind:
-                    case Parameter.POSITIONAL_ONLY:
-                        args.append(value)
-
-                    case Parameter.POSITIONAL_OR_KEYWORD:
-                        if name in self.params.kwargs:
-                            kwargs[name] = value
-                        else:
+                    match parameter.kind:
+                        case Parameter.POSITIONAL_ONLY:
                             args.append(value)
 
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
+                        case Parameter.POSITIONAL_OR_KEYWORD:
+                            if name in self.params.kwargs:
+                                kwargs[name] = value
+                            else:
+                                args.append(value)
 
-                    case Parameter.KEYWORD_ONLY:
-                        kwargs[name] = value
+                        case Parameter.VAR_POSITIONAL:
+                            args.extend(value)
 
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-            else:
-                # Let the generated Pydantic model provide the default.
-                value = getattr(validated, name)
-                kwargs[name] = value
+                        case Parameter.KEYWORD_ONLY:
+                            kwargs[name] = value
 
-        return args, kwargs
+                        case Parameter.VAR_KEYWORD:
+                            kwargs.update(value)
+                else:
+                    # Let the generated Pydantic model provide the default.
+                    value = getattr(validated, name)
+                    kwargs[name] = value
+
+            return args, kwargs
+
+        except ValidationError as ve:
+            raise TaskParameterError.from_validation_error(ve) from None
 
     def do_task(self, ctx: BlueskyContext) -> None:
         LOGGER.info(
@@ -102,10 +106,60 @@ class Task(BlueapiBaseModel):
             f"metadata {self.metadata} for all runs"
         )
         plan = ctx.plan_functions[self.name]
-        prepared_args, prepared_kwargs = self.prepare_params(ctx)
+        args, kwargs = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
-        result = ctx.run_engine(plan(*prepared_args, **prepared_kwargs))
+        result = ctx.run_engine(plan(*args, **kwargs))
         if isinstance(result, tuple):  # pragma: no cover
             # this is never true if the run_engine is configured correctly
             return None
         return result.plan_result
+
+
+def _lookup_params(ctx: BlueskyContext, task: Task) -> BaseModel:
+    """
+    Checks plan parameters against context
+
+    Args:
+        ctx: Context holding plans and devices
+        plan: Plan object including schema
+        params: Parameter values to be validated against schema
+
+    Returns:
+        Mapping[str, Any]: _description_
+    """
+
+    plan = ctx.plans[task.name]
+    model = plan.model
+    adapter = TypeAdapter(model)
+    return adapter.validate_python(task.params)
+
+
+class InvalidTaskParameter(TypedDict):
+    loc: tuple[str | int, ...]
+    msg: str | None
+    type: str | None
+    input: Any | None
+
+
+class TaskParameterError(ValueError):
+    errors: list[InvalidTaskParameter]
+
+    def __init__(self, message: str, errors: list[InvalidTaskParameter]):
+        super().__init__(message)
+        self.errors = errors
+
+    @classmethod
+    def from_validation_error(cls, error: ValidationError) -> Self:
+        errors = [
+            InvalidTaskParameter(
+                loc=e.get("loc", []),
+                msg=e.get("msg", None),
+                type=e.get("type", None),
+                input=e.get("input", None),
+            )
+            for e in error.errors()
+        ]
+        return cls(str(error), errors)
+
+    def __reduce__(self):
+        return (self.__class__, (*self.args, self.errors))

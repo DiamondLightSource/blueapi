@@ -134,7 +134,7 @@ class TaskParameterError(ValueError):
     def from_validation_error(cls, error: ValidationError) -> Self:
         errors = [
             InvalidTaskParameter(
-                loc=e.get("loc", ()),
+                loc=e.get("loc", []),
                 msg=e.get("msg", None),
                 type=e.get("type", None),
                 input=e.get("input", None),

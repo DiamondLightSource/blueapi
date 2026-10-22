@@ -188,16 +188,18 @@ def test_plans_and_devices_are_cached(bc: BlueapiClient):
     assert bc.devices is bc.devices
 
 
-def test_plan_argument_errors(bc: BlueapiClient):
-    det, stage = bc.devices.det, bc.devices.stage
-    with pytest.raises(TypeError, match="multiple values for 'detectors'"):
-        bc.plans.count([det], detectors=[stage.x])
-    with pytest.raises(TypeError, match="unexpected arguments"):
-        bc.plans.count([det], foo=1)
-    with pytest.raises(TypeError, match="too many arguments"):
-        bc.plans.sleep(1, 2)
-    with pytest.raises(TypeError, match="Missing argument"):
-        bc.plans.count()
+@pytest.mark.parametrize(
+    "a,kw,err",
+    [
+        (("det",), {"detectors": ["det"]}, "multiple values for argument 'detectors'"),
+        (("det",), {"foo": "bar"}, "got an unexpected keyword argument 'foo'"),
+        ((("det",), 2, 3, 4, 5), {}, "too many positional arguments"),
+        ((), {}, "Missing value for 'detectors'"),
+    ],
+)
+def test_plan_argument_errors(bc: BlueapiClient, a, kw, err: str):
+    with pytest.raises(TypeError, match=err):
+        bc.plans.count(*a, **kw)
 
 
 def _record_events(bc: BlueapiClient) -> tuple[list[AnyEvent], int]:

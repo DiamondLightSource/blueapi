@@ -76,7 +76,7 @@ class ParametersType(ParamType):
 class PositionalArgType(ParamType):
     """CLI input parameter to accept a JSON value as a list of positional args"""
 
-    name = "PositionalArg"
+    name = "PositionalArgs"
 
     def convert(
         self, value: Any | None, param: Parameter | None, ctx: Context | None
@@ -341,7 +341,21 @@ def listen_to_events(obj: dict) -> None:
 @controller.command(name="run")
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
-@click.option("-a", "--args", type=PositionalArgType(), default=[], required=False)
+@click.option(
+    "-a",
+    "--args",
+    type=PositionalArgType(),
+    default=[],
+    required=False,
+    help=textwrap.dedent("""\
+        Arguments to be passed to the plan as positional arguments.
+
+        This should be passed as a single string representing a JSON array and
+        may need quoting in some shells, eg
+
+            --args '[1, 2, "foo"]'
+        """),
+)
 @click.option(
     "--ws/--stomp",
     type=bool,

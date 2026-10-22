@@ -962,10 +962,10 @@ def test_task_worker_passes_positional_args(
 
     context.register_plan(positional_plan)
 
-    task = Task(name="positional_plan", args=[42])
+    task = Task(name="positional_plan", args=(1,))
     args, kwargs = task.prepare_params(context)
 
-    assert args == [42]
+    assert args == (1,)
     assert kwargs == {}
 
 
@@ -976,10 +976,10 @@ def test_task_worker_passes_multiple_positional_args(
         yield from ()
 
     context.register_plan(positional_plan)
-    task = Task(name="positional_plan", args=[1, 2])
+    task = Task(name="positional_plan", args=(1, 2))
     args, kwargs = task.prepare_params(context)
 
-    assert args == [1, 2]
+    assert args == (1, 2)
     assert kwargs == {}
 
 
@@ -997,11 +997,11 @@ def test_task_worker_passes_positional_and_keyword_args(
     context.register_plan(mixed_plan)
     task = Task(
         name="mixed_plan",
-        args=[1, 2],
+        args=(1, 2),
         params={"third": 3},
     )
     args, kwargs = task.prepare_params(context)
-    assert args == [1, 2]
+    assert args == (1, 2)
     assert kwargs == {"third": 3}
 
 
@@ -1014,9 +1014,9 @@ def test_task_worker_resolves_positional_device(
 
     context.register_plan(positional_device_plan)
 
-    task = Task(name="positional_device_plan", args=[fake_device.name])
+    task = Task(name="positional_device_plan", args=(fake_device.name,))
     args, kwargs = task.prepare_params(context)
-    assert args == [fake_device]
+    assert args == (fake_device,)
     assert kwargs == {}
 
 
@@ -1030,12 +1030,12 @@ def test_positional_only_plan(fake_device: FakeDevice) -> None:
 
     task = Task(
         name="positional_only_plan",
-        args=[1],
+        args=(1,),
         params={"device": fake_device.name},
     )
 
     args, kwargs = task.prepare_params(context)
-    assert args == [1]
+    assert args == (1,)
     assert kwargs == {"device": fake_device}
 
 
@@ -1049,10 +1049,10 @@ def test_var_positional_plan(fake_device: FakeDevice) -> None:
 
     task = Task(
         name="positional_device_plan",
-        args=[1, fake_device.name, fake_device.name],
+        args=(1, fake_device.name, fake_device.name),
     )
     args, kwargs = task.prepare_params(context)
-    assert args == [1, fake_device, fake_device]
+    assert args == (1, fake_device, fake_device)
     assert kwargs == {}
 
 
@@ -1068,11 +1068,11 @@ def test_positional_only_and_var_positional_plan(
 
     task = Task(
         name="positional_device_plan",
-        args=[1, fake_device.name, fake_device.name],
+        args=(1, fake_device.name, fake_device.name),
     )
 
     args, kwargs = task.prepare_params(context)
-    assert args == [1, fake_device, fake_device]
+    assert args == (1, fake_device, fake_device)
     assert kwargs == {}
 
 
@@ -1086,11 +1086,11 @@ def test_var_keyword_plan(fake_device: FakeDevice) -> None:
 
     task = Task(
         name="keyword_device_plan",
-        args=[1],
+        args=(1,),
         params={"first": fake_device.name, "second": fake_device.name},
     )
     args, kwargs = task.prepare_params(context)
-    assert args == [1]
+    assert args == (1,)
     assert kwargs == {"first": fake_device, "second": fake_device}
 
 
@@ -1106,11 +1106,11 @@ def test_positional_only_and_var_keyword_plan(
 
     task = Task(
         name="positional_only_plan",
-        args=[1],
+        args=(1,),
         params={"first": fake_device.name, "second": fake_device.name},
     )
     args, kwargs = task.prepare_params(context)
-    assert args == [1]
+    assert args == (1,)
     assert kwargs == {"first": fake_device, "second": fake_device}
 
 
@@ -1122,7 +1122,7 @@ def test_arg_in_args_and_kwargs():
     context = BlueskyContext()
     context.register_plan(positionals)
 
-    task = Task(name="positionals", args=[1], params={"one": 2})
+    task = Task(name="positionals", args=(1,), params={"one": 2})
     with pytest.raises(TaskParameterError, match="Invalid arguments to plan") as tpe:
         task.prepare_params(context)
 

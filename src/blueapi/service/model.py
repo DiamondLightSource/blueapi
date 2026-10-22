@@ -64,9 +64,9 @@ class TaskRequest(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of plan to run")
-    args: list[Any] = Field(
+    args: tuple[Any, ...] = Field(
         description="Positional arguments to plan",
-        default_factory=list,
+        default_factory=tuple,
         exclude_if=lambda args: not args,
     )
     params: Mapping[str, Any] = Field(

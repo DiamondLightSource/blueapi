@@ -195,12 +195,15 @@ def test_get_device(context_mock: MagicMock):
         assert interface.get_device("non_existing_device")
 
 
+@pytest.mark.parametrize("args,kwargs", (([], {"repeats": 42}), ([42], {})))
 @patch("blueapi.service.interface.context")
-def test_submit_task(context_mock: MagicMock):
+def test_submit_task(context_mock: MagicMock, args, kwargs):
     context = BlueskyContext()
-    context.register_plan(my_plan)
+    context.register_plan(my_second_plan)
     task = TaskRequest(
-        name="my_plan",
+        name="my_second_plan",
+        args=args,
+        params=kwargs,
         instrument_session=FAKE_INSTRUMENT_SESSION,
     )
     context_mock.return_value = context

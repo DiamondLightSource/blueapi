@@ -15,6 +15,7 @@ import yaml
 from bluesky.protocols import Movable
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import MessageTopic
+from click import BadParameter
 from click.testing import CliRunner
 from ophyd_async.core import AsyncStatus
 from pydantic import BaseModel
@@ -23,7 +24,7 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import ParametersType, main
+from blueapi.cli.cli import ParametersType, PositionalArgType, main
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -1426,6 +1427,29 @@ def test_config_schema(
 def test_task_parameter_type(value, result):
     t = ParametersType()
     assert t.convert(value, None, None) == result
+
+
+@pytest.mark.parametrize(
+    "value,result", [([], []), ("[1,2,3]", [1, 2, 3]), (None, None)]
+)
+def test_positional_arg_type(value, result):
+    t = PositionalArgType()
+    assert t.convert(value, None, None) == result
+
+
+@pytest.mark.parametrize(
+    "value,error",
+    [
+        ("1,2,3", "not valid JSON"),
+        ("[foo, bar]", "not valid JSON"),
+        ("23", "should be a list of arguments"),
+        ('"string"', "should be a list of arguments"),
+    ],
+)
+def test_invalid_positional_arg_type(value, error):
+    t = PositionalArgType()
+    with pytest.raises(BadParameter, match=error):
+        assert t.convert(value, None, None)
 
 
 @pytest.mark.parametrize(

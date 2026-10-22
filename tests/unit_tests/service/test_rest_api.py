@@ -371,6 +371,31 @@ def test_create_task_parameter_error(mock_runner: Mock, client: TestClient) -> N
     }
 
 
+def test_create_task_parameter_type_error(
+    mock_runner: Mock, client: TestClient
+) -> None:
+    mock_runner.run.side_effect = [TypeError("Some other error")]
+
+    response = client.post(
+        "/tasks",
+        json={
+            "name": "my-plan",
+            "instrument_session": FAKE_INSTRUMENT_SESSION,
+        },
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [
+            {
+                "input": None,
+                "loc": ["body", "params"],
+                "msg": "Some other error",
+                "type": "invalid",
+            }
+        ]
+    }
+
+
 def test_put_plan_begins_task(client: TestClient) -> None:
     task_id = "04cd9aa6-b902-414b-ae4b-49ea4200e957"
 

@@ -190,7 +190,7 @@ def test_plans_and_devices_are_cached(bc: BlueapiClient):
 
 def test_plan_argument_errors(bc: BlueapiClient):
     det, stage = bc.devices.det, bc.devices.stage
-    with pytest.raises(TypeError, match="multiple values for detectors"):
+    with pytest.raises(TypeError, match="multiple values for 'detectors'"):
         bc.plans.count([det], detectors=[stage.x])
     with pytest.raises(TypeError, match="unexpected arguments"):
         bc.plans.count([det], foo=1)

@@ -17,9 +17,9 @@ class Task(BlueapiBaseModel):
     """
 
     name: str = Field(description="Name of plan to run")
-    args: tuple[Any, ...] = Field(
+    args: list[Any] = Field(
         description="Positional arguments to plan",
-        default_factory=tuple,
+        default_factory=list,
         exclude_if=lambda args: not args,
     )
     params: Mapping[str, Any] = Field(
@@ -134,7 +134,7 @@ class TaskParameterError(ValueError):
     def from_validation_error(cls, error: ValidationError) -> Self:
         errors = [
             InvalidTaskParameter(
-                loc=e.get("loc"),
+                loc=e.get("loc", ()),
                 msg=e.get("msg", None),
                 type=e.get("type", None),
                 input=e.get("input", None),

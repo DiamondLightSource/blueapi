@@ -545,7 +545,7 @@ def test_delete_current_environment(client: BlueapiClient):
         pytest.param(
             TaskRequest(
                 name="count",
-                args=(["det"], 3),
+                args=[["det"], 3],
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),
             User.alice,
@@ -554,7 +554,7 @@ def test_delete_current_environment(client: BlueapiClient):
         pytest.param(
             TaskRequest(
                 name="count",
-                args=(["det"],),
+                args=[["det"]],
                 params={"num": 3},
                 instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
             ),

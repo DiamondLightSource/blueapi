@@ -281,6 +281,16 @@ def test_parameter_error_extra_string():
     assert str(p1) == "Unexpected field 'foo'"
 
 
+def test_parameter_error_unknown_general_error():
+    p1 = ParameterError(
+        loc=["body", "params"],
+        msg="Something else is wrong",
+        type="TypeError",
+        input=None,
+    )
+    assert str(p1) == "Something else is wrong"
+
+
 def test_parameter_error_other_string():
     p1 = ParameterError(
         loc=["body", "parameters", "field_one", 0],

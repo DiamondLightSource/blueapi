@@ -401,7 +401,7 @@ def run_plan(
     foreground: bool,
     ws: bool | None,
     instrument_session: str,
-    args: tuple[Any, ...],
+    args: list[Any],
     parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters

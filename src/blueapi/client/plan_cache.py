@@ -77,7 +77,7 @@ class Plan:
         """
         req = TaskRequest(
             name=self.name,
-            args=args,
+            args=list(args),
             params=kwargs,
             instrument_session=self._client.instrument_session,
         )

@@ -3,7 +3,6 @@ import itertools
 import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
-from pathlib import Path
 from queue import Full
 from typing import Any, TypeVar
 from unittest.mock import ANY, MagicMock, Mock, patch
@@ -13,7 +12,6 @@ import pytest
 from bluesky.protocols import Movable, Readable, Status
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.common.types import UpdatingPathProvider
 from observability_utils.tracing import (
     JsonObjectSpanExporter,
     asserting_span_exporter,
@@ -36,6 +34,7 @@ from blueapi.worker import (
     WorkerState,
 )
 from blueapi.worker.event import TaskResult, TaskStatusEnum
+from blueapi.worker.task import TaskParameterError
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
@@ -460,18 +459,7 @@ def begin_task_and_wait_until_complete(
 #
 
 
-@pytest.fixture
-def path_provider(tmp_path: Path):
-    # Prevents issue with leftover state from beamline tests
-    with patch("dodal.plan_stubs.data_session.get_path_provider") as mock:
-        mock.return_value = MagicMock(spec=UpdatingPathProvider, return_value=tmp_path)
-        mock.return_value.data_session.return_value = "foo"
-        yield
-
-
-def test_worker_and_data_events_produce_in_order(
-    worker: TaskWorker, path_provider
-) -> None:
+def test_worker_and_data_events_produce_in_order(worker: TaskWorker) -> None:
     assert_running_count_plan_produces_ordered_worker_and_data_events(
         [
             WorkerEvent(
@@ -737,7 +725,7 @@ def test_injected_devices_are_found(
         yield from ()
 
     context.register_plan(injected_device_plan)
-    params = Task(name="injected_device_plan").prepare_params(context)
+    _, params = Task(name="injected_device_plan").prepare_params(context)
     assert params["dev"] == fake_device
 
 
@@ -853,7 +841,7 @@ def test_injected_composite_devices_are_found(
     context: BlueskyContext,
 ):
     context.register_plan(injected_device_plan)
-    params = Task(name="injected_device_plan").prepare_params(context)
+    _, params = Task(name="injected_device_plan").prepare_params(context)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
 
@@ -874,7 +862,7 @@ def test_injected_composite_with_pydantic_dataclass(
     second_fake_device: FakeDevice,
 ):
     context.register_plan(injected_dataclass_device_plan)
-    params = Task(name="injected_dataclass_device_plan").prepare_params(context)
+    _, params = Task(name="injected_dataclass_device_plan").prepare_params(context)
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
 
@@ -885,7 +873,7 @@ def test_injected_composite_with_standard_dataclass(
     second_fake_device: FakeDevice,
 ):
     context.register_plan(injected_standard_dataclass_device_plan)
-    params = Task(name="injected_standard_dataclass_device_plan").prepare_params(
+    _, params = Task(name="injected_standard_dataclass_device_plan").prepare_params(
         context
     )
     assert params["composite"].fake_device == fake_device
@@ -900,7 +888,9 @@ def test_plan_module_with_composite_devices_can_be_loaded_before_device_module(
     context_without_devices.register_plan(injected_device_plan)
     context_without_devices.register_device(fake_device)
     context_without_devices.register_device(second_fake_device)
-    params = Task(name="injected_device_plan").prepare_params(context_without_devices)
+    _, params = Task(name="injected_device_plan").prepare_params(
+        context_without_devices
+    )
     assert params["composite"].fake_device == fake_device
     assert params["composite"].second_fake_device == second_fake_device
 
@@ -962,3 +952,178 @@ def test_worker_event_task_id():
 def test_worker_event_no_task_id():
     event = WorkerEvent(state=WorkerState.IDLE, task_status=None)
     assert event.task_id is None
+
+
+def test_task_worker_passes_positional_args(
+    context: BlueskyContext,
+) -> None:
+    def positional_plan(value: int) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_plan)
+
+    task = Task(name="positional_plan", args=[42])
+    args, kwargs = task.prepare_params(context)
+
+    assert args == [42]
+    assert kwargs == {}
+
+
+def test_task_worker_passes_multiple_positional_args(
+    context: BlueskyContext,
+) -> None:
+    def positional_plan(first: int, second: int) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_plan)
+    task = Task(name="positional_plan", args=[1, 2])
+    args, kwargs = task.prepare_params(context)
+
+    assert args == [1, 2]
+    assert kwargs == {}
+
+
+def test_task_worker_passes_positional_and_keyword_args(
+    context: BlueskyContext,
+) -> None:
+    def mixed_plan(
+        first: int,
+        second: int,
+        *,
+        third: int,
+    ) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(mixed_plan)
+    task = Task(
+        name="mixed_plan",
+        args=[1, 2],
+        params={"third": 3},
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, 2]
+    assert kwargs == {"third": 3}
+
+
+def test_task_worker_resolves_positional_device(
+    context: BlueskyContext,
+    fake_device: FakeDevice,
+) -> None:
+    def positional_device_plan(device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context.register_plan(positional_device_plan)
+
+    task = Task(name="positional_device_plan", args=[fake_device.name])
+    args, kwargs = task.prepare_params(context)
+    assert args == [fake_device]
+    assert kwargs == {}
+
+
+def test_positional_only_plan(fake_device: FakeDevice) -> None:
+    def positional_only_plan(val: int, /, device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_only_plan)
+
+    task = Task(
+        name="positional_only_plan",
+        args=[1],
+        params={"device": fake_device.name},
+    )
+
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"device": fake_device}
+
+
+def test_var_positional_plan(fake_device: FakeDevice) -> None:
+    def positional_device_plan(val: int, *device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_device_plan)
+
+    task = Task(
+        name="positional_device_plan",
+        args=[1, fake_device.name, fake_device.name],
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, fake_device, fake_device]
+    assert kwargs == {}
+
+
+def test_positional_only_and_var_positional_plan(
+    fake_device: FakeDevice,
+) -> None:
+    def positional_device_plan(val: int, /, *device: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_device_plan)
+
+    task = Task(
+        name="positional_device_plan",
+        args=[1, fake_device.name, fake_device.name],
+    )
+
+    args, kwargs = task.prepare_params(context)
+    assert args == [1, fake_device, fake_device]
+    assert kwargs == {}
+
+
+def test_var_keyword_plan(fake_device: FakeDevice) -> None:
+    def keyword_device_plan(val: int, **devices: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(keyword_device_plan)
+
+    task = Task(
+        name="keyword_device_plan",
+        args=[1],
+        params={"first": fake_device.name, "second": fake_device.name},
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"first": fake_device, "second": fake_device}
+
+
+def test_positional_only_and_var_keyword_plan(
+    fake_device: FakeDevice,
+) -> None:
+    def positional_only_plan(val: int, /, **devices: FakeDevice) -> MsgGenerator:
+        yield from ()
+
+    context = BlueskyContext()
+    context.register_device(fake_device)
+    context.register_plan(positional_only_plan)
+
+    task = Task(
+        name="positional_only_plan",
+        args=[1],
+        params={"first": fake_device.name, "second": fake_device.name},
+    )
+    args, kwargs = task.prepare_params(context)
+    assert args == [1]
+    assert kwargs == {"first": fake_device, "second": fake_device}
+
+
+def test_arg_in_args_and_kwargs():
+
+    def positionals(one: int, two: int) -> MsgGenerator:
+        yield from []
+
+    context = BlueskyContext()
+    context.register_plan(positionals)
+
+    task = Task(name="positionals", args=[1], params={"one": 2})
+    with pytest.raises(TaskParameterError, match="Invalid arguments to plan") as tpe:
+        task.prepare_params(context)
+
+    assert tpe.value.errors[0]["msg"] == "multiple values for argument 'one'"

@@ -3,11 +3,6 @@
 name: AsyncAPI
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - "*"
   pull_request:
   merge_group:
     types: [checks_requested]
@@ -19,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: check asyncapi.yaml file
-        uses: asyncapi/cli@268f7b4fa03db2f59c48ca6c9d37839f6c44d736 # v6.1.0
+        uses: asyncapi/cli@5c382e168801d3762cc0424b794775074a2c6c1d # v6.2.1
         with:
           command: validate
           filepath: "./docs/reference/asyncapi.yaml"

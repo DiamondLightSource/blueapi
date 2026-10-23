@@ -236,6 +236,11 @@ components:
       additionalProperties: false
       description: Task that will run a plan
       properties:
+        args:
+          description: Positional arguments to plan
+          items: {}
+          title: Args
+          type: array
         metadata:
           additionalProperties: true
           description: Any metadata to apply to all runs within this task
@@ -247,7 +252,7 @@ components:
           type: string
         params:
           additionalProperties: true
-          description: Values for parameters to plan, if any
+          description: Keyword arguments to plan, if any
           title: Params
           type: object
       required:
@@ -278,6 +283,11 @@ components:
       additionalProperties: false
       description: Request to run a task with related info
       properties:
+        args:
+          description: Positional arguments to plan
+          items: {}
+          title: Args
+          type: array
         instrument_session:
           description: Instrument session associated with this task
           title: Instrument Session
@@ -449,7 +459,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.5.0
+  version: 1.6.0
 openapi: 3.1.0
 paths:
   /api/v1/devices:

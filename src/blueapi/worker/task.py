@@ -97,7 +97,14 @@ class Task(BlueapiBaseModel):
                         kwargs.update(value)
             else:
                 # Let the generated Pydantic model provide the default.
-                kwargs[name] = getattr(validated, name)
+                value = getattr(validated, name)
+                match parameter.kind:
+                    case Parameter.VAR_KEYWORD:
+                        kwargs.update(value)
+                    case Parameter.VAR_POSITIONAL:
+                        args.extend(value)
+                    case _:
+                        kwargs[name] = value
 
         return args, kwargs
 

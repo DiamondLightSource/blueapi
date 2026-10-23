@@ -15,7 +15,9 @@
                         ]
                     },
                     "args": {
-                        "title": "Args"
+                        "items": {},
+                        "title": "Args",
+                        "type": "array"
                     },
                     "group": {
                         "title": "Group"
@@ -26,15 +28,211 @@
                         "type": "boolean"
                     },
                     "kwargs": {
-                        "title": "Kwargs"
+                        "additionalProperties": true,
+                        "title": "Kwargs",
+                        "type": "object"
                     }
                 },
                 "required": [
-                    "obj",
-                    "args",
-                    "kwargs"
+                    "obj"
                 ],
                 "title": "abs_set",
+                "type": "object"
+            }
+        },
+        {
+            "name": "rel_set",
+            "description": "\nSet a value relative to current value. Optionally, wait before continuing.\n\nParameters\n----------\nobj : Device\nargs :\n    passed to obj.set()\ngroup : string (or any hashable object), optional\n    identifier used by 'wait'; None by default\nwait : boolean, optional\n    If True, wait for completion before processing any more messages.\n    False by default.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatus :\n    Status that completes when the value is set. If `wait` is True,\n    this will always be complete by the time it is returned.\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.abs_set`\n:func:`bluesky.plan_stubs.wait`\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "obj": {
+                        "enum": [],
+                        "title": "Obj",
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "typing.Any"
+                        ]
+                    },
+                    "args": {
+                        "items": {},
+                        "title": "Args",
+                        "type": "array"
+                    },
+                    "group": {
+                        "title": "Group"
+                    },
+                    "wait": {
+                        "default": false,
+                        "title": "Wait",
+                        "type": "boolean"
+                    },
+                    "kwargs": {
+                        "additionalProperties": true,
+                        "title": "Kwargs",
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "obj"
+                ],
+                "title": "rel_set",
+                "type": "object"
+            }
+        },
+        {
+            "name": "mv",
+            "description": "\nMove one or more devices to a setpoint. Wait for all to complete.\n\nIf more than one device is specified, the movements are done in parallel.\n\nParameters\n----------\nargs :\n    device1, value1, device2, value2, ...\ngroup : string, optional\n    Used to mark these as a unit to be waited on.\ntimeout : float, optional\n    Specify a maximum time that the move(s) can be waited for.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatuses :\n    Tuple of n statuses, one for each move operation\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.abs_set`\n:func:`bluesky.plan_stubs.mvr`\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "args": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable",
+                                    "types": [
+                                        "typing.Any"
+                                    ]
+                                },
+                                {}
+                            ]
+                        },
+                        "title": "Args",
+                        "type": "array"
+                    },
+                    "group": {
+                        "title": "Group"
+                    },
+                    "timeout": {
+                        "title": "Timeout",
+                        "type": "number"
+                    },
+                    "kwargs": {
+                        "additionalProperties": true,
+                        "title": "Kwargs",
+                        "type": "object"
+                    }
+                },
+                "title": "mv",
+                "type": "object"
+            }
+        },
+        {
+            "name": "mvr",
+            "description": "\nMove one or more devices to a relative setpoint. Wait for all to complete.\n\nIf more than one device is specified, the movements are done in parallel.\n\nParameters\n----------\nargs :\n    device1, value1, device2, value2, ...\ngroup : string, optional\n    Used to mark these as a unit to be waited on.\ntimeout : float, optional\n    Specify a maximum time that the move(s) can be waited for.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatuses :\n    Tuple of n statuses, one for each move operation\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.rel_set`\n:func:`bluesky.plan_stubs.mv`\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "args": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "enum": [],
+                                    "type": "bluesky.protocols.Movable",
+                                    "types": [
+                                        "typing.Any"
+                                    ]
+                                },
+                                {}
+                            ]
+                        },
+                        "title": "Args",
+                        "type": "array"
+                    },
+                    "group": {
+                        "title": "Group"
+                    },
+                    "timeout": {
+                        "title": "Timeout",
+                        "type": "number"
+                    },
+                    "kwargs": {
+                        "additionalProperties": true,
+                        "title": "Kwargs",
+                        "type": "object"
+                    }
+                },
+                "title": "mvr",
+                "type": "object"
+            }
+        },
+        {
+            "name": "sleep",
+            "description": "Suspend all action for a given time, wrapper for `bp.sleep`.\n\nArgs:\n    time (float): Time to wait in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "time": {
+                        "title": "Time",
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "time"
+                ],
+                "title": "sleep",
+                "type": "object"
+            }
+        },
+        {
+            "name": "wait",
+            "description": "Wait for a group status to complete, wrapper for `bp.wait`.\nDoes not expose move_on, as when used as a stub will not fail on Timeout.\n\nArgs:\n    group (Group | None, optional): The name of the group to wait for, defaults to\n        None, in which case waits for all groups that have not yet been awaited.\n    timeout (float | None, default=None): a timeout in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "group": {
+                        "title": "Group",
+                        "type": "string"
+                    },
+                    "timeout": {
+                        "title": "Timeout",
+                        "type": "number"
+                    }
+                },
+                "title": "wait",
+                "type": "object"
+            }
+        },
+        {
+            "name": "rd",
+            "description": "Reads a single-value non-triggered object, wrapper for `bps.rd`.\n\nArgs:\n    readable (Readable): The device to be read\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "readable": {
+                        "enum": [
+                            "det",
+                            "stage"
+                        ],
+                        "title": "Readable",
+                        "type": "bluesky.protocols.Readable"
+                    }
+                },
+                "required": [
+                    "readable"
+                ],
+                "title": "rd",
+                "type": "object"
+            }
+        },
+        {
+            "name": "stop",
+            "description": "Stop a device, wrapper for `bps.stop`.\n\nArgs:\n    stoppable (Stoppable): Device to be stopped\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "stoppable": {
+                        "enum": [],
+                        "title": "Stoppable",
+                        "type": "bluesky.protocols.Stoppable"
+                    }
+                },
+                "required": [
+                    "stoppable"
+                ],
+                "title": "stop",
                 "type": "object"
             }
         },
@@ -390,128 +588,6 @@
             }
         },
         {
-            "name": "move",
-            "description": "Move a device, wrapper for `bp.mv`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target positions.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "moves": {
-                        "additionalProperties": true,
-                        "title": "Moves",
-                        "type": "object"
-                    },
-                    "group": {
-                        "title": "Group",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "moves"
-                ],
-                "title": "move",
-                "type": "object"
-            }
-        },
-        {
-            "name": "move_relative",
-            "description": "Move a device relative to its current position, wrapper for `bp.mvr`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target deltas.\n    group (Group | None, optional): The message group to associate with the\n        setting, for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "moves": {
-                        "additionalProperties": true,
-                        "title": "Moves",
-                        "type": "object"
-                    },
-                    "group": {
-                        "title": "Group",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "moves"
-                ],
-                "title": "move_relative",
-                "type": "object"
-            }
-        },
-        {
-            "name": "mv",
-            "description": "\nMove one or more devices to a setpoint. Wait for all to complete.\n\nIf more than one device is specified, the movements are done in parallel.\n\nParameters\n----------\nargs :\n    device1, value1, device2, value2, ...\ngroup : string, optional\n    Used to mark these as a unit to be waited on.\ntimeout : float, optional\n    Specify a maximum time that the move(s) can be waited for.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatuses :\n    Tuple of n statuses, one for each move operation\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.abs_set`\n:func:`bluesky.plan_stubs.mvr`\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "args": {
-                        "anyOf": [
-                            {
-                                "enum": [],
-                                "type": "bluesky.protocols.Movable",
-                                "types": [
-                                    "typing.Any"
-                                ]
-                            },
-                            {}
-                        ],
-                        "title": "Args"
-                    },
-                    "group": {
-                        "title": "Group"
-                    },
-                    "timeout": {
-                        "title": "Timeout",
-                        "type": "number"
-                    },
-                    "kwargs": {
-                        "title": "Kwargs"
-                    }
-                },
-                "required": [
-                    "args",
-                    "kwargs"
-                ],
-                "title": "mv",
-                "type": "object"
-            }
-        },
-        {
-            "name": "mvr",
-            "description": "\nMove one or more devices to a relative setpoint. Wait for all to complete.\n\nIf more than one device is specified, the movements are done in parallel.\n\nParameters\n----------\nargs :\n    device1, value1, device2, value2, ...\ngroup : string, optional\n    Used to mark these as a unit to be waited on.\ntimeout : float, optional\n    Specify a maximum time that the move(s) can be waited for.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatuses :\n    Tuple of n statuses, one for each move operation\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.rel_set`\n:func:`bluesky.plan_stubs.mv`\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "args": {
-                        "anyOf": [
-                            {
-                                "enum": [],
-                                "type": "bluesky.protocols.Movable",
-                                "types": [
-                                    "typing.Any"
-                                ]
-                            },
-                            {}
-                        ],
-                        "title": "Args"
-                    },
-                    "group": {
-                        "title": "Group"
-                    },
-                    "timeout": {
-                        "title": "Timeout",
-                        "type": "number"
-                    },
-                    "kwargs": {
-                        "title": "Kwargs"
-                    }
-                },
-                "required": [
-                    "args",
-                    "kwargs"
-                ],
-                "title": "mvr",
-                "type": "object"
-            }
-        },
-        {
             "name": "num_grid_rscan",
             "description": "Scan independent trajectories, relative to current positions.\n\nThe scan is defined by number of points along scan trajectories. Snakes all fast\naxes by default (all axes but the first axis provided). Wraps\nbluesky.plans.rel_grid_scan(det, *args, snake_axes, md=metadata).\n",
             "parameter_schema": {
@@ -823,154 +899,6 @@
                     "num"
                 ],
                 "title": "num_scan",
-                "type": "object"
-            }
-        },
-        {
-            "name": "rd",
-            "description": "Reads a single-value non-triggered object, wrapper for `bps.rd`.\n\nArgs:\n    readable (Readable): The device to be read\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "readable": {
-                        "enum": [
-                            "det",
-                            "stage"
-                        ],
-                        "title": "Readable",
-                        "type": "bluesky.protocols.Readable"
-                    }
-                },
-                "required": [
-                    "readable"
-                ],
-                "title": "rd",
-                "type": "object"
-            }
-        },
-        {
-            "name": "rel_set",
-            "description": "\nSet a value relative to current value. Optionally, wait before continuing.\n\nParameters\n----------\nobj : Device\nargs :\n    passed to obj.set()\ngroup : string (or any hashable object), optional\n    identifier used by 'wait'; None by default\nwait : boolean, optional\n    If True, wait for completion before processing any more messages.\n    False by default.\nkwargs :\n    passed to obj.set()\n\nYields\n------\nmsg : Msg\n\nReturns\n-------\nstatus :\n    Status that completes when the value is set. If `wait` is True,\n    this will always be complete by the time it is returned.\n\nSee Also\n--------\n:func:`bluesky.plan_stubs.abs_set`\n:func:`bluesky.plan_stubs.wait`\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "obj": {
-                        "enum": [],
-                        "title": "Obj",
-                        "type": "bluesky.protocols.Movable",
-                        "types": [
-                            "typing.Any"
-                        ]
-                    },
-                    "args": {
-                        "title": "Args"
-                    },
-                    "group": {
-                        "title": "Group"
-                    },
-                    "wait": {
-                        "default": false,
-                        "title": "Wait",
-                        "type": "boolean"
-                    },
-                    "kwargs": {
-                        "title": "Kwargs"
-                    }
-                },
-                "required": [
-                    "obj",
-                    "args",
-                    "kwargs"
-                ],
-                "title": "rel_set",
-                "type": "object"
-            }
-        },
-        {
-            "name": "set_absolute",
-            "description": "Set a device, wrapper for `bp.abs_set`.\n\nArgs:\n    movable (Movable[T]): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "movable": {
-                        "enum": [],
-                        "title": "Movable",
-                        "type": "bluesky.protocols.Movable",
-                        "types": [
-                            "Any"
-                        ]
-                    },
-                    "value": {
-                        "title": "Value"
-                    },
-                    "group": {
-                        "title": "Group",
-                        "type": "string"
-                    },
-                    "wait": {
-                        "default": true,
-                        "title": "Wait",
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "movable",
-                    "value"
-                ],
-                "title": "set_absolute",
-                "type": "object"
-            }
-        },
-        {
-            "name": "set_relative",
-            "description": "Change a device, wrapper for `bp.rel_set`.\n\nArgs:\n    movable (Movable): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "movable": {
-                        "enum": [],
-                        "title": "Movable",
-                        "type": "bluesky.protocols.Movable",
-                        "types": [
-                            "Any"
-                        ]
-                    },
-                    "value": {
-                        "title": "Value"
-                    },
-                    "group": {
-                        "title": "Group",
-                        "type": "string"
-                    },
-                    "wait": {
-                        "default": true,
-                        "title": "Wait",
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "movable",
-                    "value"
-                ],
-                "title": "set_relative",
-                "type": "object"
-            }
-        },
-        {
-            "name": "sleep",
-            "description": "Suspend all action for a given time, wrapper for `bp.sleep`.\n\nArgs:\n    time (float): Time to wait in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
-                    "time": {
-                        "title": "Time",
-                        "type": "number"
-                    }
-                },
-                "required": [
-                    "time"
-                ],
-                "title": "sleep",
                 "type": "object"
             }
         },
@@ -1908,40 +1836,118 @@
             }
         },
         {
-            "name": "stop",
-            "description": "Stop a device, wrapper for `bps.stop`.\n\nArgs:\n    stoppable (Stoppable): Device to be stopped\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "name": "set_absolute",
+            "description": "Set a device, wrapper for `bp.abs_set`.\n\nArgs:\n    movable (Movable[T]): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
             "parameter_schema": {
                 "additionalProperties": false,
                 "properties": {
-                    "stoppable": {
+                    "movable": {
                         "enum": [],
-                        "title": "Stoppable",
-                        "type": "bluesky.protocols.Stoppable"
-                    }
-                },
-                "required": [
-                    "stoppable"
-                ],
-                "title": "stop",
-                "type": "object"
-            }
-        },
-        {
-            "name": "wait",
-            "description": "Wait for a group status to complete, wrapper for `bp.wait`.\nDoes not expose move_on, as when used as a stub will not fail on Timeout.\n\nArgs:\n    group (Group | None, optional): The name of the group to wait for, defaults to\n        None, in which case waits for all groups that have not yet been awaited.\n    timeout (float | None, default=None): a timeout in seconds.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
-            "parameter_schema": {
-                "additionalProperties": false,
-                "properties": {
+                        "title": "Movable",
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "Any"
+                        ]
+                    },
+                    "value": {
+                        "title": "Value"
+                    },
                     "group": {
                         "title": "Group",
                         "type": "string"
                     },
-                    "timeout": {
-                        "title": "Timeout",
-                        "type": "number"
+                    "wait": {
+                        "default": true,
+                        "title": "Wait",
+                        "type": "boolean"
                     }
                 },
-                "title": "wait",
+                "required": [
+                    "movable",
+                    "value"
+                ],
+                "title": "set_absolute",
+                "type": "object"
+            }
+        },
+        {
+            "name": "set_relative",
+            "description": "Change a device, wrapper for `bp.rel_set`.\n\nArgs:\n    movable (Movable): The device to set.\n    value (T): The new value.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n    wait (bool, optional): The group should wait until all setting is complete (e.g.\n        a motor has finished moving). Defaults to False.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "movable": {
+                        "enum": [],
+                        "title": "Movable",
+                        "type": "bluesky.protocols.Movable",
+                        "types": [
+                            "Any"
+                        ]
+                    },
+                    "value": {
+                        "title": "Value"
+                    },
+                    "group": {
+                        "title": "Group",
+                        "type": "string"
+                    },
+                    "wait": {
+                        "default": true,
+                        "title": "Wait",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "movable",
+                    "value"
+                ],
+                "title": "set_relative",
+                "type": "object"
+            }
+        },
+        {
+            "name": "move",
+            "description": "Move a device, wrapper for `bp.mv`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target positions.\n    group (Group | None, optional): The message group to associate with the setting,\n        for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "additionalProperties": true,
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "title": "Group",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move",
+                "type": "object"
+            }
+        },
+        {
+            "name": "move_relative",
+            "description": "Move a device relative to its current position, wrapper for `bp.mvr`.\n\nArgs:\n    moves (Mapping[Movable, T]): Mapping of Movables to target deltas.\n    group (Group | None, optional): The message group to associate with the\n        setting, for sequencing. Defaults to None.\n\nReturns:\n    MsgGenerator: Plan.\n\nYields:\n    Iterator[MsgGenerator]: Bluesky messages.\n",
+            "parameter_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "moves": {
+                        "additionalProperties": true,
+                        "title": "Moves",
+                        "type": "object"
+                    },
+                    "group": {
+                        "title": "Group",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "moves"
+                ],
+                "title": "move_relative",
                 "type": "object"
             }
         }

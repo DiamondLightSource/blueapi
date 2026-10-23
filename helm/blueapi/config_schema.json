@@ -399,6 +399,12 @@
                     },
                     "title": "Repositories",
                     "type": "array"
+                },
+                "use_uv_lock": {
+                    "default": false,
+                    "description": "Whether to install the repository using uv.lock (only valid for single repository)",
+                    "title": "Use Uv Lock",
+                    "type": "boolean"
                 }
             },
             "title": "ScratchConfig",

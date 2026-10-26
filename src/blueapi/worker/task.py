@@ -67,8 +67,7 @@ class Task(BlueapiBaseModel):
         sig = signature(func)
         bound = sig.bind_partial(*self.args, **self.params)
 
-        # Only validate explicitly supplied arguments. This allows Pydantic's
-        # default/default_factory to provide injected defaults.
+        # Validate explicitly supplied arguments and resolve device names.
         adapter = TypeAdapter(plan.model)
         validated = adapter.validate_python(bound.arguments)
 
@@ -77,34 +76,32 @@ class Task(BlueapiBaseModel):
 
         for name, parameter in sig.parameters.items():
             supplied = name in bound.arguments
+            injected = isinstance(parameter.default, str)
 
-            if supplied:
-                value = getattr(validated, name)
+            # Let Python apply ordinary defaults itself.
+            if not supplied and not injected:
+                continue
 
-                match parameter.kind:
-                    case Parameter.POSITIONAL_ONLY:
+            value = getattr(validated, name)
+
+            match parameter.kind:
+                case Parameter.POSITIONAL_ONLY:
+                    args.append(value)
+
+                case Parameter.VAR_POSITIONAL:
+                    args.extend(value)
+
+                case Parameter.POSITIONAL_OR_KEYWORD:
+                    if name in self.params or (not supplied and injected):
+                        kwargs[name] = value
+                    else:
                         args.append(value)
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
-                    case Parameter.POSITIONAL_OR_KEYWORD:
-                        if name in self.params:
-                            kwargs[name] = value
-                        else:
-                            args.append(value)
-                    case Parameter.KEYWORD_ONLY:
-                        kwargs[name] = value
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-            else:
-                # Let the generated Pydantic model provide the default.
-                value = getattr(validated, name)
-                match parameter.kind:
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
-                    case _:
-                        kwargs[name] = value
+
+                case Parameter.KEYWORD_ONLY:
+                    kwargs[name] = value
+
+                case Parameter.VAR_KEYWORD:
+                    kwargs.update(value)
 
         return args, kwargs
 

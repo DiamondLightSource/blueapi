@@ -259,7 +259,7 @@ def test_run_plan_keyword_args(bc: BlueapiClient):
 
 
 def test_run_stub_with_device(bc: BlueapiClient):
-    bc.plans.set_absolute(bc.devices.stage.x, 1.0)
+    bc.plans.abs_set(bc.devices.stage.x, 1.0)
 
 
 def test_removed_callback_not_called(bc: BlueapiClient):

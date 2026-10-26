@@ -220,6 +220,7 @@ def submit_task(
         ]
     task = Task(
         name=task_request.name,
+        args=task_request.args,
         params=task_request.params,
         metadata=metadata,
     )

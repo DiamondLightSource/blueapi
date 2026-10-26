@@ -361,12 +361,17 @@ def submit_task(
             }
             for err in e.errors
         ]
-
         LOGGER.info("Error submitting task: %s - %s", task_request, e)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=errors,
-        ) from e
+    except Exception as e:
+        # Catch all for anything else that can go wrong
+        errors = [
+            {"loc": ["body", "params"], "msg": str(e), "type": "invalid", "input": None}
+        ]
+        LOGGER.info("Error submitting task: %s - %s", task_request, e)
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=errors,
+    )
 
 
 @secure_router_v1.delete(

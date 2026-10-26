@@ -5,6 +5,7 @@ import pytest
 
 from blueapi.client.client import PlanCache
 from blueapi.client.plan_cache import Plan
+from blueapi.client.rest import InvalidParametersError, ParameterError
 from blueapi.service.model import PlanModel, TaskRequest
 
 FULL_PLAN = PlanModel(
@@ -132,46 +133,43 @@ p = pytest.param
 
 
 @pytest.mark.parametrize(
-    "args,kwargs,params",
+    "args,kwargs",
     [
-        p((1,), {}, {"one": 1}, id="required_as_positional"),
-        p((), {"one": 7}, {"one": 7}, id="required_as_keyword"),
-        p((1,), {"two": 23}, {"one": 1, "two": 23}, id="all_as_mixed_args_kwargs"),
-        p((1, 2), {}, {"one": 1, "two": 2}, id="all_as_positional"),
-        p((), {"one": 21, "two": 42}, {"one": 21, "two": 42}, id="all_as_keyword"),
+        p((1,), {}, id="required_as_positional"),
+        p((), {"one": 7}, id="required_as_keyword"),
+        p((1,), {"two": 23}, id="all_as_mixed_args_kwargs"),
+        p((1, 2), {}, id="all_as_positional"),
+        p((), {"one": 21, "two": 42}, id="all_as_keyword"),
     ],
 )
-def test_plan_param_mapping(args, kwargs, params):
+def test_plan_param_forwarding(args, kwargs):
     client = Mock()
     client.instrument_session = "cm12345-1"
     plan = Plan("foobar", FULL_PLAN, client)
 
     plan(*args, **kwargs)
     client.run_task.assert_called_once_with(
-        TaskRequest(name="foobar", instrument_session="cm12345-1", params=params)
+        TaskRequest(
+            name="foobar", instrument_session="cm12345-1", args=args, params=kwargs
+        )
     )
 
 
-@pytest.mark.parametrize(
-    "args,kwargs,msg",
-    [
-        p((), {}, r"Missing argument\(s\) for \{'one'\}", id="missing_required"),
-        p((1,), {"one": 7}, "multiple values for one", id="duplicate_required"),
-        p((1, 2), {"two": 23}, "multiple values for two", id="duplicate_optional"),
-        p((1, 2, 3), {}, "too many arguments", id="too_many_args"),
-        p(
-            (),
-            {"unknown_key": 42},
-            r"got unexpected arguments: \{'unknown_key'\}",
-            id="unknown_arg",
-        ),
-    ],
-)
-def test_plan_invalid_param_mapping(args, kwargs, msg):
+def test_plan_invalid_param_mapping():
     client = Mock()
     client.instrument_session = "cm12345-1"
+    client.run_task.side_effect = InvalidParametersError(
+        [
+            ParameterError(
+                msg="foo is not valid",
+                loc=["body", "params", "foo"],
+                input="bar",
+                type="invalid",
+            )
+        ]
+    )
     plan = Plan("foobar", FULL_PLAN, client)
 
-    with pytest.raises(TypeError, match=msg):
-        plan(*args, **kwargs)
-    client.run_task.assert_not_called()
+    with pytest.raises(TypeError, match="foo is not valid"):
+        plan(1, 2, foo="bar")
+    client.run_task.assert_called_once()

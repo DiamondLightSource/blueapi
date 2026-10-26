@@ -73,6 +73,26 @@ class ParametersType(ParamType):
             return super().convert(value, param, ctx)
 
 
+class PositionalArgType(ParamType):
+    """CLI input parameter to accept a JSON value as a list of positional args"""
+
+    name = "PositionalArgs"
+
+    def convert(
+        self, value: Any | None, param: Parameter | None, ctx: Context | None
+    ) -> Any:
+        if isinstance(value, str):
+            try:
+                args = json.loads(value)
+                if isinstance(args, list):
+                    return args
+                self.fail("Positional arguments should be a list of arguments")
+            except json.JSONDecodeError as jde:
+                self.fail(f"Argument is not valid JSON: {jde}")
+        else:
+            return super().convert(value, param, ctx)
+
+
 def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
@@ -322,6 +342,21 @@ def listen_to_events(obj: dict) -> None:
 @click.argument("name", type=str)
 @click.argument("parameters", type=ParametersType(), default={}, required=False)
 @click.option(
+    "-a",
+    "--args",
+    type=PositionalArgType(),
+    default=[],
+    required=False,
+    help=textwrap.dedent("""\
+        Arguments to be passed to the plan as positional arguments.
+
+        This should be passed as a single string representing a JSON array and
+        may need quoting in some shells, eg
+
+            --args '[1, 2, "foo"]'
+        """),
+)
+@click.option(
     "--ws/--stomp",
     type=bool,
     is_flag=True,
@@ -366,6 +401,7 @@ def run_plan(
     foreground: bool,
     ws: bool | None,
     instrument_session: str,
+    args: list[Any],
     parameters: TaskParameters,
 ) -> None:
     """Run a plan with parameters
@@ -377,7 +413,7 @@ def run_plan(
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
-        name=name, params=parameters, instrument_session=instrument_session
+        name=name, args=args, params=parameters, instrument_session=instrument_session
     )
 
     try:

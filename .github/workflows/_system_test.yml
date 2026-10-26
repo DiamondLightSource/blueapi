@@ -36,6 +36,9 @@ jobs:
           docker compose -f tests/system_tests/compose.yaml up -d
           docker compose -f tests/system_tests/compose.yaml up -d --wait --wait-timeout 600 blueapi
 
+      - name: Install browser for device flow login
+        run: uv run --locked playwright install --with-deps chromium
+
       - name: Run tests
         run: uv run --locked tox -e system-test
 

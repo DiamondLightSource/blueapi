@@ -76,10 +76,10 @@ class Task(BlueapiBaseModel):
 
         for name, parameter in sig.parameters.items():
             supplied = name in bound.arguments
-            injected = isinstance(parameter.default, str)
+            maybe_device = isinstance(parameter.default, str)
 
             # Let Python apply ordinary defaults itself.
-            if not supplied and not injected:
+            if not supplied and not maybe_device:
                 continue
 
             value = getattr(validated, name)
@@ -92,7 +92,7 @@ class Task(BlueapiBaseModel):
                     args.extend(value)
 
                 case Parameter.POSITIONAL_OR_KEYWORD:
-                    if name in self.params or (not supplied and injected):
+                    if name in self.params or (not supplied and maybe_device):
                         kwargs[name] = value
                     else:
                         args.append(value)

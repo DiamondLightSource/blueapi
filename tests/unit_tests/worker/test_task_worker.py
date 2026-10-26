@@ -1130,7 +1130,7 @@ def test_arg_in_args_and_kwargs():
 
 
 @pytest.mark.parametrize(
-    ("extra_args", "params", "extra_kwargs"),
+    ("extra_args", "kwargs", "extra_kwargs"),
     [
         ([], {}, {}),
         ([2], {}, {}),
@@ -1146,7 +1146,7 @@ def test_arg_in_args_and_kwargs():
 def test_plan_with_args_and_other_parameters_and_kwargs(
     fake_device: FakeDevice,
     extra_args: list[int],
-    params: dict[str, Any],
+    kwargs: dict[str, Any],
     extra_kwargs: dict[str, Any],
 ):
     def args_with_parameters_and_kwargs(
@@ -1165,13 +1165,13 @@ def test_plan_with_args_and_other_parameters_and_kwargs(
     task = Task(
         name="args_with_parameters_and_kwargs",
         args=[fake_device.name, 1, *extra_args],
-        params={**params, **extra_kwargs},
+        params={**kwargs, **extra_kwargs},
     )
 
     prepared_args, prepared_kwargs = task.prepare_params(context)
 
     expected_args = [fake_device, 1, *extra_args]
-    expected_kwargs = {**params, **extra_kwargs}
+    expected_kwargs = {**kwargs, **extra_kwargs}
 
     assert prepared_args == expected_args
     assert prepared_kwargs == expected_kwargs

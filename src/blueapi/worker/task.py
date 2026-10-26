@@ -68,8 +68,7 @@ class Task(BlueapiBaseModel):
         bound = sig.bind_partial(*self.args, **self.params)
 
         # Validate explicitly supplied arguments and resolve device names.
-        adapter = TypeAdapter(plan.model)
-        validated = adapter.validate_python(bound.arguments)
+        validated = plan.model.model_validate(bound.arguments)
 
         args: list[Any] = []
         kwargs: dict[str, Any] = {}

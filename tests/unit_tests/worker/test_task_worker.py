@@ -1127,3 +1127,51 @@ def test_arg_in_args_and_kwargs():
         task.prepare_params(context)
 
     assert tpe.value.errors[0]["msg"] == "multiple values for argument 'one'"
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "params", "extra_kwargs"),
+    [
+        ([], {}, {}),
+        ([2], {}, {}),
+        ([2, 3], {}, {}),
+        ([], {"group": "test"}, {}),
+        ([], {"wait": True}, {}),
+        ([], {"group": "test", "wait": True}, {}),
+        ([], {}, {"custom": "value"}),
+        ([], {}, {"custom": "value", "another": 42}),
+        ([2, 3], {"group": "test", "wait": True}, {"custom": "value"}),
+    ],
+)
+def test_plan_with_args_and_other_parameters_and_kwargs(
+    fake_device: FakeDevice,
+    extra_args: list[int],
+    params: dict[str, Any],
+    extra_kwargs: dict[str, Any],
+):
+    def args_with_parameters_and_kwargs(
+        obj: FakeDevice,
+        *args: Any,
+        group: str | None = None,
+        wait: bool = False,
+        **kwargs: Any,
+    ) -> MsgGenerator:
+        yield from []
+
+    context = BlueskyContext()
+    context.register_plan(args_with_parameters_and_kwargs)
+    context.register_device(fake_device)
+
+    task = Task(
+        name="args_with_parameters_and_kwargs",
+        args=[fake_device.name, 1, *extra_args],
+        params={**params, **extra_kwargs},
+    )
+
+    prepared_args, prepared_kwargs = task.prepare_params(context)
+
+    expected_args = [fake_device, 1, *extra_args]
+    expected_kwargs = {**params, **extra_kwargs}
+
+    assert prepared_args == expected_args
+    assert prepared_kwargs == expected_kwargs

@@ -169,7 +169,30 @@ def test_missing_sub_device(bc: BlueapiClient):
 
 def test_plans_iterable(bc: BlueapiClient):
     names = {plan.name for plan in bc.plans}
-    assert {"count", "sleep", "set_absolute"} <= names
+    assert {
+        "list_rscan",
+        "rel_set",
+        "step_rscan",
+        "sleep",
+        "list_scan",
+        "mv",
+        "step_scan",
+        "abs_set",
+        "list_grid_scan",
+        "list_grid_rscan",
+        "count",
+        "step_grid_rscan",
+        "mvr",
+        "rd",
+        "spec_scan",
+        "num_grid_scan",
+        "wait",
+        "num_scan",
+        "num_grid_rscan",
+        "num_rscan",
+        "step_grid_scan",
+        "stop",
+    } <= names
     assert all(isinstance(plan, Plan) for plan in bc.plans)
 
 
@@ -236,7 +259,7 @@ def test_run_plan_keyword_args(bc: BlueapiClient):
 
 
 def test_run_stub_with_device(bc: BlueapiClient):
-    bc.plans.set_absolute(bc.devices.stage.x, 1.0)
+    bc.plans.abs_set(bc.devices.stage.x, 1.0)
 
 
 def test_removed_callback_not_called(bc: BlueapiClient):

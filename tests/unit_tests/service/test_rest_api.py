@@ -22,7 +22,7 @@ from blueapi.config import (
     OIDCConfig,
     RestConfig,
 )
-from blueapi.core.bluesky_types import Plan
+from blueapi.core.bluesky_types import BlueapiPlan
 from blueapi.service import interface, main
 from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
@@ -53,7 +53,7 @@ from blueapi.worker.task_worker import TrackableTask
 class MockCountModel(BaseModel): ...
 
 
-COUNT = Plan(name="count", model=MockCountModel)
+COUNT = BlueapiPlan(name="count", model=MockCountModel)
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
 
 
@@ -158,8 +158,8 @@ def test_rest_config_with_cors_gets_plan(
     class MyModel(BaseModel):
         id: str
 
-    plan = Plan(name="my-plan", model=MyModel)
-    mock_runner.run.return_value = [PlanModel.from_plan(plan)]
+    plan = BlueapiPlan(name="my-plan", model=MyModel)
+    mock_runner.run.return_value = [PlanModel.model_validate(plan.to_model())]
 
     response_get = client_with_cors.get("/plans")
     assert response_get.status_code == status.HTTP_200_OK
@@ -191,8 +191,8 @@ def test_get_plans(mock_runner: Mock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
-    plan = Plan(name="my-plan", model=MyModel)
-    mock_runner.run.return_value = [PlanModel.from_plan(plan)]
+    plan = BlueapiPlan(name="my-plan", model=MyModel)
+    mock_runner.run.return_value = [PlanModel.model_validate(plan.to_model())]
 
     response = client.get("/plans")
 
@@ -217,8 +217,8 @@ def test_get_plan_by_name(mock_runner: Mock, client: TestClient) -> None:
     class MyModel(BaseModel):
         id: str
 
-    plan = Plan(name="my-plan", model=MyModel)
-    mock_runner.run.return_value = PlanModel.from_plan(plan)
+    plan = BlueapiPlan(name="my-plan", model=MyModel)
+    mock_runner.run.return_value = PlanModel.model_validate(plan.to_model())
 
     response = client.get("/plans/my-plan")
 

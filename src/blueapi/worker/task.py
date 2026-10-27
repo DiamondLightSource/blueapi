@@ -86,19 +86,15 @@ class Task(BlueapiBaseModel):
             match parameter.kind:
                 case Parameter.POSITIONAL_ONLY:
                     args.append(value)
-
                 case Parameter.VAR_POSITIONAL:
                     args.extend(value)
-
                 case Parameter.POSITIONAL_OR_KEYWORD:
                     if name in self.params or (not supplied and maybe_device):
                         kwargs[name] = value
                     else:
                         args.append(value)
-
                 case Parameter.KEYWORD_ONLY:
                     kwargs[name] = value
-
                 case Parameter.VAR_KEYWORD:
                     kwargs.update(value)
 

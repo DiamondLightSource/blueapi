@@ -1143,13 +1143,13 @@ def test_arg_in_args_and_kwargs():
     [{}, {"custom": "value"}, {"custom": "value", "another": 42}],
     ids=["no_variadic_kwargs", "one_variadic_kwarg", "two_variadic_kwargs"],
 )
-def test_plan_with_args_and_other_parameters_and_kwargs(
+def test_plan_args_with_keyword_only_params_and_variadic_kwargs(
     fake_device: FakeDevice,
     extra_args: list[int],
     keyword_only_params: dict[str, Any],
     variadic_kwargs: dict[str, Any],
 ):
-    def args_with_parameters_and_kwargs(
+    def args_with_keyword_only_params_and_variadic_kwargs(
         obj: FakeDevice,
         *args: Any,
         group: str | None = None,
@@ -1159,11 +1159,11 @@ def test_plan_with_args_and_other_parameters_and_kwargs(
         yield from []
 
     context = BlueskyContext()
-    context.register_plan(args_with_parameters_and_kwargs)
+    context.register_plan(args_with_keyword_only_params_and_variadic_kwargs)
     context.register_device(fake_device)
 
     task = Task(
-        name="args_with_parameters_and_kwargs",
+        name="args_with_keyword_only_params_and_variadic_kwargs",
         args=[fake_device.name, 1, *extra_args],
         params={**keyword_only_params, **variadic_kwargs},
     )

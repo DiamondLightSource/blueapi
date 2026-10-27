@@ -8,7 +8,7 @@ from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.config import OIDCConfig
-from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
+from blueapi.core import BLUESKY_PROTOCOLS, Device
 from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
@@ -107,14 +107,6 @@ class PlanModel(BlueapiBaseModel):
         alias="schema",
         default_factory=dict,
     )
-
-    @classmethod
-    def from_plan(cls, plan: Plan) -> "PlanModel":
-        return cls(
-            name=plan.name,
-            schema=plan.model.model_json_schema(),
-            description=plan.description,
-        )
 
 
 class PlanRequest(BlueapiBaseModel):

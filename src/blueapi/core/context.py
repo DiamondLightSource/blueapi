@@ -42,8 +42,8 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     AsyncDevice,
+    BlueapiPlan,
     Device,
-    Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
@@ -127,7 +127,7 @@ class BlueskyContext:
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
-    plans: dict[str, Plan] = field(default_factory=dict)
+    plans: dict[str, BlueapiPlan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
@@ -327,7 +327,7 @@ class BlueskyContext:
             **self._type_spec_for_function(plan),  # type: ignore
         )
         LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
-        self.plans[plan.__name__] = Plan(
+        self.plans[plan.__name__] = BlueapiPlan(
             name=plan.__name__, model=model, description=plan.__doc__
         )
         self.plan_functions[plan.__name__] = plan

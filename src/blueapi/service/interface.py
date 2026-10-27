@@ -181,12 +181,14 @@ def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> 
 
 def get_plans() -> list[PlanModel]:
     """Get all available plans in the BlueskyContext"""
-    return [PlanModel.from_plan(plan) for plan in context().plans.values()]
+    return [
+        PlanModel.model_validate(plan.to_model()) for plan in context().plans.values()
+    ]
 
 
 def get_plan(name: str) -> PlanModel:
     """Get plan by name from the BlueskyContext"""
-    return PlanModel.from_plan(context().plans[name])
+    return PlanModel.model_validate(context().plans[name].to_model())
 
 
 def get_devices() -> list[DeviceModel]:

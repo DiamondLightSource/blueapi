@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from inspect import Parameter, signature
 from typing import Any, Self, TypedDict
 
-from pydantic import Field, TypeAdapter, ValidationError
+from pydantic import Field, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel

@@ -1115,7 +1115,6 @@ def test_positional_only_and_var_keyword_plan(
 
 
 def test_arg_in_args_and_kwargs():
-
     def positionals(one: int, two: int) -> MsgGenerator:
         yield from []
 
@@ -1127,3 +1126,71 @@ def test_arg_in_args_and_kwargs():
         task.prepare_params(context)
 
     assert tpe.value.errors[0]["msg"] == "multiple values for argument 'one'"
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [[], [2], [2, 3]],
+    ids=["no_extra_args", "one_extra_arg", "two_extra_args"],
+)
+@pytest.mark.parametrize(
+    "keyword_only_params",
+    [{}, {"group": "test"}, {"wait": True}, {"group": "test", "wait": True}],
+    ids=["no_keyword_only_params", "with_group", "with_wait", "with_group_and_wait"],
+)
+@pytest.mark.parametrize(
+    "variadic_kwargs",
+    [{}, {"custom": "value"}, {"custom": "value", "another": 42}],
+    ids=["no_variadic_kwargs", "one_variadic_kwarg", "two_variadic_kwargs"],
+)
+def test_plan_args_with_keyword_only_params_and_variadic_kwargs(
+    fake_device: FakeDevice,
+    extra_args: list[int],
+    keyword_only_params: dict[str, Any],
+    variadic_kwargs: dict[str, Any],
+):
+    def args_with_keyword_only_params_and_variadic_kwargs(
+        obj: FakeDevice,
+        *args: Any,
+        group: str | None = None,
+        wait: bool = False,
+        **kwargs: Any,
+    ) -> MsgGenerator:
+        yield from []
+
+    context = BlueskyContext()
+    context.register_plan(args_with_keyword_only_params_and_variadic_kwargs)
+    context.register_device(fake_device)
+
+    task = Task(
+        name="args_with_keyword_only_params_and_variadic_kwargs",
+        args=[fake_device.name, 1, *extra_args],
+        params={**keyword_only_params, **variadic_kwargs},
+    )
+    prepared_args, prepared_kwargs = task.prepare_params(context)
+
+    expected_args = [fake_device, 1, *extra_args]
+    expected_kwargs = {**keyword_only_params, **variadic_kwargs}
+
+    # We only expect to see values provided by user and replaced str device names with
+    # devices.
+    assert prepared_args == expected_args
+    assert prepared_kwargs == expected_kwargs
+
+
+def test_string_default_is_not_treated_as_device_injection():
+    def plan_with_default_str(arg: str = "primary") -> MsgGenerator:
+        yield from []
+
+    primary = FakeDevice("primary")
+    context = BlueskyContext()
+    context.register_device(primary)
+    context.register_plan(plan_with_default_str)
+
+    task = Task(name="plan_with_default_str")
+
+    args, kwargs = task.prepare_params(context)
+    # Defaults provided by plan. Checking that device with same name is not added
+    # by mistake as the default plan value.
+    assert args == []
+    assert kwargs == {}

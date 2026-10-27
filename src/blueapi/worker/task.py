@@ -1,14 +1,45 @@
+import dataclasses
+import inspect
 import logging
 from collections.abc import Mapping
 from inspect import Parameter, signature
 from typing import Any, Self, TypedDict
 
-from pydantic import Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
-from blueapi.core import BlueskyContext
+from blueapi.core import BlueskyContext, is_bluesky_compatible_device_type
 from blueapi.utils import BlueapiBaseModel
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _is_injected_parameter(parameter: Parameter) -> bool:
+    """Determine whether a parameter's string default represents injection.
+
+    The ``inject()`` helper returns a string containing the device name (or an
+    empty string for composites). However, ordinary parameters can also have
+    string defaults, so the default value alone cannot identify an injected
+    parameter.
+
+    Check the annotation to distinguish Bluesky-compatible devices and
+    composite models (including dataclasses) from ordinary parameters. This
+    ensures that ordinary defaults are left to Python rather than being
+    passed explicitly to the plan.
+    """
+    default = parameter.default
+    # If parameter default is not str, it is not injected.
+    if not isinstance(default, str):
+        return False
+
+    annotation = parameter.annotation
+    return (
+        is_bluesky_compatible_device_type(annotation)  # Check if annotation is device
+        # Check for composite inject
+        or inspect.isclass(annotation)
+        and (
+            issubclass(annotation, BaseModel) or (dataclasses.is_dataclass(annotation))
+        )
+    )
 
 
 class Task(BlueapiBaseModel):
@@ -61,6 +92,31 @@ class Task(BlueapiBaseModel):
     def _inner_prepare_params(
         self, ctx: BlueskyContext
     ) -> tuple[list[Any], Mapping[str, Any]]:
+        """Prepare positional and keyword arguments for a plan invocation.
+
+        Bind the task's supplied arguments to the plan's signature, then validate
+        them using the plan's Pydantic model. This also resolves injected device
+        names to the corresponding devices in the context.
+
+        Only explicitly supplied arguments and injected parameters are included
+        in the returned arguments. Ordinary default values are omitted so that
+        Python applies the defaults defined by the plan itself, rather than
+        overriding them with defaults from the Pydantic model.
+
+        Arguments are placed in the positional or keyword collections according
+        to their parameter kinds, preserving their intended binding when the
+        plan is invoked. Positional-or-keyword parameters supplied by name, and
+        injected parameters that were not explicitly supplied, are passed as
+        keywords to avoid changing which parameters receive their values.
+
+        Args:
+            ctx: The Bluesky context containing the registered plan and its
+                associated parameter model.
+
+        Returns:
+            A tuple containing the positional arguments and keyword arguments
+            to pass to the plan.
+        """
         plan = ctx.plans[self.name]
         func = ctx.plan_functions[self.name]
 
@@ -75,7 +131,7 @@ class Task(BlueapiBaseModel):
 
         for name, parameter in sig.parameters.items():
             supplied = name in bound.arguments
-            maybe_device = isinstance(parameter.default, str)
+            maybe_device = _is_injected_parameter(parameter)
 
             # Let Python apply ordinary defaults itself.
             if not supplied and not maybe_device:

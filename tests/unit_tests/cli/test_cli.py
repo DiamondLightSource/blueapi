@@ -159,7 +159,9 @@ def test_get_plans(runner: CliRunner):
     response = responses.add(
         responses.GET,
         "http://localhost:8000/plans",
-        json=PlanResponse(plans=[PlanModel.model_validate(plan.to_model)]).model_dump(),
+        json=PlanResponse(
+            plans=[PlanModel.model_validate(plan.to_model())]
+        ).model_dump(),
         status=200,
     )
 

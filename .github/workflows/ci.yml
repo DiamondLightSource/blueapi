@@ -12,7 +12,10 @@ on:
       - "*"
   pull_request:
   merge_group:
+<<<<<<< before updating
     types: [checks_requested]
+=======
+>>>>>>> after updating
 
 jobs:
   # Check jobs skip pushes to main: merge_group already ran them on the same commit.

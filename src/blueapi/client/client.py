@@ -6,7 +6,7 @@ from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -26,7 +26,6 @@ from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
     OIDCConfig,
-    PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -155,7 +154,7 @@ class BlueapiClient(ClientProtocol):
 
     @start_as_current_span(TRACER, "name")
     @deprecated("plans[name]")
-    def get_plan(self, name: str) -> PlanModel:
+    def get_plan(self, name: str) -> dict[str, Any]:
         """
         Get details of a single plan
 
@@ -163,7 +162,8 @@ class BlueapiClient(ClientProtocol):
             name: Plan name
 
         Returns:
-            PlanModel: Details of the plan if found
+            dict[str, Any]: Plan definition returned by BlueapiPlan.to_model()
+            containing the plan name, description and parameter schema.
         """
         return self._rest.get_plan(name)
 

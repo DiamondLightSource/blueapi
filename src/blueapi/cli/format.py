@@ -14,7 +14,6 @@ from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
-    PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -57,7 +56,8 @@ def display_full(obj: Any, stream: Stream):
         case PlanResponse(plans=plans):
             for plan in plans:
                 display_full(plan, stream)
-        case PlanModel(name=name, description=desc, parameter_schema=schema):
+        case {"name": name, "schema": schema, **rest}:
+            desc = rest.get("description")
             print(name)
             if desc:
                 print(indent(dedent(desc).strip(), "    "))
@@ -110,7 +110,15 @@ def display_json(obj: Any, stream: Stream):
         case BaseModel():
             print(json.dumps(obj.model_dump()))
         case list():
-            print(json.dumps([it.model_dump() for it in obj], indent=2))
+            print(
+                json.dumps(
+                    [
+                        it.model_dump() if isinstance(it, BaseModel) else it
+                        for it in obj
+                    ],
+                    indent=2,
+                )
+            )
         case _:
             print(json.dumps(obj))
 
@@ -121,7 +129,8 @@ def display_compact(obj: Any, stream: Stream):
         case PlanResponse(plans=plans):
             for plan in plans:
                 display_compact(plan, stream)
-        case PlanModel(name=name, description=desc, parameter_schema=schema):
+        case {"name": name, "schema": schema, **rest}:
+            desc = rest.get("description")
             print(name)
             if desc:
                 print(indent(dedent(desc.split("\n\n")[0].strip("\n")), "    "))

@@ -25,7 +25,6 @@ from blueapi.service.model import (
     DeviceResponse,
     EnvironmentResponse,
     OIDCConfig,
-    PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -218,9 +217,9 @@ class BlueapiRestClient:
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
 
-    def get_plan(self, name: str) -> PlanModel:
+    def get_plan(self, name: str) -> dict[str, Any]:
         try:
-            return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+            return self._request_and_deserialize(f"/plans/{name}", dict[str, Any])
         except NotFoundError as e:
             raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 

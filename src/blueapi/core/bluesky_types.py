@@ -81,7 +81,7 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
         return False
 
 
-class Plan(BlueapiBaseModel):
+class BlueapiPlan(BlueapiBaseModel):
     """
     A plan that can be run
     """
@@ -93,6 +93,13 @@ class Plan(BlueapiBaseModel):
     model: type[BaseModel] = Field(
         description="Validation model of the parameters for the plan"
     )
+
+    def to_model(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "schema": self.model.model_json_schema(),
+            "description": self.description,
+        }
 
 
 class DataEvent(BlueapiBaseModel):

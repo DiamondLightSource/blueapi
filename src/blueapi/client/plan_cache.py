@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from blueapi.client.rest import InvalidParametersError
-from blueapi.service.model import PlanModel, TaskRequest
+from blueapi.service.model import TaskRequest
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 from .protocols import ClientProtocol
@@ -29,10 +29,12 @@ class PlanFailedError(Exception):
 class PlanCache:
     """Collection of plans that can be accessed by name or attribute."""
 
-    def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
+    def __init__(self, client: ClientProtocol, plans: list[dict[str, Any]]):
         self._cache = {
-            model.name: Plan(name=model.name, model=model, client=client)
-            for model in plans
+            plan_dict["name"]: Plan(
+                name=plan_dict["name"], model=plan_dict, client=client
+            )
+            for plan_dict in plans
         }
         for name, plan in self._cache.items():
             if name.startswith("_"):
@@ -55,11 +57,11 @@ class PlanCache:
 class Plan:
     """Callable client-side reference to a registered BlueAPI plan."""
 
-    def __init__(self, name: str, model: PlanModel, client: ClientProtocol):
+    def __init__(self, name: str, model: dict[str, Any], client: ClientProtocol):
         self.name = name
         self.model = model
         self._client = client
-        self.__doc__ = model.description
+        self.__doc__ = model.get("description")
 
     def __call__(self, *args, **kwargs) -> Any:
         """Execute the plan with the supplied arguments.
@@ -92,15 +94,15 @@ class Plan:
 
     @property
     def help_text(self) -> str:
-        return self.model.description or f"Plan {self!r}"
+        return self.model.get("description") or f"Plan {self!r}"
 
     @property
     def properties(self) -> dict[str, Any]:
-        return self.model.parameter_schema.get("properties", {})
+        return self.model.get("schema", {}).get("properties", {})
 
     @property
     def required(self) -> list[str]:
-        return self.model.parameter_schema.get("required", [])
+        return self.model.get("schema", {}).get("required", [])
 
     def __repr__(self) -> str:
         """Return a signature-like representation of the plan.

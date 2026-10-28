@@ -40,7 +40,7 @@ from blueapi.config import (
     ScratchRepository,
     generate_config_schema,
 )
-from blueapi.core.bluesky_types import DataEvent, Plan
+from blueapi.core.bluesky_types import BlueapiPlan, DataEvent
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -154,12 +154,14 @@ class MyDevice(Movable[ComplexType]):
 
 @responses.activate
 def test_get_plans(runner: CliRunner):
-    plan = Plan(name="my-plan", model=MyModel)
+    plan = BlueapiPlan(name="my-plan", model=MyModel)
 
     response = responses.add(
         responses.GET,
         "http://localhost:8000/plans",
-        json=PlanResponse(plans=[PlanModel.from_plan(plan)]).model_dump(),
+        json=PlanResponse(
+            plans=[PlanModel.model_validate(plan.to_model())]
+        ).model_dump(),
         status=200,
     )
 
@@ -835,7 +837,7 @@ class ExtendedModel(BaseModel):
 def test_plan_output_formatting():
     """Test for alternative plan output formats"""
 
-    plan = Plan(
+    plan = BlueapiPlan(
         name="my-plan",
         description=dedent("""\
             Summary of description
@@ -844,7 +846,7 @@ def test_plan_output_formatting():
             """),
         model=ExtendedModel,
     )
-    plans = PlanResponse(plans=[PlanModel.from_plan(plan)])
+    plans = PlanResponse(plans=[PlanModel.model_validate(plan.to_model())])
 
     compact = dedent("""\
                 my-plan

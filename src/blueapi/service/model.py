@@ -8,7 +8,7 @@ from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.config import OIDCConfig
-from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
+from blueapi.core import BLUESKY_PROTOCOLS, Device
 from blueapi.core.context import generic_bounds
 from blueapi.utils import BlueapiBaseModel
 from blueapi.worker import WorkerState
@@ -93,30 +93,6 @@ class DeviceResponse(BlueapiBaseModel):
     devices: list[DeviceModel] = Field(description="Devices available to use in plans")
 
 
-class PlanModel(BlueapiBaseModel):
-    """
-    Representation of a plan
-    """
-
-    name: str = Field(description="Name of the plan")
-    description: str | SkipJsonSchema[None] = Field(
-        description="Docstring of the plan", default=None
-    )
-    parameter_schema: dict[str, Any] = Field(
-        description="Schema of the plan's parameters",
-        alias="schema",
-        default_factory=dict,
-    )
-
-    @classmethod
-    def from_plan(cls, plan: Plan) -> "PlanModel":
-        return cls(
-            name=plan.name,
-            schema=plan.model.model_json_schema(),
-            description=plan.description,
-        )
-
-
 class PlanRequest(BlueapiBaseModel):
     """
     A query for plans
@@ -130,7 +106,9 @@ class PlanResponse(BlueapiBaseModel):
     Response to a query for plans
     """
 
-    plans: list[PlanModel] = Field(description="Plans available to use by a worker")
+    plans: list[dict[str, Any]] = Field(
+        description="Plans available to use by a worker"
+    )
 
 
 class TaskResponse(BlueapiBaseModel):

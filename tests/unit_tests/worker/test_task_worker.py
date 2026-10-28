@@ -740,7 +740,7 @@ def test_injected_devices_plan_model(
 
     context.register_plan(injected_device_plan)
     plan = context.plans["injected_device_plan"]
-    PlanModel.from_plan(plan)
+    PlanModel.model_validate(plan.to_model())
 
 
 def test_missing_injected_devices_fail_early(
@@ -853,7 +853,7 @@ def test_injected_composite_devices_plan_model(
 ):
     context.register_plan(injected_device_plan)
     plan = context.plans["injected_device_plan"]
-    PlanModel.from_plan(plan)
+    PlanModel.model_validate(plan.to_model())
 
 
 def test_injected_composite_with_pydantic_dataclass(

@@ -6,7 +6,6 @@ from .bluesky_types import (
     DataEvent,
     Device,
     MsgGenerator,
-    Plan,
     PlanGenerator,
     WatchableStatus,
     is_bluesky_compatible_device,
@@ -20,7 +19,6 @@ from .protocols import DeviceManager
 OTLP_EXPORT_ENABLED = environ.get("OTLP_EXPORT_ENABLED") == "true"
 
 __all__ = [
-    "Plan",
     "PlanGenerator",
     "MsgGenerator",
     "Device",

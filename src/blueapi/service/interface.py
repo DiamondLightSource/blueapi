@@ -22,7 +22,6 @@ from blueapi.log import set_up_logging
 from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
     DeviceModel,
-    PlanModel,
     PythonEnvironmentResponse,
     SourceInfo,
     TaskRequest,
@@ -179,16 +178,14 @@ def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> 
     stream.subscribe(forward_message)
 
 
-def get_plans() -> list[PlanModel]:
+def get_plans() -> list[dict[str, Any]]:
     """Get all available plans in the BlueskyContext"""
-    return [
-        PlanModel.model_validate(plan.to_model()) for plan in context().plans.values()
-    ]
+    return [plan.to_model() for plan in context().plans.values()]
 
 
-def get_plan(name: str) -> PlanModel:
+def get_plan(name: str) -> dict[str, Any]:
     """Get plan by name from the BlueskyContext"""
-    return PlanModel.model_validate(context().plans[name].to_model())
+    return context().plans[name].to_model()
 
 
 def get_devices() -> list[DeviceModel]:

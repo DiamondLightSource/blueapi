@@ -2,7 +2,7 @@ import logging
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from bluesky._vendor.super_state_machine.errors import TransitionError
@@ -73,7 +73,6 @@ from .model import (
     EnvironmentResponse,
     Health,
     HealthProbeResponse,
-    PlanModel,
     PlanResponse,
     PythonEnvironmentResponse,
     SourceInfo,
@@ -293,7 +292,7 @@ def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResp
 @start_as_current_span(TRACER, "name")
 def get_plan_by_name(
     name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
-) -> PlanModel:
+) -> dict[str, Any]:
     """Retrieve information about a plan by its (unique) name."""
     return runner.run(interface.get_plan, name)
 

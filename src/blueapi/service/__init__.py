@@ -1,4 +1,4 @@
 from .authentication import SessionManager
-from .model import DeviceModel, PlanModel
+from .model import DeviceModel
 
-__all__ = ["PlanModel", "DeviceModel", "SessionManager"]
+__all__ = ["DeviceModel", "SessionManager"]

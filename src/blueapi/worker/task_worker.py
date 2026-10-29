@@ -475,7 +475,7 @@ class TaskWorker:
 
         if self._current is not None:
             self._current.is_complete = True
-            self._pending_tasks.pop(self._current.task_id)
+            self._pending_tasks.pop(self._current.task_id, None)
             self._completed_tasks[self._current.task_id] = self._current
         self._report_status()
         self._errors.clear()

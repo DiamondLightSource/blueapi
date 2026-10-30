@@ -67,7 +67,9 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/diamondlightsource/dls-tiled:0.5.0
+    # Local build until dls-tiled is released against tiled 0.2.20
+    build:
+      context: ./services/tiled
     network_mode: host # Port 8407
     environment:
       - VITE_LOGIN_REDIRECT=false

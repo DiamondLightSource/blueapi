@@ -16,7 +16,11 @@ trees:
     tree: catalog
     args:
       uri: "sqlite:////storage/catalog.db"
-      writable_storage: "sqlite:////storage/catalog.db"
+      # Tables get their own file: on tiled 0.2.20, writing them through ADBC
+      # into the catalog's SQLite file corrupted it ("disk image is malformed")
+      writable_storage:
+        - "file:///storage/data"
+        - "sqlite:////storage/tables.db"
       init_if_not_exists: true
 
 access_control:
@@ -24,4 +28,4 @@ access_control:
   args:
     authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
     token_audience: account
-    empty_access_blob_public: true
+    empty_access_tags_public: true

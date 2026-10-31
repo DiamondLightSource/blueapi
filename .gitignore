@@ -71,3 +71,4 @@ lockfiles/
 
 # Editor/IDE project files
 .idea/
+tests/system_tests/logs/

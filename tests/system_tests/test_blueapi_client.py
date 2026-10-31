@@ -1,4 +1,3 @@
-import time
 from collections.abc import Generator, Mapping
 from pathlib import Path
 from typing import Any
@@ -18,8 +17,7 @@ from blueapi.client.client import MissingInstrumentSessionError
 from blueapi.client.device_cache import DeviceRef
 from blueapi.client.event_bus import AnyEvent
 from blueapi.client.plan_cache import Plan
-from blueapi.client.rest import ServiceUnavailableError, UnauthorisedAccessError
-from blueapi.config import ApplicationConfig
+from blueapi.client.rest import UnauthorisedAccessError
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import TaskRequest
 from blueapi.worker.event import WorkerEvent, WorkerState
@@ -58,18 +56,6 @@ def login(token_path: Path, user: User) -> BlueapiClient:
 
     # New client should pick up the cached token without logging in again
     return BlueapiClient.from_config_file(str(config_file))
-
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_server():
-    client = BlueapiClient.from_config(ApplicationConfig())
-    for _ in range(20):
-        try:
-            _ = client.oidc_config
-            return
-        except ServiceUnavailableError:
-            time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
 
 
 @pytest.fixture(scope="module")

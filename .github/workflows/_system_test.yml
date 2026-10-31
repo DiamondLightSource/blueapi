@@ -4,9 +4,6 @@ on:
 env:
   # https://github.com/pytest-dev/pytest/issues/2042
   PY_IGNORE_IMPORTMISMATCH: "1"
-  # test: sim IOCs and gateways from example-services, ci: the containerised blueapi server.
-  # Set here as --profile would replace COMPOSE_PROFILES=test from tests/system_tests/.env
-  COMPOSE_PROFILES: test,ci
 
 jobs:
   run:
@@ -27,21 +24,13 @@ jobs:
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v2
 
-      - name: Read dodal version from uv.lock
-        run: echo "DODAL_VERSION=$(grep -A1 '^name = "dls-dodal"$' uv.lock | sed -n 's/^version = "\(.*\)"$/\1/p')" >> "$GITHUB_ENV"
-
-      - name: Compose services
-        # Wait on blueapi only: --wait on everything fails on the one-shot init container exiting
-        run: |
-          docker compose -f tests/system_tests/compose.yaml up -d
-          docker compose -f tests/system_tests/compose.yaml up -d --wait --wait-timeout 600 blueapi
-
       - name: Install browser for device flow login
         run: uv run --locked playwright install --with-deps chromium
 
       - name: Run tests
+        # Starts the services, see tests/system_tests/stack.py
         run: uv run --locked tox -e system-test
 
-      - name: Compose logs
+      - name: Service logs
         if: failure()
-        run: docker compose -f tests/system_tests/compose.yaml logs
+        run: tail -n +1 tests/system_tests/logs/*

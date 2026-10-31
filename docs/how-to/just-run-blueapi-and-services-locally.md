@@ -1,6 +1,6 @@
 # Run BlueAPI and connect to services locally
 
-For development purposes, it can be useful to run BlueAPI and adjacent services (Numtracker, Tiled, OPA etc.) locally, i.e. not in a devcontainer. Following the steps in this page will allow you to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs, in detached mode. This can be useful for learning about the stack, running system tests checking if changes during development propagate as expected etc. 
+For development purposes, it can be useful to run BlueAPI and adjacent services (Numtracker, Tiled, OPA etc.) locally, i.e. not in a devcontainer. Following the steps in this page will allow you to launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs. The IOCs are started with docker compose and the other services with testcontainers (see `tests/system_tests/stack.py`); all of them stop when the command exits. This can be useful for learning about the stack, running system tests checking if changes during development propagate as expected etc. 
 
 Before starting, ensure you have followed the [Installation instructions](../tutorials/1.%20installation.md).
 
@@ -8,22 +8,22 @@ Before starting, ensure you have followed the [Installation instructions](../tut
 
 2. The default command `just` into the terminal will do the following:
     - A. initialise the example-services repo
-    - B. launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs in detached mode
+    - B. launch an instance of NumTracker, RabbitMQ, Keycloak, Tiled, OPA and a number of IOCs
     - C. set required EPICS environmental variables
     - D. start the BlueAPI server using the the config in `tests/system_tests/config.yaml`
+    - Ctrl-C stops the server and all of the services
 
 3. To run the above separately use the following commands:
-    - 2A and 2B: `just compose`
-    - 2C and 2D: `just serve`
+    - 2A and 2B: `just services` (runs until Ctrl-C)
+    - 2C and 2D: `just serve`, in another terminal
 
-4. In a new terminal window, to run unit and system tests respectively: `just unit` and `just system`
+4. In a new terminal window, to run unit and system tests respectively: `just unit` and `just system`. If no BlueAPI server is running, `just system` starts the services and a containerised server itself.
 
 5. Other commands available (use `just --list` to see them)
     - `just run PLAN PARAMS`: provide session, plan and parameter details to run a plan
     - `just lint`: will run all the precommit checks, update the BlueAPI schema, run pyright
     - `just coverage`: generate code coverage report
     - `just repl`: will give you a repl with pre-configured and logged in client
-    - `just compose down`: tear down adjacent services
 
 Channel Access
 

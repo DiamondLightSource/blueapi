@@ -1,4 +1,4 @@
-# Overlay on config.yaml for the containerised server in CI (compose profile "ci").
+# Overlay on config.yaml for the containerised server started by stack.py.
 # dodal is not in the image, so setup-scratch installs it; DODAL_VERSION is read from uv.lock.
 scratch:
   root: /tmp/scratch/blueapi

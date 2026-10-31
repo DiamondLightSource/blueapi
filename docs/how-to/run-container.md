@@ -22,9 +22,11 @@ To get a released version, use a numbered release instead of `latest`.
 
 ## Starting the message bus
 
-The worker requires a running instance of the message bus, which in this case is RabbitMQ. The easiest way to start it is
- to `compose` the services in `tests/system_tests/compose.yaml`
+The worker requires a running instance of the message bus, which in this case is RabbitMQ. The easiest way to start it
+along with the other services is `just services`, or to run RabbitMQ on its own with the STOMP plugin enabled:
 
 ```sh
-docker compose -f tests/system_tests/compose.yaml run rabbitmq --detach
+docker run --detach -p 61613:61613 --security-opt label=disable \
+    -v ./tests/system_tests/services/rabbitmq_plugins:/etc/rabbitmq/enabled_plugins \
+    docker.io/rabbitmq:4.0-management
 ```

@@ -1,15 +1,8 @@
 SESSION := "cm12345-1"
-RUNNER := `command -v docker || command -v podman || true`
 
-[doc('Start the example services via compose and run the blueapi server')]
-dev-server: compose serve
-
-_check-runner:
-    #!/usr/bin/env bash
-    if [[ "{{ RUNNER }}" == "" ]]; then
-        echo "{{ style('error') }}error{{ NORMAL }}: No container runtime available - either podman or docker is required"
-        exit 1
-    fi
+[doc('Start the services and run the blueapi server, Ctrl-C stops both')]
+dev-server: init-example-services
+    uv run python -m tests.system_tests.stack just serve
 
 [doc('Clone the example-services submodule if needed but leave it alone otherwise')]
 init-example-services:
@@ -18,9 +11,9 @@ init-example-services:
         git submodule update --init example-services
     fi
 
-[doc('Bring up the example services with docker/podman compose')]
-compose +ARGS="up -d --no-recreate": init-example-services _check-runner
-    {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ ARGS }}
+[doc('Start the services until Ctrl-C: EPICS IOCs via compose, the rest via testcontainers')]
+services: init-example-services
+    uv run python -m tests.system_tests.stack
 
 [doc('Run the blueapi server with the system test config')]
 serve *OPTS:

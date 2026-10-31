@@ -21,7 +21,6 @@ from blueapi.client.rest import (
     InvalidParametersError,
     NotFoundError,
     ParameterError,
-    ServiceUnavailableError,
     UnauthorisedAccessError,
     UnknownPlanError,
 )
@@ -196,18 +195,6 @@ def client_factory() -> dict[ValidUser, BlueapiClient]:
             users[user] = BlueapiClient.from_config(config=ApplicationConfig())
 
     return users
-
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_server(client_without_auth: BlueapiClient):
-    for _ in range(20):
-        try:
-            _ = client_without_auth.oidc_config
-            return
-        except ServiceUnavailableError:
-            ...
-        time.sleep(0.5)
-    raise TimeoutError("No connection to the blueapi server")
 
 
 @pytest.fixture

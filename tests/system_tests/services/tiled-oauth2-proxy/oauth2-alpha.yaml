@@ -16,7 +16,7 @@ providers:
     insecureSkipNonce: true
     issuerURL: http://localhost:8081/realms/master
 server:
-  BindAddress: localhost:4181
+  BindAddress: 0.0.0.0:4181
   SecureBindAddress: ""
   TLS: null
 upstreamConfig:

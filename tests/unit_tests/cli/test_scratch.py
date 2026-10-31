@@ -1,8 +1,10 @@
 import os
 import stat
+import sys
 import uuid
 from collections.abc import Generator
 from pathlib import Path
+from subprocess import TimeoutExpired
 from unittest.mock import ANY, MagicMock, Mock, PropertyMock, call, patch
 
 import pytest
@@ -62,20 +64,106 @@ def test_scratch_install_installs_path(
     )
 
 
+_UV_SYNC = [
+    "uv",
+    "sync",
+    "--locked",
+    "--inexact",
+    "--no-dev",
+    "--no-install-package",
+    "blueapi",
+]
+
+
+@pytest.fixture
+def two_dirs(directory_path_with_sgid: Path) -> tuple[Path, Path]:
+    locked, other = (
+        directory_path_with_sgid / "locked",
+        directory_path_with_sgid / "dodal",
+    )
+    locked.mkdir()
+    other.mkdir()
+    return locked, other
+
+
 @patch("blueapi.cli.scratch.Popen")
-def test_scratch_install_with_uv_lock(
+def test_scratch_install_with_uv_lock_syncs_into_running_environment(
     mock_popen: Mock,
     directory_path_with_sgid: Path,
 ):
-    mock_process = Mock()
-    mock_process.returncode = 0
-    mock_popen.return_value = mock_process
+    mock_popen.return_value.returncode = 0
 
-    scratch_install(directory_path_with_sgid, use_uv_lock=[True], timeout=1.0)
+    scratch_install(uv_lock_path=directory_path_with_sgid, timeout=1.0)
 
     mock_popen.assert_called_once_with(
-        ["uv", "sync", "--inexact"], cwd=directory_path_with_sgid
+        _UV_SYNC,
+        cwd=directory_path_with_sgid,
+        env={**os.environ, "UV_PROJECT_ENVIRONMENT": sys.prefix},
     )
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_with_uv_lock_installs_others_after_without_deps(
+    mock_popen: Mock,
+    two_dirs: tuple[Path, Path],
+):
+    locked, other = two_dirs
+    mock_popen.return_value.returncode = 0
+
+    scratch_install(other, uv_lock_path=locked, timeout=1.0)
+
+    assert mock_popen.call_args_list == [
+        call(_UV_SYNC, cwd=locked, env=ANY),
+        call(["uv", "pip", "install", "--no-deps", "-e", str(other)]),
+    ]
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_without_uv_lock_keeps_deps(
+    mock_popen: Mock,
+    two_dirs: tuple[Path, Path],
+):
+    first, second = two_dirs
+    mock_popen.return_value.returncode = 0
+
+    scratch_install(first, second, timeout=1.0)
+
+    assert mock_popen.call_args_list == [
+        call(["uv", "pip", "install", "-e", str(first)]),
+        call(["uv", "pip", "install", "-e", str(second)]),
+    ]
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_uv_lock_failure_stops_before_others(
+    mock_popen: Mock,
+    two_dirs: tuple[Path, Path],
+):
+    locked, other = two_dirs
+    mock_popen.return_value.returncode = 1
+
+    with pytest.raises(RuntimeError, match=f"Failed to install {locked} with uv sync"):
+        scratch_install(other, uv_lock_path=locked, timeout=1.0)
+
+    mock_popen.assert_called_once()
+
+
+def test_scratch_install_uv_lock_fails_on_nonexistant_path(nonexistant_path: Path):
+    with pytest.raises(KeyError):
+        scratch_install(uv_lock_path=nonexistant_path, timeout=1.0)
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_kills_process_on_timeout(
+    mock_popen: Mock,
+    directory_path_with_sgid: Path,
+):
+    mock_popen.return_value.wait.side_effect = TimeoutExpired("uv", 1.0)
+
+    with pytest.raises(TimeoutExpired):
+        scratch_install(directory_path_with_sgid, timeout=1.0)
+
+    mock_popen.return_value.kill.assert_called_once()
 
 
 def test_scratch_install_fails_on_file(file_path: Path):
@@ -364,10 +452,39 @@ def test_setup_scratch_iterates_repos(
             call(
                 directory_path_with_sgid / "foo",
                 directory_path_with_sgid / "bar",
-                use_uv_lock=[False, False],
+                uv_lock_path=None,
                 timeout=120.0,
             ),
         ]
+    )
+
+
+@patch("blueapi.cli.scratch.ensure_repo")
+@patch("blueapi.cli.scratch.scratch_install")
+def test_setup_scratch_passes_uv_lock_repo_separately(
+    mock_scratch_install: Mock,
+    mock_ensure_repo: Mock,
+    directory_path_with_sgid: Path,
+):
+    config = ScratchConfig(
+        root=directory_path_with_sgid,
+        repositories=[
+            ScratchRepository(name="dodal", remote_url="http://example.com/dodal.git"),
+            ScratchRepository(
+                name="village_bluesky",
+                remote_url="http://example.com/village_bluesky.git",
+                use_uv_lock=True,
+            ),
+            ScratchRepository(name="ophyd", remote_url="http://example.com/ophyd.git"),
+        ],
+    )
+    setup_scratch(config, install_timeout=120.0)
+
+    mock_scratch_install.assert_called_once_with(
+        directory_path_with_sgid / "dodal",
+        directory_path_with_sgid / "ophyd",
+        uv_lock_path=directory_path_with_sgid / "village_bluesky",
+        timeout=120.0,
     )
 
 

@@ -2,10 +2,11 @@ import importlib.metadata
 import logging
 import os
 import stat
+import sys
 import textwrap
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 
 from git import Repo
 from tomlkit import parse
@@ -64,9 +65,14 @@ def setup_scratch(
             except Exception as exc:
                 raise RuntimeError("Failed to clone repositories") from exc
 
+    locked = next((repo for repo in config.repositories if repo.use_uv_lock), None)
     scratch_install(
-        *(config.root / repo.name for repo in config.repositories),
-        use_uv_lock=[repo.use_uv_lock for repo in config.repositories],
+        *(
+            config.root / repo.name
+            for repo in config.repositories
+            if repo is not locked
+        ),
+        uv_lock_path=config.root / locked.name if locked else None,
         timeout=install_timeout,
     )
 
@@ -119,41 +125,64 @@ def ensure_repo(
 
 def scratch_install(
     *paths: Path,
-    use_uv_lock: list[bool] | None = None,
+    uv_lock_path: Path | None = None,
     timeout: float = _DEFAULT_INSTALL_TIMEOUT,
 ) -> None:
     """
     Install scratch packages. Make blueapi aware of repositories checked out in
     the scratch area. Make it automatically follow code changes to those repositories
-    (pending a restart). Do not install any of the packages' dependencies as they
-    may conflict with each other.
+    (pending a restart).
 
     Args:
-        paths: List of Paths to the checked out repositories
-        use_uv_lock: Optional list of booleans indicating whether to install
-            using uv.lock
-        timeout: Time to wait for installation subprocess
+        paths: List of Paths to the checked out repositories, installed editable
+        uv_lock_path: Optional path to a single repository to install from its
+            uv.lock. This is designed for when you have tested your code against
+            a set of dependencies and want them not to move between restarts,
+            e.g. village_bluesky. It is synced first, into the environment blueapi
+            is running in, with exactly the locked versions. The repositories in
+            ``paths`` (e.g. dodal) are then installed editable without their
+            dependencies, so they cannot move the locked versions.
+        timeout: Time to wait for each installation subprocess
     """
-    if not paths:
-        return
+    if uv_lock_path is not None:
+        _validate_directory(uv_lock_path)
+        LOGGER.info("Installing %s from its uv.lock", uv_lock_path)
+        _run_install(
+            [
+                "uv",
+                "sync",
+                "--locked",  # fail rather than re-resolve a stale uv.lock
+                "--inexact",  # keep packages that are not in the lock
+                "--no-dev",
+                "--no-install-package",  # keep the blueapi that is running
+                "blueapi",
+            ],
+            uv_lock_path,
+            timeout,
+            cwd=uv_lock_path,
+            # sync into this environment rather than the repository's own .venv
+            env={**os.environ, "UV_PROJECT_ENVIRONMENT": sys.prefix},
+        )
 
-    use_uv_lock_list = use_uv_lock or [False] * len(paths)
-
-    LOGGER.info("Installing packages")
-    for path, uv_lock in zip(paths, use_uv_lock_list, strict=True):
+    no_deps = ["--no-deps"] if uv_lock_path is not None else []
+    for path in paths:
         _validate_directory(path)
-        if uv_lock:
-            args = ["uv", "sync", "--inexact"]
-            process = Popen(args, cwd=path)
-        else:
-            args = ["uv", "pip", "install", "-e", str(path)]
-            process = Popen(args)
+        LOGGER.info("Installing %s", path)
+        _run_install(["uv", "pip", "install", *no_deps, "-e", str(path)], path, timeout)
 
+
+def _run_install(args: list[str], path: Path, timeout: float, **kwargs) -> None:
+    process = Popen(args, **kwargs)
+    try:
         process.wait(timeout=timeout)
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Failed to install packages: Exit Code: {process.returncode}"
-            )
+    except TimeoutExpired:
+        process.kill()
+        raise
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Failed to install {path} with {' '.join(args)}: "
+            f"Exit Code: {process.returncode}"
+        )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

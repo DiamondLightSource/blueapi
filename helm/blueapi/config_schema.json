@@ -427,7 +427,7 @@
                 },
                 "use_uv_lock": {
                     "default": false,
-                    "description": "Whether to install the repository using uv.lock",
+                    "description": "Install this repository with `uv sync` from its committed uv.lock. Designed for when you have tested your code against a set of dependencies and want them not to move between restarts, e.g. a beamline repository such as village_bluesky. At most one repository may set this. It is installed first; every other repository (e.g. dodal) is then installed editable without its dependencies, so the locked versions are kept.",
                     "title": "Use Uv Lock",
                     "type": "boolean"
                 }

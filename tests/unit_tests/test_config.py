@@ -12,7 +12,7 @@ import pytest
 import responses
 import yaml
 from bluesky_stomp.models import BasicAuthentication
-from pydantic import BaseModel, Field, WebsocketUrl
+from pydantic import BaseModel, Field, ValidationError, WebsocketUrl
 
 from blueapi.config import (
     CONFIG_SCHEMA_LOCATION,
@@ -20,6 +20,8 @@ from blueapi.config import (
     ConfigLoader,
     OIDCConfig,
     RestConfig,
+    ScratchConfig,
+    ScratchRepository,
     generate_config_schema,
 )
 from blueapi.utils import InvalidConfigError
@@ -581,3 +583,23 @@ def test_issuer_url_preferred_over_well_known_url(caplog):
 def test_ws_address(url: str, ws_url: str):
     conf = RestConfig.model_validate({"url": url})
     assert conf.ws_address == WebsocketUrl(ws_url)
+
+
+def _repo(name: str, use_uv_lock: bool) -> ScratchRepository:
+    return ScratchRepository(
+        name=name, remote_url=f"https://example.com/{name}.git", use_uv_lock=use_uv_lock
+    )
+
+
+@pytest.mark.parametrize("locks", [[], [False, False], [True], [False, True, False]])
+def test_scratch_config_allows_at_most_one_uv_lock(locks: list[bool]):
+    ScratchConfig(repositories=[_repo(f"r{i}", lock) for i, lock in enumerate(locks)])
+
+
+def test_scratch_config_rejects_multiple_uv_lock():
+    with pytest.raises(
+        ValidationError, match="Only one repository may set use_uv_lock"
+    ):
+        ScratchConfig(
+            repositories=[_repo("a", True), _repo("b", False), _repo("c", True)]
+        )

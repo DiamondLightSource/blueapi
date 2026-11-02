@@ -7,6 +7,8 @@ from unittest.mock import Mock
 import pytest
 
 from blueapi.cli.stubgen import (
+    DEV_TMPL,
+    PLAN_TMPL,
     PlanSpec,
     _docstring,
     _type_string,
@@ -94,8 +96,8 @@ def test_type_string(typ: dict, expected: str):
 @pytest.mark.parametrize(
     "template,model",
     [
-        ("device_cache_template.pyi.jinja", {"devices": []}),
-        ("plan_cache_template.pyi.jinja", {"plans": []}),
+        (DEV_TMPL, {"devices": []}),
+        (PLAN_TMPL, {"plans": []}),
     ],
 )
 def test_render_empty(template: str, model: dict[str, Any]):
@@ -124,7 +126,7 @@ def test_render_empty_plan_function():
     output = StringIO()
     plans = [Plan(name="empty", model=FOO, runner=Mock())]
     plan_model = [PlanSpec.from_plan(p) for p in plans]
-    render_stub_file(output, "plan_cache_template.pyi.jinja", plans=plan_model)
+    render_stub_file(output, PLAN_TMPL, plans=plan_model)
     rendered = _extract_rendered(output)
 
     assert (
@@ -144,7 +146,7 @@ def test_render_multiple_plan_functions():
     runner = Mock()
     plans = [Plan("empty", FOO, runner), Plan("two_args", BAR, runner)]
     plan_model = [PlanSpec.from_plan(p) for p in plans]
-    render_stub_file(output, "plan_cache_template.pyi.jinja", plans=plan_model)
+    render_stub_file(output, PLAN_TMPL, plans=plan_model)
     rendered = _extract_rendered(output)
 
     assert (
@@ -174,7 +176,7 @@ def test_device_fields():
         DeviceRef("one", cache, DeviceModel(name="one", protocols=[])),
         DeviceRef("two", cache, DeviceModel(name="two", protocols=[])),
     ]
-    render_stub_file(output, "device_cache_template.pyi.jinja", devices=devices)
+    render_stub_file(output, DEV_TMPL, devices=devices)
 
     assert _extract_rendered(output) == "    one: DeviceRef\n    two: DeviceRef\n"
 

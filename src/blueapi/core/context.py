@@ -5,7 +5,14 @@ from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
-from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
@@ -32,7 +39,6 @@ from blueapi.config import (
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
-    NumtrackerClient,
     is_function_sourced_from_module,
     load_module_all,
 )
@@ -49,6 +55,7 @@ from .bluesky_types import (
     is_bluesky_plan_generator,
 )
 from .device_lookup import find_component
+from .numtracker import NumtrackerClient
 
 LOGGER = logging.getLogger(__name__)
 

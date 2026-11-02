@@ -3,6 +3,8 @@ from blueapi.service.model import DeviceModel
 
 from .rest import NotFoundError
 
+# This file should be kept in sync with the type stub template in stubs/templates
+
 
 class DeviceCache:
     """Cache and lazily resolve devices from a Blueapi server."""

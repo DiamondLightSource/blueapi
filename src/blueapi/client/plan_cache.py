@@ -1,11 +1,10 @@
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from blueapi.client.rest import InvalidParametersError
-from blueapi.service.model import PlanModel, TaskRequest
+from blueapi.service.model import PlanModel
 from blueapi.worker.event import TaskError, TaskResult, TaskStatus
-
-from .protocols import ClientProtocol
 
 _REPR_MAX_LENGTH = 100
 _REPR_MAX_ARGS_INLINE = 3
@@ -19,6 +18,8 @@ _JSON_TYPE_MAP = {
 
 log = logging.getLogger(__name__)
 
+PlanRunner = Callable[[str, tuple[Any, ...], dict[str, Any]], TaskStatus]
+
 
 class PlanFailedError(Exception):
     def __init__(self, typ: str, message: str):
@@ -29,9 +30,9 @@ class PlanFailedError(Exception):
 class PlanCache:
     """Collection of plans that can be accessed by name or attribute."""
 
-    def __init__(self, client: ClientProtocol, plans: list[PlanModel]):
+    def __init__(self, runner: PlanRunner, plans: list[PlanModel]):
         self._cache = {
-            model.name: Plan(name=model.name, model=model, client=client)
+            model.name: Plan(name=model.name, model=model, runner=runner)
             for model in plans
         }
         for name, plan in self._cache.items():
@@ -55,10 +56,10 @@ class PlanCache:
 class Plan:
     """Callable client-side reference to a registered BlueAPI plan."""
 
-    def __init__(self, name: str, model: PlanModel, client: ClientProtocol):
+    def __init__(self, name: str, model: PlanModel, runner: PlanRunner):
         self.name = name
         self.model = model
-        self._client = client
+        self._runner = runner
         self.__doc__ = model.description
 
     def __call__(self, *args, **kwargs) -> Any:
@@ -75,14 +76,8 @@ class Plan:
             TypeError: If the supplied arguments do not match the plan
                 parameter schema.
         """
-        req = TaskRequest(
-            name=self.name,
-            args=list(args),
-            params=kwargs,
-            instrument_session=self._client.instrument_session,
-        )
         try:
-            match self._client.run_task(req):
+            match self._runner(self.name, args, kwargs):
                 case TaskStatus(result=TaskResult(result=res)):
                     return res
                 case TaskStatus(result=TaskError(type=typ, message=msg)):

@@ -18,6 +18,8 @@ _JSON_TYPE_MAP = {
 
 log = logging.getLogger(__name__)
 
+# This file should be kept in sync with the type stub template in stubs/templates
+
 PlanRunner = Callable[[str, tuple[Any, ...], dict[str, Any]], TaskStatus]
 
 

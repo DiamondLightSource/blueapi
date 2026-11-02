@@ -164,6 +164,13 @@ def main(
         print("Please invoke subcommand!")
 
 
+def _missing_server_extra(e: ImportError) -> ClickException:
+    return ClickException(
+        f"{e.name} is not installed, it is needed to run the server. "
+        "Install it with: pip install blueapi[server]"
+    )
+
+
 @main.command(name="schema")
 @click.option("-o", "--output", type=Path, help="Path to file to save the schema")
 @click.option(
@@ -177,12 +184,15 @@ def schema(output: Path | None = None, update: bool = False) -> None:
     """Only import the service functions when starting the service or generating
     the schema, not the controller as a new FastAPI app will be started each time.
     """
-    from blueapi.service.openapi import (
-        DOCS_SCHEMA_LOCATION,
-        generate_schema,
-        print_schema_as_yaml,
-        write_schema_as_yaml,
-    )
+    try:
+        from blueapi.service.openapi import (
+            DOCS_SCHEMA_LOCATION,
+            generate_schema,
+            print_schema_as_yaml,
+            write_schema_as_yaml,
+        )
+    except ImportError as e:
+        raise _missing_server_extra(e) from e
 
     """Generate the schema for the REST API"""
     schema = generate_schema()
@@ -229,7 +239,10 @@ def start_application(obj: dict):
     """Only import the service functions when starting the service or generating
     the schema, not the controller as a new FastAPI app will be started each time.
     """
-    from blueapi.service.main import start
+    try:
+        from blueapi.service.main import start
+    except ImportError as e:
+        raise _missing_server_extra(e) from e
 
     """
     Set up basic automated instrumentation for the FastAPI app, creating the

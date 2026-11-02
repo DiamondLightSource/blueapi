@@ -9,7 +9,7 @@ from subprocess import Popen
 from git import Repo
 
 from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
-from blueapi.utils import get_owner_gid, is_sgid_set
+from blueapi.utils import get_owner_gid, is_sgid_set, validate_directory
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -128,7 +128,7 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
         return
     LOGGER.info("Installing packages")
     for path in paths:
-        _validate_directory(path)
+        validate_directory(path)
         args = ["uv", "pip", "install", "-e", str(path)]
         process = Popen(args)
         process.wait(timeout=timeout)
@@ -139,7 +139,7 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
-    _validate_directory(root_path)
+    validate_directory(root_path)
 
     if required_gid is not None:
         if not is_sgid_set(root_path):
@@ -168,10 +168,3 @@ def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
             chgrp command.
             """)
             )
-
-
-def _validate_directory(path: Path) -> None:
-    if not path.exists():
-        raise KeyError(f"{path}: No such file or directory")
-    elif path.is_file():
-        raise KeyError(f"{path}: Is a file, not a directory")

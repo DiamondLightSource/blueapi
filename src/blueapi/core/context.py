@@ -55,7 +55,6 @@ from .bluesky_types import (
     is_bluesky_plan_generator,
 )
 from .device_lookup import find_component
-from .numtracker import NumtrackerClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -132,7 +131,6 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
-    numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
@@ -144,10 +142,10 @@ class BlueskyContext:
         if not configuration:
             return
 
-        if (nt_conf := configuration.numtracker) is not None:
-            if configuration.env.metadata is not None:
-                self.numtracker = NumtrackerClient(url=nt_conf.url)
-            else:
+        if configuration.numtracker is not None:
+            # The numtracker client itself is wired up by the service, see
+            # blueapi.service.interface.context
+            if configuration.env.metadata is None:
                 raise InvalidConfigError(
                     "Numtracker url has been configured, but there is no instrument or"
                     " instrument_session in the environment metadata"
@@ -158,20 +156,6 @@ class BlueskyContext:
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
             self.path_provider = path_provider
-
-            # local reference so it's available in _update_scan_num
-            numtracker = self.numtracker
-
-            async def _update_scan_num(md: dict[str, Any]) -> int:
-                scan = await numtracker.create_scan(
-                    md["instrument_session"], md["instrument"]
-                )
-                md["data_session_directory"] = str(scan.scan.directory.path)
-                md["detector_file_template"] = nt_conf.detector_file_template
-                md["scan_file"] = scan.scan.scan_file
-                return scan.scan.scan_number
-
-            self.run_engine.scan_id_source = _update_scan_num
 
         self.with_config(configuration.env)
 

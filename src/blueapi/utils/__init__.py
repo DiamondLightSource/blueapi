@@ -5,7 +5,7 @@ from logging import Logger
 from typing import Any, ParamSpec, TypeVar
 
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .file_permissions import get_owner_gid, is_sgid_set
+from .file_permissions import get_owner_gid, is_sgid_set, validate_directory
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
 from .serialization import serialize
@@ -22,6 +22,7 @@ __all__ = [
     "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",
+    "validate_directory",
     "is_function_sourced_from_module",
     "deprecated",
 ]

@@ -6,13 +6,7 @@ from tomlkit import parse
 
 from blueapi.config import ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
-
-
-def _validate_directory(path: Path) -> None:
-    if not path.exists():
-        raise KeyError(f"{path}: No such file or directory")
-    elif path.is_file():
-        raise KeyError(f"{path}: Is a file, not a directory")
+from blueapi.utils import validate_directory
 
 
 def _get_project_name_from_pyproject(path: Path) -> str:
@@ -53,7 +47,7 @@ def get_python_environment(
         python_env_response = PythonEnvironmentResponse(scratch_enabled=False)
     else:
         python_env_response = PythonEnvironmentResponse(scratch_enabled=True)
-        _validate_directory(config.root)
+        validate_directory(config.root)
         for repo in config.repositories:
             local_directory = config.root / repo.name
             repo = Repo(local_directory)

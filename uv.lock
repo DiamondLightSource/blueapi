@@ -496,7 +496,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "tiled", extra = ["client"] },
     { name = "tqdm" },
     { name = "websockets" },
 ]
@@ -579,8 +578,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "tiled", extras = ["client"], specifier = "==0.2.18" },
-    { name = "tiled", extras = ["client"], marker = "extra == 'server'", specifier = ">=0.2.4" },
+    { name = "tiled", extras = ["client"], marker = "extra == 'server'", specifier = "==0.2.18" },
     { name = "tomlkit", marker = "extra == 'server'" },
     { name = "tqdm" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.52.1" },

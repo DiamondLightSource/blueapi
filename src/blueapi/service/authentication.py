@@ -11,6 +11,13 @@ from fastapi.requests import HTTPConnection
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.status import HTTP_401_UNAUTHORIZED
 
+# Re-exported for backwards compatibility, these now live in blueapi.client.session
+from blueapi.client.session import (  # noqa: F401
+    CacheManager,
+    JWTAuth,
+    SessionCacheManager,
+    SessionManager,
+)
 from blueapi.config import OIDCConfig, ServiceAccount
 
 

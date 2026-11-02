@@ -29,7 +29,6 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
-from blueapi.core.numtracker import NumtrackerClient
 from blueapi.service import interface
 from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
@@ -42,6 +41,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
+from blueapi.service.numtracker import NumtrackerClient
 from blueapi.utils.invalid_config_error import InvalidConfigError
 from blueapi.worker.event import (
     TaskResult,
@@ -304,7 +304,7 @@ def test_get_tasks(get_tasks_mock: MagicMock):
     assert interface.get_tasks() == pending_task + running_task
 
 
-@patch("blueapi.service.interface.BlueskyContext.numtracker")
+@patch("blueapi.service.interface.numtracker")
 @patch("blueapi.service.interface.TaskWorker.begin_task")
 def test_begin_task_with_headers(worker_mock: MagicMock, mock_numtracker: MagicMock):
     uuid_value = "350043fd-597e-41a7-9a92-5d5478232cf7"
@@ -312,7 +312,7 @@ def test_begin_task_with_headers(worker_mock: MagicMock, mock_numtracker: MagicM
     headers = {"a": "b"}
 
     returned_task = interface.begin_task(task, headers)
-    mock_numtracker.set_headers.assert_called_once_with(headers)
+    mock_numtracker().set_headers.assert_called_once_with(headers)
 
     assert task == returned_task
     worker_mock.assert_called_once_with(uuid_value)
@@ -439,7 +439,6 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
 @patch("blueapi.service.interface.worker")
 def test_remove_tiled_subscriber(worker, context, from_uri, writer):
     task = WorkerTask(task_id="foo_bar")
-    context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.subscribe.return_value = 17
     worker().worker_events.subscribe.return_value = 42
@@ -507,7 +506,6 @@ def _missing_session_path(key: str):
 @patch("blueapi.service.interface.context")
 @patch("blueapi.service.interface.worker")
 def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
-    context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
@@ -542,7 +540,6 @@ def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
 def test_begin_task_finds_existing_session_in_one_lookup(
     worker, context, from_uri, writer
 ):
-    context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
@@ -559,7 +556,6 @@ def test_begin_task_finds_existing_session_in_one_lookup(
 @patch("blueapi.service.interface.context")
 @patch("blueapi.service.interface.worker")
 def test_begin_task_raises_for_invalid_instrument_session(worker, context, from_uri):
-    context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task(
@@ -581,7 +577,6 @@ def test_begin_task_raises_for_invalid_instrument_session(worker, context, from_
 def test_begin_task_handles_tiled_container_create_errors(
     worker, context, from_uri, writer, status_code, expect_raises
 ):
-    context().numtracker = None
     context().tiled_conf = TiledConfig()
     context().run_engine.md = {"instrument": "p46"}
     worker().get_task_by_id.return_value = _existing_task()
@@ -605,7 +600,6 @@ def test_begin_task_handles_tiled_container_create_errors(
 def test_begin_task_uses_service_account_auth_for_tiled(
     worker, context, from_uri, writer
 ):
-    context().numtracker = None
     context().tiled_conf = TiledConfig(
         authentication=ServiceAccount(
             client_id="tiled_writer",
@@ -627,7 +621,6 @@ def test_begin_task_uses_service_account_auth_for_tiled(
 def test_service_account_tiled_client_reused_across_tasks(
     worker, context, from_uri, writer
 ):
-    context().numtracker = None
     context().tiled_conf = TiledConfig(
         authentication=ServiceAccount(
             client_id="tiled_writer",
@@ -705,7 +698,7 @@ def test_configure_numtracker():
     )
     interface.set_config(conf)
     headers = {"a": "b"}
-    nt = interface.context().numtracker
+    nt = interface.numtracker()
 
     assert isinstance(nt, NumtrackerClient)
     nt.set_headers(headers)
@@ -713,7 +706,7 @@ def test_configure_numtracker():
     assert nt._url.unicode_string() == "https://numtracker-example.com/graphql"
 
 
-@patch("blueapi.core.numtracker.httpx.AsyncClient.post")
+@patch("blueapi.service.numtracker.httpx.AsyncClient.post")
 async def test_headers_are_cleared(mock_post):
     mock_response = Mock()
     mock_post.return_value = mock_response
@@ -776,7 +769,7 @@ def test_numtracker_requires_instrument_metadata():
     interface.set_config(ApplicationConfig())
 
 
-@patch("blueapi.core.numtracker.NumtrackerClient.create_scan")
+@patch("blueapi.service.numtracker.NumtrackerClient.create_scan")
 async def test_numtracker_create_scan_called_with_arguments_from_metadata(
     mock_create_scan,
 ):
@@ -791,10 +784,10 @@ async def test_numtracker_create_scan_called_with_arguments_from_metadata(
 
     headers = {"a": "b"}
 
-    assert ctx.numtracker is not None
+    assert (nt := interface.numtracker()) is not None
     assert ctx.run_engine.scan_id_source is not None
 
-    ctx.numtracker.set_headers(headers)
+    nt.set_headers(headers)
     ctx.run_engine.md["instrument_session"] = "ab123"
     scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
     assert isawaitable(scan_id) and await scan_id

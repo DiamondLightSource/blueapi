@@ -1,0 +1,29 @@
+from blueapi.client.rest import BlueapiRestClient
+from blueapi.service.model import DeviceModel
+
+{#-
+ This file is based on the devices_cache.py file in
+ blueapi/client/device_cache.py and should be kept in sync with changes there.
+#}
+
+# This file is auto-generated for a live server and should not be modified directly
+
+class DeviceRef:
+    model: DeviceModel
+    _cache: DeviceCache
+    def __new__(cls, name: str, cache: DeviceCache, model: DeviceModel): ...
+    def __getattr__(self, name) -> DeviceRef: ...
+    def __repr__(self) -> str: ...
+
+class DeviceCache:
+    def __init__(self, rest: BlueapiRestClient) -> None: ...
+    def __getitem__(self, name: str) -> DeviceRef: ...
+    def __iter__(self):  # -> Iterator[DeviceRef]:
+        ...
+    def __repr__(self) -> str: ...
+
+### Generated
+    {%- for item in devices %}
+    {{ item.name }}: DeviceRef
+    {%- endfor %}
+### End

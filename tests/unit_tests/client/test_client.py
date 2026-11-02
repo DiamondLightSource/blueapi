@@ -497,8 +497,8 @@ def test_run_stomp_ignores_non_matching_events(
 
 
 def test_scripting_interface_returns_result():
-    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
-    client.run_task.return_value = TaskStatus(
+    runner = Mock()
+    runner.return_value = TaskStatus(
         task_id="foobar",
         task_complete=True,
         task_failed=False,
@@ -506,15 +506,15 @@ def test_scripting_interface_returns_result():
     )
     demo_plan = Plan(
         name="demo",
-        client=client,
+        runner=runner,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
     assert demo_plan() == 42
 
 
 def test_scripting_interface_raises_exceptions():
-    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
-    client.run_task.return_value = TaskStatus(
+    runner = Mock()
+    runner.return_value = TaskStatus(
         task_id="foobar",
         task_complete=True,
         task_failed=True,
@@ -522,7 +522,7 @@ def test_scripting_interface_raises_exceptions():
     )
     demo_plan = Plan(
         name="demo",
-        client=client,
+        runner=runner,
         model=PlanModel(name="demo", description="Demo plan", schema={}),
     )
     with pytest.raises(PlanFailedError, match="Plan failed"):

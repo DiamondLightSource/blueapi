@@ -13,7 +13,7 @@ Lightweight bluesky-as-a-service wrapper application. Also usable as a library.
 What            | Where
 :---:           | :---:
 Source          | <https://github.com/DiamondLightSource/blueapi>
-PyPI            | `pip install blueapi`
+PyPI            | `pip install blueapi[server]` (server) / `pip install blueapi` (client only)
 Docker          | `docker run ghcr.io/diamondlightsource/blueapi:latest`
 Documentation   | <https://diamondlightsource.github.io/blueapi>
 Releases        | <https://github.com/DiamondLightSource/blueapi/releases>

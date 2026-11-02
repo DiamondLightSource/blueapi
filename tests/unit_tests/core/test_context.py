@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from inspect import Parameter
 from pathlib import Path
@@ -31,6 +32,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.adcore import ADWriterFactory
 from ophyd_async.epics.motor import Motor
+from ophyd_async.sim import SimMotor
 from pydantic import TypeAdapter, ValidationError
 from pydantic.json_schema import SkipJsonSchema
 from pytest import LogCaptureFixture
@@ -67,6 +69,29 @@ EXPECTED_PLANS = {
     "plan_l",
     "plan_m",
     "plan_n",
+}
+EXPECTED_FAKE_DEVICE_MODULE_DEVICES = {
+    "fake_motor_x",
+    "fake_motor_x-velocity",
+    "fake_motor_x-acceleration_time",
+    "fake_motor_x-user_setpoint",
+    "fake_motor_y",
+    "fake_motor_y-velocity",
+    "fake_motor_y-acceleration_time",
+    "fake_motor_y-user_setpoint",
+    "fake_motor_bundle_a",
+    "fake_motor_bundle_a-velocity",
+    "fake_motor_bundle_a-acceleration_time",
+    "fake_motor_bundle_a-user_setpoint",
+    "fake_motor_bundle_b",
+    "fake_motor_bundle_b-velocity",
+    "fake_motor_bundle_b-acceleration_time",
+    "fake_motor_bundle_b-user_setpoint",
+    "device_a",
+    "device_a-motor",
+    "device_a-motor-velocity",
+    "device_a-motor-acceleration_time",
+    "device_a-motor-user_setpoint",
 }
 
 
@@ -188,9 +213,28 @@ def test_generated_schema(
 
     devicey_context.register_plan(demo_plan)
     schema = devicey_context.plans["demo_plan"].model.model_json_schema()
+
+    # Registering "sim" (a Motor) and "sim_det" (an AravisDetector) also
+    # registers all of their Movable-conforming child signals (PVs owned by
+    # ophyd-async, not blueapi), so the enum is more than just the two roots.
+    # Deriving it here, rather than hardcoding every PV name, keeps this test
+    # from breaking on unrelated upstream changes to those device classes.
+    expected_movables = sorted(
+        name
+        for name, device in devicey_context.devices.items()
+        if isinstance(device, Movable)
+    )
+    assert "sim" in expected_movables
+    assert "sim-velocity" in expected_movables
+    assert len(expected_movables) > 2
+
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "enum": ["sim"]},
+        "mov": {
+            "title": "Mov",
+            "type": "bluesky.protocols.Movable",
+            "enum": expected_movables,
+        },
     }
 
 
@@ -267,17 +311,134 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
     assert empty_context.devices["foo"] is sim_motor
 
 
+class Stage(Device):
+    """A real (non-mock) nested ophyd-async device tree: a stage with two
+    motors as children, each of which has its own signals as children."""
+
+    def __init__(self, name: str = "") -> None:
+        self.x = SimMotor()
+        self.y = SimMotor()
+        super().__init__(name=name)
+
+
+def test_register_device_registers_children_recursively(
+    empty_context: BlueskyContext,
+):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+
+    assert empty_context.devices.keys() == {
+        "stage",
+        "stage-x",
+        "stage-x-velocity",
+        "stage-x-acceleration_time",
+        "stage-x-user_setpoint",
+        "stage-y",
+        "stage-y-velocity",
+        "stage-y-acceleration_time",
+        "stage-y-user_setpoint",
+    }
+    assert empty_context.devices["stage-x"] is stage.x
+    assert empty_context.devices["stage-y"] is stage.y
+
+
+def test_child_sharing_parent_name_is_not_registered_separately(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    # SimMotor deliberately gives its readback signal the same ophyd-async
+    # name as the motor itself, so that readings are keyed by the device
+    # name. The motor, not the bare signal, should be found under "motor".
+    caplog.set_level(logging.WARNING)
+    motor = SimMotor(name="motor")
+    empty_context.register_device(motor)
+
+    assert empty_context.devices["motor"] is motor
+    assert "motor-user_readback" not in empty_context.devices
+    assert not caplog.get_records("call")
+
+
+def test_overridden_registration_name_does_not_rename_children(
+    empty_context: BlueskyContext,
+):
+    # Children are registered under their own ophyd-async names, which are
+    # unaffected by the name their parent is registered under
+    motor = SimMotor(name="motor")
+    empty_context.register_device(motor, name="foo")
+
+    assert empty_context.devices.keys() == {
+        "foo",
+        "motor-velocity",
+        "motor-acceleration_time",
+        "motor-user_setpoint",
+    }
+    assert empty_context.devices["foo"] is motor
+    assert empty_context.devices["motor-velocity"] is motor.velocity
+
+
+def test_unrelated_name_collision_keeps_existing_device_and_warns(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    # Pre-register something under the name that a motor's velocity signal
+    # would naturally take.
+    sentinel = SimMotor(name="sentinel")
+    empty_context.register_device(sentinel, name="motor-velocity")
+
+    caplog.set_level(logging.WARNING)
+    motor = SimMotor(name="motor")
+    empty_context.register_device(motor)
+
+    assert empty_context.devices["motor-velocity"] is sentinel
+    assert empty_context.devices["motor"] is motor
+    assert any(
+        "motor-velocity" in record.message for record in caplog.get_records("call")
+    )
+
+
+def test_register_device_is_idempotent(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+    before = dict(empty_context.devices)
+
+    empty_context.register_device(stage)
+
+    assert empty_context.devices == before
+
+
+def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):
+    stage = Stage()  # no name given, so stage and its children are unnamed
+    empty_context.register_device(stage, name="stage")
+
+    assert empty_context.devices.keys() == {"stage"}
+
+
+def test_dotted_and_dashed_lookup_return_same_device(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+
+    assert empty_context.find_device("stage.x") is empty_context.find_device("stage-x")
+    assert empty_context.find_device("stage-x") is stage.x
+
+
+def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+
+    def move_plan(mov: Movable) -> MsgGenerator:
+        yield from ()
+
+    empty_context.register_plan(move_plan)
+    model = empty_context.plans[move_plan.__name__].model
+    adapter = TypeAdapter(model)
+
+    assert adapter.validate_python({"mov": "stage-x"}).mov is stage.x  # type: ignore
+    assert adapter.validate_python({"mov": "stage.x"}).mov is stage.x  # type: ignore
+
+
 def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
     empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
-    assert {
-        "fake_motor_x",
-        "fake_motor_y",
-        "fake_motor_bundle_a",
-        "fake_motor_bundle_b",
-        "device_a",
-    } == empty_context.devices.keys()
+    assert EXPECTED_FAKE_DEVICE_MODULE_DEVICES == empty_context.devices.keys()
 
 
 def test_add_failing_devices_from_module(
@@ -339,13 +500,7 @@ def test_add_devices_and_plans_from_modules_with_config(
             ]
         )
     )
-    assert {
-        "fake_motor_x",
-        "fake_motor_y",
-        "fake_motor_bundle_a",
-        "fake_motor_bundle_b",
-        "device_a",
-    } == empty_context.devices.keys()
+    assert EXPECTED_FAKE_DEVICE_MODULE_DEVICES == empty_context.devices.keys()
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
 
@@ -715,8 +870,7 @@ def test_empty_device_manager(empty_context: BlueskyContext):
 
 
 def test_single_device_manager(empty_context: BlueskyContext):
-    foo = Mock(spec=Device, name="foo")
-    foo.name = "foo"
+    foo = Device(name="foo")
     sdm = StaticDeviceManager(devices={"foo": foo})
     empty_context.with_device_manager(sdm)
 
@@ -780,8 +934,7 @@ def test_path_provider_passed_to_device_manager(empty_context: BlueskyContext):
 
 
 def test_device_manager_environment_source(empty_context: BlueskyContext):
-    foo = Mock(spec=Device, name="foo")
-    foo.name = "foo"
+    foo = Device(name="foo")
     stm = StaticDeviceManager(devices={"foo": foo})
     dev_mod = Mock(spec=ModuleType)
     dev_mod.devices = stm

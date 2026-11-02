@@ -9,7 +9,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import NotConnectedError, PathProvider
+from ophyd_async.core import NotConnectedError, PathProvider, walk_devices
 from pydantic import (
     BaseModel,
     GetCoreSchemaHandler,
@@ -335,11 +335,13 @@ class BlueskyContext:
 
     def register_device(self, device: Device, name: str | None = None) -> None:
         """
-        Register an device in the context. The device needs to be registered with a
-        name. If the device is Readable, Movable or Flyable it has a `name`
-        attribute which can be used. The attribute can be overridden with the
-        `name` parameter here. If the device conforms to a different protocol then
-        the parameter must be used to name it.
+        Register a device under `name`, or its own `.name` if not given -
+        devices without a usable `.name` must supply `name` explicitly.
+
+        ophyd-async device children are also registered recursively under
+        their own ophyd-async names (e.g. "stage" also registers "stage-x",
+        "stage-y"), alongside existing dotted access (e.g. "stage.x"). Ophyd
+        v1 devices have no `children()` and are left untouched.
 
         Args:
             device (Device): The device to register
@@ -359,6 +361,38 @@ class BlueskyContext:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
         self.devices[name] = device
+        self._register_children(device)
+
+    def _register_children(self, device: Device) -> None:
+        """
+        Register `device`'s descendants under their ophyd-async names. No-op if
+        `device` isn't ophyd-async (e.g. ophyd v1, which has no `children()`).
+        """
+
+        if not isinstance(device, AsyncDevice):
+            return
+
+        tree = walk_devices(device)
+        for path, child in tree.items():
+            if not child.name:
+                continue
+
+            # Some children deliberately share their parent's name, e.g. a
+            # motor's user_readback, so that readings are keyed by the parent
+            parent_path, _, _ = path.rpartition(".")
+            parent = tree[parent_path] if parent_path else device
+            if child.name == parent.name:
+                continue
+
+            existing = self.devices.setdefault(child.name, child)
+            if existing is not child:
+                LOGGER.warning(
+                    "Not registering %s as a top level device under the "
+                    "name '%s': a different device is already registered "
+                    "with that name",
+                    child,
+                    child.name,
+                )
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

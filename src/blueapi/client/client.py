@@ -320,7 +320,7 @@ class BlueapiClient:
 
         return self.active_task
 
-    @start_as_current_span(TRACER, "name", "args", "params")
+    @start_as_current_span(TRACER, "name", "args", "kwargs")
     def run_plan(
         self, name: str, args: tuple[Any, ...], kwargs: Mapping[str, Any]
     ) -> TaskStatus:

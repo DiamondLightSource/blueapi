@@ -14,6 +14,9 @@ from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS
 
 log = logging.getLogger(__name__)
 
+PLAN_TMPL = "plan_cache_template.pyi.jinja"
+DEV_TMPL = "device_cache_template.pyi.jinja"
+
 
 @dataclass
 class ArgSpec:
@@ -100,10 +103,10 @@ def generate_stubs(target: Path, plans: list[Plan], devices: list[DeviceRef]):
 
     plan_model = [PlanSpec.from_plan(p) for p in plans]
     with open(client_dir / "plan_cache.pyi", "w") as out:
-        render_stub_file(out, "plan_cache_template.pyi.jinja", plans=plan_model)
+        render_stub_file(out, PLAN_TMPL, plans=plan_model)
 
     with open(client_dir / "device_cache.pyi", "w") as out:
-        render_stub_file(out, "device_cache_template.pyi.jinja", devices=devices)
+        render_stub_file(out, DEV_TMPL, devices=devices)
 
 
 def _docstring(text: str) -> str:

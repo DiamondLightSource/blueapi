@@ -1,17 +1,20 @@
 from io import StringIO
 from textwrap import dedent
 from types import FunctionType
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
-from blueapi.client.cache import DeviceRef, Plan
 
 from blueapi.cli.stubgen import (
+    PlanSpec,
     _docstring,
     _type_string,
     generate_stubs,
     render_stub_file,
 )
+from blueapi.client.device_cache import DeviceRef
+from blueapi.client.plan_cache import Plan
 from blueapi.service.model import DeviceModel, PlanModel
 
 
@@ -88,14 +91,18 @@ def test_type_string(typ: dict, expected: str):
     assert _type_string(typ) == expected
 
 
-def test_render_empty():
+@pytest.mark.parametrize(
+    "template,model",
+    [
+        ("device_cache_template.pyi.jinja", {"devices": []}),
+        ("plan_cache_template.pyi.jinja", {"plans": []}),
+    ],
+)
+def test_render_empty(template: str, model: dict[str, Any]):
     output = StringIO()
 
-    render_stub_file(output, [], [])
-    plan_text, device_text = _extract_rendered(output)
-
-    assert plan_text == ""
-    assert device_text == ""
+    render_stub_file(output, template, **model)
+    assert _extract_rendered(output) == ""
 
 
 FOO = PlanModel(name="empty", description="Doc string for empty", schema={})
@@ -115,17 +122,16 @@ BAR = PlanModel(
 
 def test_render_empty_plan_function():
     output = StringIO()
-    plans = [Plan(model=FOO, runner=Mock())]
-    render_stub_file(output, plans, [])
-    plan_text, device_text = _extract_rendered(output)
-
-    assert device_text == ""
+    plans = [Plan(name="empty", model=FOO, runner=Mock())]
+    plan_model = [PlanSpec.from_plan(p) for p in plans]
+    render_stub_file(output, "plan_cache_template.pyi.jinja", plans=plan_model)
+    rendered = _extract_rendered(output)
 
     assert (
-        plan_text
+        rendered
         == """\
     def empty(self,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
         \"""
         Doc string for empty
         \"""
@@ -136,16 +142,16 @@ def test_render_empty_plan_function():
 def test_render_multiple_plan_functions():
     output = StringIO()
     runner = Mock()
-    plans = [Plan(FOO, runner), Plan(BAR, runner)]
-    render_stub_file(output, plans, [])
-    plan_text, device_text = _extract_rendered(output)
-    assert device_text == ""
+    plans = [Plan("empty", FOO, runner), Plan("two_args", BAR, runner)]
+    plan_model = [PlanSpec.from_plan(p) for p in plans]
+    render_stub_file(output, "plan_cache_template.pyi.jinja", plans=plan_model)
+    rendered = _extract_rendered(output)
 
     assert (
-        plan_text
+        rendered
         == """\
     def empty(self,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
         \"""
         Doc string for empty
         \"""
@@ -153,7 +159,7 @@ def test_render_multiple_plan_functions():
     def two_args(self,
             one: int,
             two: str | None = None,
-    ) -> WorkerEvent:
+    ) -> TaskStatus:
         \"""
         Doc string for two_args
         \"""
@@ -168,16 +174,17 @@ def test_device_fields():
         DeviceRef("one", cache, DeviceModel(name="one", protocols=[])),
         DeviceRef("two", cache, DeviceModel(name="two", protocols=[])),
     ]
-    render_stub_file(output, [], devices)
+    render_stub_file(output, "device_cache_template.pyi.jinja", devices=devices)
 
-    plan_text, device_text = _extract_rendered(output)
-    assert plan_text == ""
-    assert device_text == "    one: DeviceRef\n    two: DeviceRef\n"
+    assert _extract_rendered(output) == "    one: DeviceRef\n    two: DeviceRef\n"
 
 
 def test_package_creation(tmp_path):
-    generate_stubs(tmp_path / "blueapi-stubs", [], [])
-    with open(tmp_path / "blueapi-stubs" / "pyproject.toml") as pyproj:
+
+    stub_root = tmp_path / "blueapi-stubs"
+
+    generate_stubs(stub_root, [], [])
+    with open(stub_root / "pyproject.toml") as pyproj:
         assert pyproj.read().startswith(
             dedent("""
             [project]
@@ -185,23 +192,20 @@ def test_package_creation(tmp_path):
             version = "0.1.0"
             """)
         )
-    with open(
-        tmp_path / "blueapi-stubs" / "src" / "blueapi-stubs" / "py.typed"
-    ) as typed:
+
+    stub_src = stub_root / "src" / "blueapi-stubs"
+
+    with open(stub_src / "py.typed") as typed:
         assert typed.read() == "partial\n"
 
-    assert (
-        tmp_path / "blueapi-stubs" / "src" / "blueapi-stubs" / "client" / "cache.pyi"
-    ).exists()
+    assert (stub_src / "client" / "device_cache.pyi").exists()
+    assert (stub_src / "client" / "plan_cache.pyi").exists()
 
 
-def _extract_rendered(src: StringIO) -> tuple[str, str]:
+def _extract_rendered(src: StringIO) -> str:
     src.seek(0)
-    _read_until_line(src, "### Generated plans")
-    plan_text = _read_until_line(src, "### End")
-    _read_until_line(src, "### Generated devices")
-    device_text = _read_until_line(src, "### End")
-    return plan_text, device_text
+    _read_until_line(src, "### Generated")
+    return _read_until_line(src, "### End")
 
 
 def _read_until_line(src: StringIO, match: str) -> str:

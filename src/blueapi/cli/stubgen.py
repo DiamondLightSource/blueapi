@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from inspect import cleandoc
 from pathlib import Path
 from textwrap import dedent
-from typing import Self, TextIO
+from typing import Any, Self, TextIO
 
 from jinja2 import Environment, PackageLoader
 
-from blueapi.client.cache import DeviceRef, Plan
+from blueapi.client.device_cache import DeviceRef
+from blueapi.client.plan_cache import Plan
 from blueapi.core import context
 from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS
 
@@ -71,7 +72,6 @@ def generate_stubs(target: Path, plans: list[Plan], devices: list[DeviceRef]):
     log.debug("Making project structure: %s", client_dir)
     client_dir.mkdir(parents=True, exist_ok=True)
 
-    stub_file = client_dir / "cache.pyi"
     project_file = target / "pyproject.toml"
     py_typed = target / "src" / "blueapi-stubs" / "py.typed"
 
@@ -96,9 +96,14 @@ def generate_stubs(target: Path, plans: list[Plan], devices: list[DeviceRef]):
     with open(py_typed, "w") as out:
         out.write("partial\n")
 
-    log.debug("Writing stub file to %s", stub_file)
-    with open(stub_file, "w") as out:
-        render_stub_file(out, plans, devices)
+    log.debug("Writing stub files to %s", client_dir)
+
+    plan_model = [PlanSpec.from_plan(p) for p in plans]
+    with open(client_dir / "plan_cache.pyi", "w") as out:
+        render_stub_file(out, "plan_cache_template.pyi.jinja", plans=plan_model)
+
+    with open(client_dir / "device_cache.pyi", "w") as out:
+        render_stub_file(out, "device_cache_template.pyi.jinja", devices=devices)
 
 
 def _docstring(text: str) -> str:
@@ -106,12 +111,8 @@ def _docstring(text: str) -> str:
     return cleandoc(text).replace('"""', '\\"""')
 
 
-def render_stub_file(
-    stub_file: TextIO, plan_models: list[Plan], devices: list[DeviceRef]
-):
-    plans = [PlanSpec.from_plan(p) for p in plan_models]
-
+def render_stub_file(stub_file: TextIO, template: str, **model: Any):
     env = Environment(loader=PackageLoader("blueapi", package_path="stubs/templates"))
     env.filters["docstring"] = _docstring
-    tmpl = env.get_template("cache_template.pyi.jinja")
-    stub_file.write(tmpl.render(plans=plans, devices=devices))
+    tmpl = env.get_template(template)
+    stub_file.write(tmpl.render(**model))

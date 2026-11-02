@@ -47,8 +47,11 @@ BLUESKY_PROTOCOL_NAMES = {context.qualified_name(proto) for proto in BLUESKY_PRO
 def _type_string(spec) -> str:
     """Best effort attempt at making useful type hints for plans"""
     match spec.get("type"):
-        case "array":
+        case "array" if "items" in spec:
             return f"list[{_type_string(spec.get('items'))}]"
+        case "array" if "prefixItems" in spec:
+            items = spec.get("prefixItems")
+            return f"tuple[{', '.join(_type_string(item) for item in items)}]"
         case "integer":
             return "int"
         case "number":

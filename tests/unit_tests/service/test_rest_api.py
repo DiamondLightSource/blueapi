@@ -147,7 +147,7 @@ def client_with_cors(
 class MinimalDevice(Stoppable):
     name: str
 
-    def stop(self, success: bool = True):
+    def stop(self, *, success: bool = True):
         pass
 
 

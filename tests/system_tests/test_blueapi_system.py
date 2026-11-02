@@ -659,11 +659,8 @@ def test_plan_runs(
     "task",
     [
         TaskRequest(
-            name="set_absolute",
-            params={
-                "movable": "stage.x",
-                "value": 1.0,
-            },
+            name="abs_set",
+            args=["stage.x", 1.0],
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         ),
     ],

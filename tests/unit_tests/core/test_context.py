@@ -478,7 +478,7 @@ class ConcreteStoppable(Stoppable):
     def name(self) -> str:
         return "Concrete"
 
-    def stop(self, success: bool = True):
+    def stop(self, *, success: bool = True):
         pass
 
 

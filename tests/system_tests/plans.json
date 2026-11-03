@@ -12,14 +12,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -73,14 +77,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -95,7 +103,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -148,14 +159,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -170,7 +185,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -223,14 +241,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -245,7 +267,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -293,14 +318,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -315,7 +344,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -363,14 +395,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -385,7 +421,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -446,14 +485,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -468,7 +511,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -529,14 +575,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -551,7 +601,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -603,14 +656,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -625,7 +682,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -749,7 +809,10 @@
                         "properties": {
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -771,7 +834,10 @@
                             },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -848,7 +914,10 @@
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -890,13 +959,19 @@
                         "properties": {
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -1012,7 +1087,10 @@
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -1135,7 +1213,10 @@
                         "properties": {
                             "x_axis": {
                                 "description": "An identifier for what to move for x",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "X Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -1156,7 +1237,10 @@
                             },
                             "y_axis": {
                                 "description": "An identifier for what to move for y",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Y Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -1221,7 +1305,10 @@
                         "properties": {
                             "axis": {
                                 "description": "An identifier for what to move",
-                                "enum": [],
+                                "enum": [
+                                    "stage-theta",
+                                    "stage-x"
+                                ],
                                 "title": "Axis",
                                 "type": "bluesky.protocols.Movable"
                             },
@@ -1284,7 +1371,9 @@
                         "items": {
                             "enum": [
                                 "det",
-                                "stage"
+                                "stage",
+                                "stage-theta",
+                                "stage-x"
                             ],
                             "type": "bluesky.protocols.Readable"
                         },
@@ -1321,14 +1410,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -1343,7 +1436,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -1396,14 +1492,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -1418,7 +1518,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -1471,14 +1574,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -1493,7 +1600,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -1541,14 +1651,18 @@
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "bluesky.protocols.Readable"
                                 },
                                 {
                                     "enum": [
                                         "det",
-                                        "stage"
+                                        "stage",
+                                        "stage-theta",
+                                        "stage-x"
                                     ],
                                     "type": "ophyd_async.core._protocol.AsyncReadable"
                                 }
@@ -1563,7 +1677,10 @@
                             "minItems": 2,
                             "prefixItems": [
                                 {
-                                    "enum": [],
+                                    "enum": [
+                                        "stage-theta",
+                                        "stage-x"
+                                    ],
                                     "type": "bluesky.protocols.Movable"
                                 },
                                 {
@@ -1606,7 +1723,10 @@
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
-                        "enum": [],
+                        "enum": [
+                            "stage-theta",
+                            "stage-x"
+                        ],
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
                         "types": [
@@ -1641,7 +1761,10 @@
                 "additionalProperties": false,
                 "properties": {
                     "movable": {
-                        "enum": [],
+                        "enum": [
+                            "stage-theta",
+                            "stage-x"
+                        ],
                         "title": "Movable",
                         "type": "bluesky.protocols.Movable",
                         "types": [
@@ -1761,7 +1884,9 @@
                     "readable": {
                         "enum": [
                             "det",
-                            "stage"
+                            "stage",
+                            "stage-theta",
+                            "stage-x"
                         ],
                         "title": "Readable",
                         "type": "bluesky.protocols.Readable"
@@ -1781,7 +1906,10 @@
                 "additionalProperties": false,
                 "properties": {
                     "stoppable": {
-                        "enum": [],
+                        "enum": [
+                            "stage-theta",
+                            "stage-x"
+                        ],
                         "title": "Stoppable",
                         "type": "bluesky.protocols.Stoppable"
                     }

@@ -157,46 +157,28 @@ def test_get_devices(context_mock: MagicMock):
     context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
-    devices = interface.get_devices()
-
-    # Registering "my_axis" also registers its signals as top level devices
-    # (e.g. "my_axis-velocity"), so there is one DeviceModel per entry in the
-    # context rather than just the two explicitly registered above - each
-    # reported under its own registry key, in registration order.
-    assert [d.name for d in devices] == list(context.devices.keys())
-    assert devices[0] == DeviceModel(
-        name="my_device",
-        protocols=[
-            ProtocolInfo(name="Stoppable", types=[]),
-        ],
-    )
-    assert devices[1] == DeviceModel(
-        name="my_axis",
-        protocols=[
-            ProtocolInfo(name="Checkable", types=[]),
-            ProtocolInfo(name="Flyable", types=[]),
-            ProtocolInfo(name="Movable", types=[]),
-            ProtocolInfo(name="Readable", types=[]),
-            ProtocolInfo(name="Stageable", types=[]),
-            ProtocolInfo(name="Stoppable", types=[]),
-            ProtocolInfo(name="Subscribable", types=[]),
-            ProtocolInfo(name="Configurable", types=[]),
-            ProtocolInfo(name="Device", types=[]),
-        ],
-    )
-    assert (
+    assert interface.get_devices() == [
         DeviceModel(
-            name="my_axis-velocity",
+            name="my_device",
             protocols=[
+                ProtocolInfo(name="Stoppable", types=[]),
+            ],
+        ),
+        DeviceModel(
+            name="my_axis",
+            protocols=[
+                ProtocolInfo(name="Checkable", types=[]),
+                ProtocolInfo(name="Flyable", types=[]),
                 ProtocolInfo(name="Movable", types=[]),
                 ProtocolInfo(name="Readable", types=[]),
                 ProtocolInfo(name="Stageable", types=[]),
+                ProtocolInfo(name="Stoppable", types=[]),
                 ProtocolInfo(name="Subscribable", types=[]),
+                ProtocolInfo(name="Configurable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],
-        )
-        in devices
-    )
+        ),
+    ]
 
 
 @patch("blueapi.service.interface.context")

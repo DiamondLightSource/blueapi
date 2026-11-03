@@ -72,26 +72,11 @@ EXPECTED_PLANS = {
 }
 EXPECTED_FAKE_DEVICE_MODULE_DEVICES = {
     "fake_motor_x",
-    "fake_motor_x-velocity",
-    "fake_motor_x-acceleration_time",
-    "fake_motor_x-user_setpoint",
     "fake_motor_y",
-    "fake_motor_y-velocity",
-    "fake_motor_y-acceleration_time",
-    "fake_motor_y-user_setpoint",
     "fake_motor_bundle_a",
-    "fake_motor_bundle_a-velocity",
-    "fake_motor_bundle_a-acceleration_time",
-    "fake_motor_bundle_a-user_setpoint",
     "fake_motor_bundle_b",
-    "fake_motor_bundle_b-velocity",
-    "fake_motor_bundle_b-acceleration_time",
-    "fake_motor_bundle_b-user_setpoint",
     "device_a",
     "device_a-motor",
-    "device_a-motor-velocity",
-    "device_a-motor-acceleration_time",
-    "device_a-motor-user_setpoint",
 }
 
 
@@ -214,27 +199,9 @@ def test_generated_schema(
     devicey_context.register_plan(demo_plan)
     schema = devicey_context.plans["demo_plan"].model.model_json_schema()
 
-    # Registering "sim" (a Motor) and "sim_det" (an AravisDetector) also
-    # registers all of their Movable-conforming child signals (PVs owned by
-    # ophyd-async, not blueapi), so the enum is more than just the two roots.
-    # Deriving it here, rather than hardcoding every PV name, keeps this test
-    # from breaking on unrelated upstream changes to those device classes.
-    expected_movables = sorted(
-        name
-        for name, device in devicey_context.devices.items()
-        if isinstance(device, Movable)
-    )
-    assert "sim" in expected_movables
-    assert "sim-velocity" in expected_movables
-    assert len(expected_movables) > 2
-
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {
-            "title": "Mov",
-            "type": "bluesky.protocols.Movable",
-            "enum": expected_movables,
-        },
+        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "enum": ["sim"]},
     }
 
 
@@ -312,49 +279,40 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
 
 
 class Stage(Device):
-    """A real (non-mock) nested ophyd-async device tree: a stage with two
-    motors as children, each of which has its own signals as children."""
-
     def __init__(self, name: str = "") -> None:
         self.x = SimMotor()
         self.y = SimMotor()
         super().__init__(name=name)
 
 
+class Table(Device):
+    def __init__(self, name: str = "") -> None:
+        self.mount = Stage()
+        super().__init__(name=name)
+
+
 def test_register_device_registers_children_recursively(
     empty_context: BlueskyContext,
 ):
-    stage = Stage(name="stage")
-    empty_context.register_device(stage)
+    table = Table(name="table")
+    empty_context.register_device(table)
 
     assert empty_context.devices.keys() == {
-        "stage",
-        "stage-x",
-        "stage-x-velocity",
-        "stage-x-acceleration_time",
-        "stage-x-user_setpoint",
-        "stage-y",
-        "stage-y-velocity",
-        "stage-y-acceleration_time",
-        "stage-y-user_setpoint",
+        "table",
+        "table-mount",
+        "table-mount-x",
+        "table-mount-y",
     }
-    assert empty_context.devices["stage-x"] is stage.x
-    assert empty_context.devices["stage-y"] is stage.y
+    assert empty_context.devices["table-mount"] is table.mount
+    assert empty_context.devices["table-mount-x"] is table.mount.x
+    assert empty_context.devices["table-mount-y"] is table.mount.y
 
 
-def test_child_sharing_parent_name_is_not_registered_separately(
-    empty_context: BlueskyContext, caplog: LogCaptureFixture
-):
-    # SimMotor deliberately gives its readback signal the same ophyd-async
-    # name as the motor itself, so that readings are keyed by the device
-    # name. The motor, not the bare signal, should be found under "motor".
-    caplog.set_level(logging.WARNING)
+def test_signals_are_not_registered(empty_context: BlueskyContext):
     motor = SimMotor(name="motor")
     empty_context.register_device(motor)
 
-    assert empty_context.devices["motor"] is motor
-    assert "motor-user_readback" not in empty_context.devices
-    assert not caplog.get_records("call")
+    assert empty_context.devices.keys() == {"motor"}
 
 
 def test_overridden_registration_name_does_not_rename_children(
@@ -362,36 +320,27 @@ def test_overridden_registration_name_does_not_rename_children(
 ):
     # Children are registered under their own ophyd-async names, which are
     # unaffected by the name their parent is registered under
-    motor = SimMotor(name="motor")
-    empty_context.register_device(motor, name="foo")
+    stage = Stage(name="stage")
+    empty_context.register_device(stage, name="foo")
 
-    assert empty_context.devices.keys() == {
-        "foo",
-        "motor-velocity",
-        "motor-acceleration_time",
-        "motor-user_setpoint",
-    }
-    assert empty_context.devices["foo"] is motor
-    assert empty_context.devices["motor-velocity"] is motor.velocity
+    assert empty_context.devices.keys() == {"foo", "stage-x", "stage-y"}
+    assert empty_context.devices["foo"] is stage
+    assert empty_context.devices["stage-x"] is stage.x
 
 
 def test_unrelated_name_collision_keeps_existing_device_and_warns(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
-    # Pre-register something under the name that a motor's velocity signal
-    # would naturally take.
     sentinel = SimMotor(name="sentinel")
-    empty_context.register_device(sentinel, name="motor-velocity")
+    empty_context.register_device(sentinel, name="stage-x")
 
     caplog.set_level(logging.WARNING)
-    motor = SimMotor(name="motor")
-    empty_context.register_device(motor)
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
 
-    assert empty_context.devices["motor-velocity"] is sentinel
-    assert empty_context.devices["motor"] is motor
-    assert any(
-        "motor-velocity" in record.message for record in caplog.get_records("call")
-    )
+    assert empty_context.devices["stage-x"] is sentinel
+    assert empty_context.devices["stage-y"] is stage.y
+    assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
 def test_register_device_is_idempotent(empty_context: BlueskyContext):

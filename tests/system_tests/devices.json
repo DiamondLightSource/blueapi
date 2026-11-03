@@ -53,6 +53,106 @@
                     "types": []
                 }
             ]
+        },
+        {
+            "name": "det-driver",
+            "protocols": [
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf",
+            "protocols": [
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "Flyable",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "Flyable",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
         }
     ]
 }

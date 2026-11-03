@@ -9,7 +9,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import NotConnectedError, PathProvider, walk_devices
+from ophyd_async.core import NotConnectedError, PathProvider, Signal, walk_devices
 from pydantic import (
     BaseModel,
     GetCoreSchemaHandler,
@@ -338,10 +338,10 @@ class BlueskyContext:
         Register a device under `name`, or its own `.name` if not given -
         devices without a usable `.name` must supply `name` explicitly.
 
-        ophyd-async device children are also registered recursively under
-        their own ophyd-async names (e.g. "stage" also registers "stage-x",
-        "stage-y"), alongside existing dotted access (e.g. "stage.x"). Ophyd
-        v1 devices have no `children()` and are left untouched.
+        ophyd-async child devices (but not signals) are also registered
+        recursively under their own ophyd-async names (e.g. "stage" also
+        registers "stage-x", "stage-y"), alongside existing dotted access (e.g.
+        "stage.x"). Ophyd v1 devices have no `children()` and are left untouched.
 
         Args:
             device (Device): The device to register
@@ -365,23 +365,18 @@ class BlueskyContext:
 
     def _register_children(self, device: Device) -> None:
         """
-        Register `device`'s descendants under their ophyd-async names. No-op if
-        `device` isn't ophyd-async (e.g. ophyd v1, which has no `children()`).
+        Register `device`'s descendant devices (not signals) under their
+        ophyd-async names. No-op if `device` isn't ophyd-async (e.g. ophyd v1,
+        which has no `children()`).
         """
 
         if not isinstance(device, AsyncDevice):
             return
 
-        tree = walk_devices(device)
-        for path, child in tree.items():
-            if not child.name:
-                continue
-
-            # Some children deliberately share their parent's name, e.g. a
-            # motor's user_readback, so that readings are keyed by the parent
-            parent_path, _, _ = path.rpartition(".")
-            parent = tree[parent_path] if parent_path else device
-            if child.name == parent.name:
+        for child in walk_devices(device).values():
+            # Signals are attributes of their device rather than devices in
+            # their own right, and remain reachable via dotted access
+            if isinstance(child, Signal) or not child.name:
                 continue
 
             existing = self.devices.setdefault(child.name, child)

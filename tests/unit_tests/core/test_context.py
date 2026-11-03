@@ -354,7 +354,7 @@ def test_signals_are_registered(empty_context: BlueskyContext):
     assert empty_context.devices["detector-lens_mode"] is detector.lens_mode
 
 
-def test_child_sharing_parent_name_is_not_registered_separately(
+def test_child_sharing_parent_name_is_registered_by_attribute(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
     # SimMotor's readback signal has the same name as the motor
@@ -363,11 +363,11 @@ def test_child_sharing_parent_name_is_not_registered_separately(
     empty_context.register_device(motor)
 
     assert empty_context.devices["motor"] is motor
-    assert motor.user_readback not in empty_context.devices.values()
+    assert empty_context.devices["motor-user_readback"] is motor.user_readback
     assert not caplog.get_records("call")
 
 
-def test_descendant_sharing_ancestor_name_is_not_registered_separately(
+def test_descendant_sharing_ancestor_name_is_registered_by_attribute(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
     caplog.set_level(logging.WARNING)
@@ -376,7 +376,7 @@ def test_descendant_sharing_ancestor_name_is_not_registered_separately(
     empty_context.register_device(stage)
 
     assert empty_context.devices["stage"] is stage
-    assert stage.x.position not in empty_context.devices.values()
+    assert empty_context.devices["stage-x-position"] is stage.x.position
     assert not caplog.get_records("call")
 
 

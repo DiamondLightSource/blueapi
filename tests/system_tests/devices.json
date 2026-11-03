@@ -2676,6 +2676,48 @@
                     "types": []
                 }
             ]
+        },
+        {
+            "name": "stage-x-user_readback",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-user_readback",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
         }
     ]
 }

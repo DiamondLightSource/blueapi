@@ -377,17 +377,22 @@ class BlueskyContext:
             return
 
         ancestor_names = ancestor_names | {device.name}
-        for _, child in device.children():
-            # Some children share an ancestor's name, e.g. a motor's user_readback
-            if child.name and child.name not in ancestor_names:
-                existing = self.devices.setdefault(child.name, child)
+        for attr_name, child in device.children():
+            if child.name:
+                # Some children share an ancestor's name, e.g. a motor's
+                # user_readback, so name these after their attribute instead
+                if child.name in ancestor_names:
+                    name = f"{device.name}-{attr_name}"
+                else:
+                    name = child.name
+                existing = self.devices.setdefault(name, child)
                 if existing is not child:
                     # Its children's names start with the clashing name, so skip
                     # them too
                     LOGGER.warning(
                         "Not registering %s or its children, name '%s' is in use",
                         child,
-                        child.name,
+                        name,
                     )
                     continue
             self._register_children(child, ancestor_names)

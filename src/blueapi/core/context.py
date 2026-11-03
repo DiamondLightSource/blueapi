@@ -9,7 +9,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import NotConnectedError, PathProvider, Signal, walk_devices
+from ophyd_async.core import NotConnectedError, PathProvider
 from pydantic import (
     BaseModel,
     GetCoreSchemaHandler,
@@ -335,13 +335,15 @@ class BlueskyContext:
 
     def register_device(self, device: Device, name: str | None = None) -> None:
         """
-        Register a device under `name`, or its own `.name` if not given -
-        devices without a usable `.name` must supply `name` explicitly.
+        Register an device in the context. The device needs to be registered with a
+        name. If the device is Readable, Movable or Flyable it has a `name`
+        attribute which can be used. The attribute can be overridden with the
+        `name` parameter here. If the device conforms to a different protocol then
+        the parameter must be used to name it.
 
-        ophyd-async child devices (but not signals) are also registered
-        recursively under their own ophyd-async names (e.g. "stage" also
-        registers "stage-x", "stage-y"), alongside existing dotted access (e.g.
-        "stage.x"). Ophyd v1 devices have no `children()` and are left untouched.
+        Children of ophyd-async devices, including signals, are also registered
+        under their own names, e.g. registering "stage" also registers "stage-x"
+        and "stage-x-velocity".
 
         Args:
             device (Device): The device to register
@@ -360,34 +362,35 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
+        existing = self.devices.get(name)
+        if existing is not None and existing is not device:
+            LOGGER.warning("Replacing existing device registered as '%s'", name)
         self.devices[name] = device
         self._register_children(device)
 
-    def _register_children(self, device: Device) -> None:
-        """
-        Register `device`'s descendant devices (not signals) under their
-        ophyd-async names. No-op if `device` isn't ophyd-async (e.g. ophyd v1,
-        which has no `children()`).
-        """
+    def _register_children(
+        self, device: Device, ancestor_names: frozenset[str] = frozenset()
+    ) -> None:
+        """Register the children of an ophyd-async device under their own names."""
 
         if not isinstance(device, AsyncDevice):
             return
 
-        for child in walk_devices(device).values():
-            # Signals are attributes of their device rather than devices in
-            # their own right, and remain reachable via dotted access
-            if isinstance(child, Signal) or not child.name:
-                continue
-
-            existing = self.devices.setdefault(child.name, child)
-            if existing is not child:
-                LOGGER.warning(
-                    "Not registering %s as a top level device under the "
-                    "name '%s': a different device is already registered "
-                    "with that name",
-                    child,
-                    child.name,
-                )
+        ancestor_names = ancestor_names | {device.name}
+        for _, child in device.children():
+            # Some children share an ancestor's name, e.g. a motor's user_readback
+            if child.name and child.name not in ancestor_names:
+                existing = self.devices.setdefault(child.name, child)
+                if existing is not child:
+                    # Its children's names start with the clashing name, so skip
+                    # them too
+                    LOGGER.warning(
+                        "Not registering %s or its children, name '%s' is in use",
+                        child,
+                        child.name,
+                    )
+                    continue
+            self._register_children(child, ancestor_names)
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

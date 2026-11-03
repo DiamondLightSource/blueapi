@@ -23,11 +23,13 @@ from bluesky.utils import MsgGenerator
 from dodal.common import PlanGenerator, inject
 from ophyd_async.core import (
     Device,
+    DeviceVector,
     PathProvider,
     StandardDetector,
     StaticPathProvider,
     UUIDFilenameProvider,
     init_devices,
+    soft_signal_rw,
 )
 from ophyd_async.epics.adaravis import AravisDetector
 from ophyd_async.epics.adcore import ADWriterFactory
@@ -78,6 +80,15 @@ EXPECTED_FAKE_DEVICE_MODULE_DEVICES = {
     "device_a",
     "device_a-motor",
 }
+
+
+def assert_fake_device_module_registered(context: BlueskyContext) -> None:
+    # Which child signals exist depends on the upstream device classes
+    assert EXPECTED_FAKE_DEVICE_MODULE_DEVICES <= context.devices.keys()
+    assert all(
+        name.split("-")[0] in EXPECTED_FAKE_DEVICE_MODULE_DEVICES
+        for name in context.devices
+    )
 
 
 #
@@ -199,9 +210,20 @@ def test_generated_schema(
     devicey_context.register_plan(demo_plan)
     schema = devicey_context.plans["demo_plan"].model.model_json_schema()
 
+    # Which child signals exist depends on the upstream Motor class
+    expected_movables = sorted(
+        name
+        for name, device in devicey_context.devices.items()
+        if isinstance(device, Movable)
+    )
+    assert {"sim", "sim-velocity"} <= set(expected_movables)
     assert schema["properties"] == {
         "foo": {"title": "Foo", "type": "integer"},
-        "mov": {"title": "Mov", "type": "bluesky.protocols.Movable", "enum": ["sim"]},
+        "mov": {
+            "title": "Mov",
+            "type": "bluesky.protocols.Movable",
+            "enum": expected_movables,
+        },
     }
 
 
@@ -278,10 +300,17 @@ def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
     assert empty_context.devices["foo"] is sim_motor
 
 
+class Axis(Device):
+    def __init__(self, name: str = "") -> None:
+        self.position = soft_signal_rw(float)
+        self.velocity = soft_signal_rw(float)
+        super().__init__(name=name)
+
+
 class Stage(Device):
     def __init__(self, name: str = "") -> None:
-        self.x = SimMotor()
-        self.y = SimMotor()
+        self.x = Axis()
+        self.y = Axis()
         super().__init__(name=name)
 
 
@@ -301,29 +330,87 @@ def test_register_device_registers_children_recursively(
         "table",
         "table-mount",
         "table-mount-x",
+        "table-mount-x-position",
+        "table-mount-x-velocity",
         "table-mount-y",
+        "table-mount-y-position",
+        "table-mount-y-velocity",
     }
     assert empty_context.devices["table-mount"] is table.mount
     assert empty_context.devices["table-mount-x"] is table.mount.x
-    assert empty_context.devices["table-mount-y"] is table.mount.y
+    assert empty_context.devices["table-mount-x-velocity"] is table.mount.x.velocity
 
 
-def test_signals_are_not_registered(empty_context: BlueskyContext):
+class Detector(Device):
+    def __init__(self, name: str = "") -> None:
+        self.lens_mode = soft_signal_rw(str)
+        super().__init__(name=name)
+
+
+def test_signals_are_registered(empty_context: BlueskyContext):
+    detector = Detector(name="detector")
+    empty_context.register_device(detector)
+
+    assert empty_context.devices["detector-lens_mode"] is detector.lens_mode
+
+
+def test_child_sharing_parent_name_is_not_registered_separately(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    # SimMotor's readback signal has the same name as the motor
+    caplog.set_level(logging.WARNING)
     motor = SimMotor(name="motor")
     empty_context.register_device(motor)
 
-    assert empty_context.devices.keys() == {"motor"}
+    assert empty_context.devices["motor"] is motor
+    assert motor.user_readback not in empty_context.devices.values()
+    assert not caplog.get_records("call")
+
+
+def test_descendant_sharing_ancestor_name_is_not_registered_separately(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    caplog.set_level(logging.WARNING)
+    stage = Stage(name="stage")
+    stage.x.position.set_name("stage")
+    empty_context.register_device(stage)
+
+    assert empty_context.devices["stage"] is stage
+    assert stage.x.position not in empty_context.devices.values()
+    assert not caplog.get_records("call")
+
+
+class AxisBank(Device):
+    def __init__(self, name: str = "") -> None:
+        self.axes = DeviceVector({1: Axis(), 2: Axis()})
+        super().__init__(name=name)
+
+
+def test_device_vector_children_are_registered(empty_context: BlueskyContext):
+    bank = AxisBank(name="bank")
+    empty_context.register_device(bank)
+
+    assert empty_context.devices["bank-axes"] is bank.axes
+    assert empty_context.devices["bank-axes-1"] is bank.axes[1]
+    assert empty_context.devices["bank-axes-2-velocity"] is bank.axes[2].velocity
 
 
 def test_overridden_registration_name_does_not_rename_children(
     empty_context: BlueskyContext,
 ):
-    # Children are registered under their own ophyd-async names, which are
-    # unaffected by the name their parent is registered under
+    # Children keep their own names when the parent is registered as "foo"
     stage = Stage(name="stage")
     empty_context.register_device(stage, name="foo")
 
-    assert empty_context.devices.keys() == {"foo", "stage-x", "stage-y"}
+    assert empty_context.devices.keys() == {
+        "foo",
+        "stage-x",
+        "stage-x-position",
+        "stage-x-velocity",
+        "stage-y",
+        "stage-y-position",
+        "stage-y-velocity",
+    }
     assert empty_context.devices["foo"] is stage
     assert empty_context.devices["stage-x"] is stage.x
 
@@ -339,22 +426,61 @@ def test_unrelated_name_collision_keeps_existing_device_and_warns(
     empty_context.register_device(stage)
 
     assert empty_context.devices["stage-x"] is sentinel
+    assert "stage-x-position" not in empty_context.devices
     assert empty_context.devices["stage-y"] is stage.y
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
-def test_register_device_is_idempotent(empty_context: BlueskyContext):
+def test_top_level_device_replacing_existing_device_warns(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+
+    caplog.set_level(logging.WARNING)
+    replacement = SimMotor(name="stage-x")
+    empty_context.register_device(replacement)
+
+    assert empty_context.devices["stage-x"] is replacement
+    assert any("stage-x" in record.message for record in caplog.get_records("call"))
+
+
+class EqualToEverything(SimMotor):
+    def __eq__(self, other: object) -> bool:
+        return True
+
+    __hash__ = SimMotor.__hash__
+
+
+def test_replacement_warning_uses_identity(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    empty_context.register_device(EqualToEverything(name="motor"))
+
+    caplog.set_level(logging.WARNING)
+    replacement = EqualToEverything(name="motor")
+    empty_context.register_device(replacement)
+
+    assert empty_context.devices["motor"] is replacement
+    assert any("motor" in record.message for record in caplog.get_records("call"))
+
+
+def test_register_device_is_idempotent(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
     stage = Stage(name="stage")
     empty_context.register_device(stage)
     before = dict(empty_context.devices)
 
+    caplog.set_level(logging.WARNING)
     empty_context.register_device(stage)
 
     assert empty_context.devices == before
+    assert not caplog.get_records("call")
 
 
 def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):
-    stage = Stage()  # no name given, so stage and its children are unnamed
+    stage = Stage()  # unnamed, so its children are too
     empty_context.register_device(stage, name="stage")
 
     assert empty_context.devices.keys() == {"stage"}
@@ -379,15 +505,16 @@ def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):
     model = empty_context.plans[move_plan.__name__].model
     adapter = TypeAdapter(model)
 
-    assert adapter.validate_python({"mov": "stage-x"}).mov is stage.x  # type: ignore
-    assert adapter.validate_python({"mov": "stage.x"}).mov is stage.x  # type: ignore
+    position = stage.x.position
+    assert adapter.validate_python({"mov": "stage-x-position"}).mov is position  # type: ignore
+    assert adapter.validate_python({"mov": "stage.x.position"}).mov is position  # type: ignore
 
 
 def test_add_devices_from_module(empty_context: BlueskyContext):
     import tests.unit_tests.core.fake_device_module as device_module
 
     empty_context.with_device_manager(device_module.devices)  # type: ignore - protocol uses Any to avoid dependency on dodal
-    assert EXPECTED_FAKE_DEVICE_MODULE_DEVICES == empty_context.devices.keys()
+    assert_fake_device_module_registered(empty_context)
 
 
 def test_add_failing_devices_from_module(
@@ -449,7 +576,7 @@ def test_add_devices_and_plans_from_modules_with_config(
             ]
         )
     )
-    assert EXPECTED_FAKE_DEVICE_MODULE_DEVICES == empty_context.devices.keys()
+    assert_fake_device_module_registered(empty_context)
     assert EXPECTED_PLANS == empty_context.plans.keys()
 
 

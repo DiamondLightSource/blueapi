@@ -11,6 +11,7 @@ from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from fastapi import status
+from ophyd_async.core import Device, soft_signal_rw
 from ophyd_async.epics.motor import Motor
 from pydantic import HttpUrl, SecretStr
 from pytest_httpx import HTTPXMock
@@ -157,7 +158,10 @@ def test_get_devices(context_mock: MagicMock):
     context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_devices() == [
+    # Which child signals exist depends on the upstream Motor class
+    devices = interface.get_devices()
+    assert [d.name for d in devices] == list(context.devices)
+    assert devices[:2] == [
         DeviceModel(
             name="my_device",
             protocols=[
@@ -175,6 +179,36 @@ def test_get_devices(context_mock: MagicMock):
                 ProtocolInfo(name="Stoppable", types=[]),
                 ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Configurable", types=[]),
+                ProtocolInfo(name="Device", types=[]),
+            ],
+        ),
+    ]
+
+
+class Detector(Device):
+    def __init__(self, name: str = "") -> None:
+        self.lens_mode = soft_signal_rw(str)
+        super().__init__(name=name)
+
+
+@patch("blueapi.service.interface.context")
+def test_get_devices_includes_child_signals(context_mock: MagicMock):
+    context = BlueskyContext()
+    context.register_device(Detector(name="detector"))
+    context_mock.return_value = context
+
+    assert interface.get_devices() == [
+        DeviceModel(
+            name="detector",
+            protocols=[ProtocolInfo(name="Device", types=[])],
+        ),
+        DeviceModel(
+            name="detector-lens_mode",
+            protocols=[
+                ProtocolInfo(name="Movable", types=[]),
+                ProtocolInfo(name="Readable", types=[]),
+                ProtocolInfo(name="Stageable", types=[]),
+                ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],
         ),

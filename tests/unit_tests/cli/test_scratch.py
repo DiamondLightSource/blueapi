@@ -87,6 +87,95 @@ def test_scratch_install_fails_on_non_zero_exit_code(
         scratch_install(directory_path_with_sgid, timeout=1.0)
 
 
+@pytest.fixture
+def locked_and_other_repos(tmp_path: Path) -> tuple[Path, Path]:
+    locked = tmp_path / "village_bluesky"
+    other = tmp_path / "dodal"
+    locked.mkdir()
+    other.mkdir()
+    (locked / "uv.lock").write_text("")
+    return locked, other
+
+
+def _successful_process() -> Mock:
+    process = Mock()
+    process.returncode = 0
+    return process
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_with_locked_repo_syncs_then_installs_without_deps(
+    mock_popen: Mock,
+    locked_and_other_repos: tuple[Path, Path],
+):
+    locked, other = locked_and_other_repos
+    mock_popen.return_value = _successful_process()
+
+    scratch_install(locked, other, timeout=1.0, locked_repo=locked)
+
+    assert mock_popen.call_count == 2
+    sync_args = mock_popen.call_args_list[0].args[0]
+    assert sync_args[:4] == ["uv", "sync", "--locked", "--inexact"]
+    assert str(locked) in sync_args
+    assert mock_popen.call_args_list[1] == call(
+        ["uv", "pip", "install", "--no-deps", "-e", str(other)]
+    )
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_fails_if_lock_file_missing(
+    mock_popen: Mock,
+    locked_and_other_repos: tuple[Path, Path],
+):
+    locked, other = locked_and_other_repos
+    (locked / "uv.lock").unlink()
+
+    with pytest.raises(FileNotFoundError, match="uv.lock"):
+        scratch_install(locked, other, timeout=1.0, locked_repo=locked)
+
+    mock_popen.assert_not_called()
+
+
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_stops_if_uv_sync_fails(
+    mock_popen: Mock,
+    locked_and_other_repos: tuple[Path, Path],
+):
+    locked, other = locked_and_other_repos
+    mock_popen.return_value.returncode = 1
+
+    with pytest.raises(RuntimeError, match="Exit Code: 1"):
+        scratch_install(locked, other, timeout=1.0, locked_repo=locked)
+
+    mock_popen.assert_called_once()
+
+
+@patch("blueapi.cli.scratch.ensure_repo")
+@patch("blueapi.cli.scratch.scratch_install")
+def test_setup_scratch_passes_locked_repo(
+    mock_scratch_install: Mock,
+    mock_ensure_repo: Mock,
+    directory_path_with_sgid: Path,
+):
+    config = ScratchConfig(
+        root=directory_path_with_sgid,
+        repositories=[
+            ScratchRepository(name="foo", remote_url="http://example.com/foo.git"),
+            ScratchRepository(
+                name="bar", remote_url="http://example.com/bar.git", use_uv_lock=True
+            ),
+        ],
+    )
+    setup_scratch(config, install_timeout=120.0)
+
+    mock_scratch_install.assert_called_once_with(
+        directory_path_with_sgid / "foo",
+        directory_path_with_sgid / "bar",
+        timeout=120.0,
+        locked_repo=directory_path_with_sgid / "bar",
+    )
+
+
 @patch("blueapi.cli.scratch.Repo")
 def test_repo_not_cloned_and_validated_if_found_locally(
     mock_repo: Mock,
@@ -349,6 +438,7 @@ def test_setup_scratch_iterates_repos(
                 directory_path_with_sgid / "foo",
                 directory_path_with_sgid / "bar",
                 timeout=120.0,
+                locked_repo=None,
             ),
         ]
     )

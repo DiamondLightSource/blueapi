@@ -191,17 +191,16 @@ def create_cli_client(aud: str = "") -> dict[str, Any]:
 @create_client
 def create_web_client(
     aud: str,
-    secret: str,
     root_url: str,
     attributes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     payload = general_mappers(aud)
     payload.update(
         standardFlowEnabled=True,
-        secret=secret,
+        publicClient=True,
         rootUrl=root_url,
         redirectUris=[f"{root_url}/*"],
-        attributes=attributes or {},
+        attributes={"pkce.code.challenge.method": "S256", **(attributes or {})},
     )
     return payload
 
@@ -239,7 +238,6 @@ def create_clients() -> None:
     create_web_client(
         client_id="ixx-blueapi",
         aud="ixx-blueapi",
-        secret="blueapi-secret",
         root_url="http://localhost:4180",
         attributes={
             "frontchannel.logout.session.required": "true",
@@ -249,7 +247,6 @@ def create_clients() -> None:
     create_web_client(
         client_id="tiled",
         aud="tiled",
-        secret="tiled-secret",
         root_url="http://localhost:4181",
     )
     create_beamline_service_account_client(client_id="tiled-writer")

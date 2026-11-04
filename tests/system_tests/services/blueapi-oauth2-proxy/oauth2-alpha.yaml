@@ -6,7 +6,9 @@ injectRequestHeaders:
 providers:
 - provider: oidc
   clientID: ixx-blueapi
-  clientSecret: blueapi-secret
+  # Keycloak client is public (PKCE); oauth2-proxy still requires a non-empty secret
+  clientSecret: unused
+  code_challenge_method: S256
   id: authn
   oidcConfig:
     audienceClaims: ["aud"]

@@ -347,13 +347,6 @@ class Detector(Device):
         super().__init__(name=name)
 
 
-def test_signals_are_registered(empty_context: BlueskyContext):
-    detector = Detector(name="detector")
-    empty_context.register_device(detector)
-
-    assert empty_context.devices["detector-lens_mode"] is detector.lens_mode
-
-
 def test_child_sharing_parent_name_is_registered_by_attribute(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):

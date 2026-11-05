@@ -86,7 +86,6 @@ class Task(BlueapiBaseModel):
         sig = signature(func)
         bound = sig.bind_partial(*self.args, **self.params)
 
-        # Validate explicitly supplied arguments and resolve device names.
         validated = plan.model.model_validate(bound.arguments)
 
         args: list[Any] = []

@@ -382,8 +382,8 @@ class BlueskyContext:
 
         existing = self.devices.setdefault(name, device)
         if existing is not device:
-            # Its children's names start with the clashing name, so skip them too.
-            # Expected for e.g. a motor's user_readback, which has the motor's name
+            # Expected for e.g. a motor's user_readback, which has the motor's name.
+            # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:
                 LOGGER.warning(
                     "Some devices were not registered as their names are in use, "

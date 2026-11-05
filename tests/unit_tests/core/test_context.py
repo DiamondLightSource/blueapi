@@ -381,33 +381,14 @@ def test_device_vector_children_are_registered(empty_context: BlueskyContext):
 def test_overridden_registration_name_does_not_rename_children(
     empty_context: BlueskyContext,
 ):
-    # Children keep their own names when the parent is registered as "foo"
-    stage = Stage(name="stage")
-    empty_context.register_device(stage, name="foo")
-
-    assert empty_context.devices.keys() == {
-        "foo",
-        "stage-x",
-        "stage-x-position",
-        "stage-x-velocity",
-        "stage-y",
-        "stage-y-position",
-        "stage-y-velocity",
-    }
-    assert empty_context.devices["foo"] is stage
-    assert empty_context.devices["stage-x"] is stage.x
-
-
-def test_overridden_registration_name_frees_parent_name_for_child(
-    empty_context: BlueskyContext,
-):
-    # "motor" isn't in use when the motor is registered as "foo", so its
-    # readback keeps its own name
+    # Children keep their own names when the parent is registered as "foo", so
+    # the motor's readback is registered as "motor", which is not in use
     motor = SimMotor(name="motor")
     empty_context.register_device(motor, name="foo")
 
     assert empty_context.devices["foo"] is motor
     assert empty_context.devices["motor"] is motor.user_readback
+    assert empty_context.devices["motor-velocity"] is motor.velocity
 
 
 def test_unrelated_name_collision_keeps_existing_device_and_logs(

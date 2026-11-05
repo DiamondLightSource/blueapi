@@ -191,8 +191,9 @@ def get_plan(name: str) -> PlanModel:
 
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
-    # Use the registered name, as a device registered with an override name would
-    # otherwise show its own name, which a child may also be registered as
+    # Report each device under its registered name. A device registered under an
+    # override name would otherwise show its own name, which one of its children
+    # may be registered as, e.g. a motor's user_readback
     return [
         DeviceModel.from_device(device, name)
         for name, device in context().devices.items()

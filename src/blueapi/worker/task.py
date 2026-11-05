@@ -93,35 +93,22 @@ class Task(BlueapiBaseModel):
         kwargs: dict[str, Any] = {}
 
         for name, parameter in sig.parameters.items():
-            supplied = name in bound.arguments
+            value = getattr(validated, name)
 
-            if supplied:
-                value = getattr(validated, name)
-
-                match parameter.kind:
-                    case Parameter.POSITIONAL_ONLY:
+            match parameter.kind:
+                case Parameter.POSITIONAL_ONLY:
+                    args.append(value)
+                case Parameter.VAR_POSITIONAL:
+                    args.extend(value)
+                case Parameter.VAR_KEYWORD:
+                    kwargs.update(value)
+                case Parameter.POSITIONAL_OR_KEYWORD:
+                    if name in bound.arguments and name not in self.params:
                         args.append(value)
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
-                    case Parameter.POSITIONAL_OR_KEYWORD:
-                        if name in self.params:
-                            kwargs[name] = value
-                        else:
-                            args.append(value)
-                    case Parameter.KEYWORD_ONLY:
+                    else:
                         kwargs[name] = value
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-            else:
-                kwargs[name] = getattr(validated, name)
-                value = getattr(validated, name)
-                match parameter.kind:
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
-                    case _:
-                        kwargs[name] = value
+                case Parameter.KEYWORD_ONLY:
+                    kwargs[name] = value
 
         return args, kwargs
 

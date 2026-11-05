@@ -1170,7 +1170,12 @@ def test_plan_args_with_keyword_only_params_and_variadic_kwargs(
     prepared_args, prepared_kwargs = task.prepare_params(context)
 
     expected_args = [fake_device, 1, *extra_args]
-    expected_kwargs = {**keyword_only_params, **variadic_kwargs}
+    expected_kwargs = {
+        "group": None,  # Defaults supplied by schema from registering plan.
+        "wait": False,  # Defaults supplied by schema from registering plan.
+        **keyword_only_params,
+        **variadic_kwargs,
+    }
 
     # We only expect to see values provided by user and replaced str device names with
     # devices.

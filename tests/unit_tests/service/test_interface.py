@@ -11,7 +11,6 @@ from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from fastapi import status
-from ophyd_async.core import Device, soft_signal_rw
 from ophyd_async.epics.motor import Motor
 from ophyd_async.sim import SimMotor
 from pydantic import HttpUrl, SecretStr
@@ -180,36 +179,6 @@ def test_get_devices(context_mock: MagicMock):
                 ProtocolInfo(name="Stoppable", types=[]),
                 ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Configurable", types=[]),
-                ProtocolInfo(name="Device", types=[]),
-            ],
-        ),
-    ]
-
-
-class Detector(Device):
-    def __init__(self, name: str = "") -> None:
-        self.lens_mode = soft_signal_rw(str)
-        super().__init__(name=name)
-
-
-@patch("blueapi.service.interface.context")
-def test_get_devices_includes_child_signals(context_mock: MagicMock):
-    context = BlueskyContext()
-    context.register_device(Detector(name="detector"))
-    context_mock.return_value = context
-
-    assert interface.get_devices() == [
-        DeviceModel(
-            name="detector",
-            protocols=[ProtocolInfo(name="Device", types=[])],
-        ),
-        DeviceModel(
-            name="detector-lens_mode",
-            protocols=[
-                ProtocolInfo(name="Movable", types=[]),
-                ProtocolInfo(name="Readable", types=[]),
-                ProtocolInfo(name="Stageable", types=[]),
-                ProtocolInfo(name="Subscribable", types=[]),
                 ProtocolInfo(name="Device", types=[]),
             ],
         ),

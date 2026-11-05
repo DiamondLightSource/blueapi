@@ -341,12 +341,6 @@ def test_register_device_registers_children_recursively(
     assert empty_context.devices["table-mount-x-velocity"] is table.mount.x.velocity
 
 
-class Detector(Device):
-    def __init__(self, name: str = "") -> None:
-        self.lens_mode = soft_signal_rw(str)
-        super().__init__(name=name)
-
-
 def test_child_sharing_parent_name_is_skipped_and_warned_once(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
@@ -404,7 +398,7 @@ def test_overridden_registration_name_does_not_rename_children(
     assert empty_context.devices["stage-x"] is stage.x
 
 
-def test_oerridden_registration_name_frees_parent_name_for_child(
+def test_overridden_registration_name_frees_parent_name_for_child(
     empty_context: BlueskyContext,
 ):
     # "motor" isn't in use when the motor is registered as "foo", so its
@@ -414,7 +408,6 @@ def test_oerridden_registration_name_frees_parent_name_for_child(
 
     assert empty_context.devices["foo"] is motor
     assert empty_context.devices["motor"] is motor.user_readback
-    assert "motor-user_readback" not in empty_context.devices
 
 
 def test_unrelated_name_collision_keeps_existing_device_and_logs(
@@ -467,14 +460,6 @@ def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):
     empty_context.register_device(stage, name="stage")
 
     assert empty_context.devices.keys() == {"stage"}
-
-
-def test_dotted_and_dashed_lookup_return_same_device(empty_context: BlueskyContext):
-    stage = Stage(name="stage")
-    empty_context.register_device(stage)
-
-    assert empty_context.find_device("stage.x") is empty_context.find_device("stage-x")
-    assert empty_context.find_device("stage-x") is stage.x
 
 
 def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):

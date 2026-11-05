@@ -1,5 +1,6 @@
 import inspect
 from collections.abc import Callable, Generator, Mapping
+from dataclasses import dataclass
 from typing import (
     Any,
     Protocol,
@@ -25,7 +26,7 @@ from bluesky.protocols import (
 )
 from bluesky.utils import Msg, MsgGenerator
 from ophyd_async.core import Device as AsyncDevice
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from blueapi.utils import BlueapiBaseModel
 
@@ -81,18 +82,16 @@ def is_bluesky_plan_generator(func: PlanGenerator) -> bool:
         return False
 
 
-class Plan(BlueapiBaseModel):
+@dataclass
+class Plan:
     """
     A plan that can be run
     """
 
-    name: str = Field(description="Referenceable name of the plan")
-    description: str | None = Field(
-        description="Description/docstring of the plan", default=None
-    )
-    model: type[BaseModel] = Field(
-        description="Validation model of the parameters for the plan"
-    )
+    name: str
+    model: type[BaseModel]
+    plan_function: PlanGenerator
+    description: str | None = None
 
 
 class DataEvent(BlueapiBaseModel):

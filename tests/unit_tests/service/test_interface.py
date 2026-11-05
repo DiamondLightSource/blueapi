@@ -12,6 +12,7 @@ from bluesky.utils import MsgGenerator
 from bluesky_stomp.messaging import StompClient
 from fastapi import status
 from ophyd_async.epics.motor import Motor
+from ophyd_async.sim import SimMotor
 from pydantic import HttpUrl, SecretStr
 from pytest_httpx import HTTPXMock
 from stomp.connect import StompConnection11 as Connection
@@ -157,7 +158,10 @@ def test_get_devices(context_mock: MagicMock):
     context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_devices() == [
+    # Which child signals exist depends on the upstream Motor class
+    devices = interface.get_devices()
+    assert [d.name for d in devices] == list(context.devices)
+    assert devices[:2] == [
         DeviceModel(
             name="my_device",
             protocols=[
@@ -179,6 +183,19 @@ def test_get_devices(context_mock: MagicMock):
             ],
         ),
     ]
+
+
+@patch("blueapi.service.interface.context")
+def test_get_devices_reports_registered_names(context_mock: MagicMock):
+    # The motor is registered as "foo", but its readback is named "motor"
+    context = BlueskyContext()
+    context.register_device(SimMotor(name="motor"), name="foo")
+    context_mock.return_value = context
+
+    names = [device.name for device in interface.get_devices()]
+    assert names.count("foo") == 1
+    assert names.count("motor") == 1
+    assert interface.get_device("foo").name == "foo"
 
 
 @patch("blueapi.service.interface.context")

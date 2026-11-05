@@ -36,8 +36,9 @@ class DeviceModel(BlueapiBaseModel):
     )
 
     @classmethod
-    def from_device(cls, device: Device) -> "DeviceModel":
-        name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
+    def from_device(cls, device: Device, name: str | None = None) -> "DeviceModel":
+        if name is None:
+            name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
         return cls(name=name, protocols=list(_protocol_info(device)))
 
 

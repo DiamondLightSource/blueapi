@@ -191,15 +191,22 @@ def get_plan(name: str) -> PlanModel:
 
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
-    return [DeviceModel.from_device(device) for device in context().devices.values()]
+    # Report each device under its registered name. A device registered under an
+    # override name would otherwise show its own name, which one of its children
+    # may be registered as, e.g. a motor's user_readback
+    return [
+        DeviceModel.from_device(device, name)
+        for name, device in context().devices.items()
+    ]
 
 
 def get_device(name: str) -> DeviceModel:
     """Retrieve device by name from the BlueskyContext"""
-    if not (device := context().find_device(name)):
+    ctx = context()
+    if not (device := ctx.find_device(name)):
         raise KeyError(name)
 
-    return DeviceModel.from_device(device)
+    return DeviceModel.from_device(device, name if name in ctx.devices else None)
 
 
 def submit_task(

@@ -218,14 +218,15 @@ def test_get_devices_includes_child_signals(context_mock: MagicMock):
 
 @patch("blueapi.service.interface.context")
 def test_get_devices_reports_registered_names(context_mock: MagicMock):
+    # The motor is registered as "foo", but its readback is named "motor"
     context = BlueskyContext()
-    context.register_device(SimMotor(name="motor"))
+    context.register_device(SimMotor(name="motor"), name="foo")
     context_mock.return_value = context
 
     names = [device.name for device in interface.get_devices()]
-    assert "motor-user_readback" in names
+    assert names.count("foo") == 1
     assert names.count("motor") == 1
-    assert interface.get_device("motor-user_readback").name == "motor-user_readback"
+    assert interface.get_device("foo").name == "foo"
 
 
 @patch("blueapi.service.interface.context")

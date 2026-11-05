@@ -347,30 +347,26 @@ class Detector(Device):
         super().__init__(name=name)
 
 
-def test_child_sharing_parent_name_is_registered_by_attribute(
+def test_child_sharing_parent_name_is_skipped_and_warned_once(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
     # SimMotor's readback signal has the same name as the motor
-    caplog.set_level(logging.WARNING)
+    caplog.set_level(logging.DEBUG)
     motor = SimMotor(name="motor")
     empty_context.register_device(motor)
+    empty_context.register_device(SimMotor(name="other"))
 
     assert empty_context.devices["motor"] is motor
-    assert empty_context.devices["motor-user_readback"] is motor.user_readback
-    assert not caplog.get_records("call")
-
-
-def test_descendant_sharing_ancestor_name_is_registered_by_attribute(
-    empty_context: BlueskyContext, caplog: LogCaptureFixture
-):
-    caplog.set_level(logging.WARNING)
-    stage = Stage(name="stage")
-    stage.x.position.set_name("stage")
-    empty_context.register_device(stage)
-
-    assert empty_context.devices["stage"] is stage
-    assert empty_context.devices["stage-x-position"] is stage.x.position
-    assert not caplog.get_records("call")
+    assert motor.user_readback not in empty_context.devices.values()
+    assert empty_context.find_device("motor.user_readback") is motor.user_readback
+    records = caplog.get_records("call")
+    assert [record.levelno for record in records] == [
+        logging.WARNING,
+        logging.DEBUG,
+        logging.DEBUG,
+    ]
+    assert "'motor'" in records[1].message
+    assert "'other'" in records[2].message
 
 
 class AxisBank(Device):
@@ -408,7 +404,7 @@ def test_overridden_registration_name_does_not_rename_children(
     assert empty_context.devices["stage-x"] is stage.x
 
 
-def test_overridden_registration_name_frees_parent_name_for_child(
+def test_oerridden_registration_name_frees_parent_name_for_child(
     empty_context: BlueskyContext,
 ):
     # "motor" isn't in use when the motor is registered as "foo", so its
@@ -421,13 +417,13 @@ def test_overridden_registration_name_frees_parent_name_for_child(
     assert "motor-user_readback" not in empty_context.devices
 
 
-def test_unrelated_name_collision_keeps_existing_device_and_warns(
+def test_unrelated_name_collision_keeps_existing_device_and_logs(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
     sentinel = SimMotor(name="sentinel")
     empty_context.register_device(sentinel, name="stage-x")
 
-    caplog.set_level(logging.WARNING)
+    caplog.set_level(logging.DEBUG)
     stage = Stage(name="stage")
     empty_context.register_device(stage)
 
@@ -437,17 +433,18 @@ def test_unrelated_name_collision_keeps_existing_device_and_warns(
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
-def test_top_level_device_replacing_existing_device_warns(
+def test_top_level_name_collision_keeps_existing_device_and_logs(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
     stage = Stage(name="stage")
     empty_context.register_device(stage)
 
-    caplog.set_level(logging.WARNING)
-    replacement = SimMotor(name="stage-x")
-    empty_context.register_device(replacement)
+    caplog.set_level(logging.DEBUG)
+    motor = SimMotor(name="stage-x")
+    empty_context.register_device(motor)
 
-    assert empty_context.devices["stage-x"] is replacement
+    assert empty_context.devices["stage-x"] is stage.x
+    assert motor.velocity not in empty_context.devices.values()
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 

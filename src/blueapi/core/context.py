@@ -132,6 +132,7 @@ class BlueskyContext:
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
+    _warned_name_clash: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self, configuration: ApplicationConfig | None):
         if not configuration:
@@ -343,7 +344,8 @@ class BlueskyContext:
 
         Children of ophyd-async devices, including signals, are also registered
         under their own names, e.g. registering "stage" also registers "stage-x"
-        and "stage-x-velocity".
+        and "stage-x-velocity". If a name is already in use, the existing device
+        is kept and the new one and its children are not registered.
 
         Args:
             device (Device): The device to register
@@ -362,11 +364,8 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        existing = self.devices.get(name)
-        if existing is not None and existing is not device:
-            LOGGER.warning("Replacing existing device registered as '%s'", name)
-        self.devices[name] = device
-        self._register_children(device)
+        if self._add_device(name, device):
+            self._register_children(device)
 
     def _register_children(self, device: Device) -> None:
         """Register the children of an ophyd-async device under their own names."""
@@ -374,24 +373,30 @@ class BlueskyContext:
         if not isinstance(device, AsyncDevice):
             return
 
-        for attr_name, child in device.children():
-            if child.name:
-                name = child.name
-                # Some children share a name already in use, e.g. a motor's
-                # user_readback, so name these after their attribute instead
-                if self.devices.get(name, child) is not child:
-                    name = f"{device.name}-{attr_name}"
-                existing = self.devices.setdefault(name, child)
-                if existing is not child:
-                    # Its children's names start with the clashing name, so skip
-                    # them too
-                    LOGGER.warning(
-                        "Not registering %s or its children, name '%s' is in use",
-                        child,
-                        name,
-                    )
-                    continue
-            self._register_children(child)
+        for _, child in device.children():
+            if not child.name or self._add_device(child.name, child):
+                self._register_children(child)
+
+    def _add_device(self, name: str, device: Device) -> bool:
+        """Add a device unless a different one is already registered as name."""
+
+        existing = self.devices.setdefault(name, device)
+        if existing is not device:
+            # Its children's names start with the clashing name, so skip them too.
+            # Expected for e.g. a motor's user_readback, which has the motor's name
+            if not self._warned_name_clash:
+                LOGGER.warning(
+                    "Some devices were not registered as their names are in use, "
+                    "e.g. motor readbacks. Enable debug logging to see which"
+                )
+                self._warned_name_clash = True
+            LOGGER.debug(
+                "Not registering %s or its children, name '%s' is in use",
+                device,
+                name,
+            )
+            return False
+        return True
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

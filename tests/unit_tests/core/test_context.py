@@ -496,11 +496,10 @@ def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):
 
     empty_context.register_plan(move_plan)
     model = empty_context.plans[move_plan.__name__].model
-    adapter = TypeAdapter(model)
 
     position = stage.x.position
-    assert adapter.validate_python({"mov": "stage-x-position"}).mov is position  # type: ignore
-    assert adapter.validate_python({"mov": "stage.x.position"}).mov is position  # type: ignore
+    assert model.model_validate({"mov": "stage-x-position"}).mov is position  # type: ignore
+    assert model.model_validate({"mov": "stage.x.position"}).mov is position  # type: ignore
 
 
 def test_add_devices_from_module(empty_context: BlueskyContext):

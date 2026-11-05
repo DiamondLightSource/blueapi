@@ -51,4 +51,4 @@ def test_invalid_plan_args_are_invalid():
     module = importlib.import_module("invalid_plan_args")
     context.with_plan_module(module)
     with pytest.raises(TypeError):
-        context.plan_functions["demo"](**{"foo": 1, "bar": 2})
+        context.plans["demo"].plan_function(**{"foo": 1, "bar": 2})

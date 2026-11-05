@@ -368,23 +368,19 @@ class BlueskyContext:
         self.devices[name] = device
         self._register_children(device)
 
-    def _register_children(
-        self, device: Device, ancestor_names: frozenset[str] = frozenset()
-    ) -> None:
+    def _register_children(self, device: Device) -> None:
         """Register the children of an ophyd-async device under their own names."""
 
         if not isinstance(device, AsyncDevice):
             return
 
-        ancestor_names = ancestor_names | {device.name}
         for attr_name, child in device.children():
             if child.name:
-                # Some children share an ancestor's name, e.g. a motor's
+                name = child.name
+                # Some children share a name already in use, e.g. a motor's
                 # user_readback, so name these after their attribute instead
-                if child.name in ancestor_names:
+                if self.devices.get(name, child) is not child:
                     name = f"{device.name}-{attr_name}"
-                else:
-                    name = child.name
                 existing = self.devices.setdefault(name, child)
                 if existing is not child:
                     # Its children's names start with the clashing name, so skip
@@ -395,7 +391,7 @@ class BlueskyContext:
                         name,
                     )
                     continue
-            self._register_children(child, ancestor_names)
+            self._register_children(child)
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

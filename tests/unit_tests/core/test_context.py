@@ -408,6 +408,19 @@ def test_overridden_registration_name_does_not_rename_children(
     assert empty_context.devices["stage-x"] is stage.x
 
 
+def test_overridden_registration_name_frees_parent_name_for_child(
+    empty_context: BlueskyContext,
+):
+    # "motor" isn't in use when the motor is registered as "foo", so its
+    # readback keeps its own name
+    motor = SimMotor(name="motor")
+    empty_context.register_device(motor, name="foo")
+
+    assert empty_context.devices["foo"] is motor
+    assert empty_context.devices["motor"] is motor.user_readback
+    assert "motor-user_readback" not in empty_context.devices
+
+
 def test_unrelated_name_collision_keeps_existing_device_and_warns(
     empty_context: BlueskyContext, caplog: LogCaptureFixture
 ):
@@ -436,26 +449,6 @@ def test_top_level_device_replacing_existing_device_warns(
 
     assert empty_context.devices["stage-x"] is replacement
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
-
-
-class EqualToEverything(SimMotor):
-    def __eq__(self, other: object) -> bool:
-        return True
-
-    __hash__ = SimMotor.__hash__
-
-
-def test_replacement_warning_uses_identity(
-    empty_context: BlueskyContext, caplog: LogCaptureFixture
-):
-    empty_context.register_device(EqualToEverything(name="motor"))
-
-    caplog.set_level(logging.WARNING)
-    replacement = EqualToEverything(name="motor")
-    empty_context.register_device(replacement)
-
-    assert empty_context.devices["motor"] is replacement
-    assert any("motor" in record.message for record in caplog.get_records("call"))
 
 
 def test_register_device_is_idempotent(

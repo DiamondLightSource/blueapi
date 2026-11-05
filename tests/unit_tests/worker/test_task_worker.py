@@ -1190,7 +1190,8 @@ def test_string_default_is_not_treated_as_device_injection():
     task = Task(name="plan_with_default_str")
 
     args, kwargs = task.prepare_params(context)
-    # Defaults provided by plan. Checking that device with same name is not added
-    # by mistake as the default plan value.
     assert args == []
-    assert kwargs == {}
+    # Defaults provided by plan. Checking that device with same name is not added
+    # by mistake as the default plan value. The kwargs is provided by pydantic model
+    # from schema.
+    assert kwargs == {"arg": "primary"}

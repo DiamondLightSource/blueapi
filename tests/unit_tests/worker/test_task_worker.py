@@ -1176,9 +1176,6 @@ def test_plan_args_with_keyword_only_params_and_variadic_kwargs(
         **keyword_only_params,
         **variadic_kwargs,
     }
-
-    # We only expect to see values provided by user and replaced str device names with
-    # devices.
     assert prepared_args == expected_args
     assert prepared_kwargs == expected_kwargs
 

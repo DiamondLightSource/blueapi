@@ -15,6 +15,13 @@ services:
       - NUMTRACKER_LOG_LEVEL=info
       - NUMTRACKER_AUTHZ_ACCESS=v1/data/diamond/session/access
       - NUMTRACKER_AUTHZ_ADMIN=v1/data/diamond/admin/configure_instrument
+      # numtracker 1.0.2 (the default image) reads these names instead. Set
+      # so that it still enforces authorisation rather than starting with it
+      # off; it sends beamline/visit, which the central rules refuse, so
+      # NUMTRACKER_IMAGE has to be a numtracker that sends instrument_session.
+      - NUMTRACKER_AUTH_HOST=http://localhost:8181
+      - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/session/access
+      - NUMTRACKER_AUTH_ADMIN=v1/data/diamond/admin/configure_instrument
     security_opt:
       - label=disable
 

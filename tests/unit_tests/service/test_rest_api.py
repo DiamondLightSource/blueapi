@@ -74,7 +74,9 @@ def mock_runner() -> Mock:
 
 @pytest.fixture
 def mock_opa_client() -> Mock:
-    return Mock(spec=OpaUserClient)
+    opa = Mock(spec=OpaUserClient)
+    opa.can_access_task.return_value = False
+    return opa
 
 
 @pytest.fixture
@@ -506,7 +508,7 @@ def test_get_tasks_by_invalid_status(client: TestClient) -> None:
 
 
 @pytest.mark.parametrize("admin,task_ids", [(True, ["foo", "bar"]), (False, ["foo"])])
-def test_get_tasks_filters_by_user(
+def test_get_tasks_filters_by_instrument_session(
     mock_runner: Mock,
     client_with_opa: TestClient,
     access_token: str,
@@ -514,12 +516,27 @@ def test_get_tasks_filters_by_user(
     admin: bool,
     task_ids: list[str],
 ):
-
+    # foo was submitted by another user, but on a session this user is on
     mock_runner.run.return_value = [
-        TrackableTask(task_id="foo", task=Task(name="f1", metadata={"user": "jd1"})),
-        TrackableTask(task_id="bar", task=Task(name="f2", metadata={"user": "jd2"})),
+        TrackableTask(
+            task_id="foo",
+            task=Task(
+                name="f1",
+                metadata={"user": "jd2", "instrument_session": "cm12345-1"},
+            ),
+        ),
+        TrackableTask(
+            task_id="bar",
+            task=Task(
+                name="f2",
+                metadata={"user": "jd1", "instrument_session": "cm12345-2"},
+            ),
+        ),
     ]
     mock_opa_client.admin.return_value = admin
+    mock_opa_client.can_access_task.side_effect = lambda task: (
+        task.metadata["instrument_session"] == "cm12345-1"
+    )
     client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
     tasks = client_with_opa.get("/tasks").json().get("tasks")
 
@@ -533,13 +550,14 @@ def test_delete_submitted_task(mock_runner: Mock, client: TestClient) -> None:
     assert response.json() == {"task_id": f"{task_id}"}
 
 
-def test_cant_delete_other_users_task(
+def test_cant_delete_task_on_other_session(
     mock_runner: Mock,
     client_with_opa: TestClient,
     access_token: str,
     mock_opa_client: Mock,
 ):
     mock_opa_client.admin.return_value = False
+    mock_opa_client.can_access_task.return_value = False
     mock_runner.run.side_effect = lambda mth, *args: {
         interface.get_task_by_id: TrackableTask(
             task_id="bar", task=Task(name="t2", metadata={"user": "jd2"})
@@ -553,6 +571,28 @@ def test_cant_delete_other_users_task(
     assert resp.status_code == 404
 
     mock_runner.run.assert_called_once()
+
+
+def test_can_delete_other_users_task_on_same_session(
+    mock_runner: Mock,
+    client_with_opa: TestClient,
+    access_token: str,
+    mock_opa_client: Mock,
+):
+    mock_opa_client.admin.return_value = False
+    mock_opa_client.can_access_task.return_value = True
+    mock_runner.run.side_effect = lambda mth, *args: {
+        interface.get_task_by_id: TrackableTask(
+            task_id="bar", task=Task(name="t2", metadata={"user": "jd2"})
+        ),
+        interface.clear_task: "bar",
+    }[mth]
+    client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
+
+    resp = client_with_opa.delete("/tasks/bar")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"task_id": "bar"}
 
 
 def test_set_active_task(client: TestClient) -> None:
@@ -603,15 +643,20 @@ def test_set_active_task_worker_already_running(
     assert response.json() == {"detail": "Worker already active"}
 
 
-@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+@pytest.mark.parametrize(
+    "admin,session_access,status",
+    [(True, False, 200), (False, False, 404), (False, True, 200)],
+)
 def test_set_other_users_task_active(
     mock_runner: Mock,
     client_with_opa: TestClient,
     mock_opa_client: Mock,
     access_token: str,
     admin: bool,
+    session_access: bool,
     status: int,
 ):
+    mock_opa_client.can_access_task.return_value = session_access
 
     task_id = "foo"
     task = WorkerTask(task_id=task_id)
@@ -664,15 +709,20 @@ def test_get_task(mock_runner: Mock, client: TestClient):
     }
 
 
-@pytest.mark.parametrize("admin,status", [(True, 200), (False, 404)])
+@pytest.mark.parametrize(
+    "admin,session_access,status",
+    [(True, False, 200), (False, False, 404), (False, True, 200)],
+)
 def test_get_other_users_task(
     mock_runner: Mock,
     client_with_opa: TestClient,
     mock_opa_client: Mock,
     access_token: str,
     admin: bool,
+    session_access: bool,
     status: int,
 ):
+    mock_opa_client.can_access_task.return_value = session_access
     client_with_opa.headers["Authorization"] = f"Bearer {access_token}"
     mock_runner.run.return_value = TrackableTask(
         task_id="foo", task=Task(name="bar", metadata={"user": "jd2"})
@@ -870,15 +920,20 @@ def test_set_state_invalid_transition(mock_runner: Mock, client: TestClient):
     }
 
 
-@pytest.mark.parametrize("admin,status", [(True, 202), (False, 403)])
+@pytest.mark.parametrize(
+    "admin,session_access,status",
+    [(True, False, 202), (False, False, 403), (False, True, 202)],
+)
 def test_set_state_of_other_users_task(
     mock_runner: Mock,
     client_with_opa: TestClient,
     mock_opa_client: Mock,
     access_token: str,
     admin: bool,
+    session_access: bool,
     status: int,
 ):
+    mock_opa_client.can_access_task.return_value = session_access
 
     mock_opa_client.admin.return_value = admin
     mock_runner.run.side_effect = lambda mth, *a, **kw: {

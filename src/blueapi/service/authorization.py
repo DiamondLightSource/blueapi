@@ -12,6 +12,7 @@ from blueapi.config import OIDCConfig, OpaConfig, ServiceAccount
 from blueapi.service.authentication import TiledAuth, unchecked_bearer_token
 from blueapi.service.model import TaskRequest
 from blueapi.utils import INSTRUMENT_SESSION_RE
+from blueapi.worker.task import Task
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,11 +62,12 @@ class OpaClient:
                 f"Tiled service account is not valid for '{self._instrument}'"
             )
 
-    async def require_submit_task(self, instrument_session: str, token: str):
+    async def can_access_session(self, instrument_session: str, token: str) -> bool:
+        """True if the token's user can access the instrument session on this
+        instrument; False for a malformed instrument session."""
         if not (match := INSTRUMENT_SESSION_RE.match(instrument_session)):
-            raise ValueError("Invalid instrument session")
-
-        if not await self._call_opa(
+            return False
+        return await self._call_opa(
             self._config.submit_task_check,
             {
                 "token": token,
@@ -73,7 +75,13 @@ class OpaClient:
                 "instrument_session": int(match["visit"]),
                 "proposal_category": match["code"].upper(),
             },
-        ):
+        )
+
+    async def require_submit_task(self, instrument_session: str, token: str):
+        if not INSTRUMENT_SESSION_RE.match(instrument_session):
+            raise ValueError("Invalid instrument session")
+
+        if not await self.can_access_session(instrument_session, token):
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN, detail="Not authorized to submit task"
             )
@@ -89,10 +97,25 @@ class OpaUserClient:
     def __init__(self, client: OpaClient, token: str):
         self.client = client
         self.token = token
+        # Created per request, so this only saves repeat lookups within one,
+        # e.g. listing many tasks on the same instrument session.
+        self._session_access: dict[str, bool] = {}
 
     async def can_submit_task(self, task: TaskRequest):
         LOGGER.info("Checking permissions to run task")
         await self.client.require_submit_task(task.instrument_session, self.token)
+
+    async def can_access_task(self, task: Task) -> bool:
+        """True if the user can access the instrument session the task was
+        submitted with. A task without one is only accessible to admins."""
+        session = task.metadata.get("instrument_session")
+        if not isinstance(session, str):
+            return False
+        if session not in self._session_access:
+            self._session_access[session] = await self.client.can_access_session(
+                session, self.token
+            )
+        return self._session_access[session]
 
     async def admin(self) -> bool:
         return await self.client.is_admin(self.token)

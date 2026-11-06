@@ -186,15 +186,17 @@ def get_app(config: ApplicationConfig):
 async def access_task_permission(
     opa: Annotated[OpaUserClient | None, Depends(opa)],
     task_id: str,
-    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
+    """Admins can access any task; other users only tasks submitted with an
+    instrument session they are on, whoever submitted them."""
     task = runner.run(interface.get_task_by_id, task_id)
 
     if (
         opa
+        and task
         and not await opa.admin()
-        and (task and fedid != task.task.metadata.get("user"))
+        and not await opa.can_access_task(task.task)
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -203,7 +205,6 @@ async def access_task_permission(
 async def start_task_permission(
     task: WorkerTask,
     opa: Annotated[OpaUserClient, Depends(opa)],
-    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ):
     if not task.task_id:
@@ -211,7 +212,7 @@ async def start_task_permission(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No task id provided",
         )
-    await access_task_permission(opa, task.task_id, fedid, runner)
+    await access_task_permission(opa, task.task_id, runner)
 
 
 async def on_key_error_404(_: Request, __: Exception):
@@ -405,7 +406,7 @@ async def get_tasks(
     tasks = runner.run(interface.get_tasks, task_status)
 
     if opa and not await opa.admin():
-        tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
+        tasks = [t for t in tasks if await opa.can_access_task(t.task)]
 
     return TasksListResponse(tasks=tasks)
 
@@ -567,7 +568,7 @@ async def set_state(
             opa
             and not await opa.admin()
             and active
-            and active.task.metadata.get("user") != fedid
+            and not await opa.can_access_task(active.task)
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

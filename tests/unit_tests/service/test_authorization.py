@@ -14,6 +14,7 @@ from blueapi.service.authorization import (
     validate_tiled_config,
 )
 from blueapi.service.model import TaskRequest
+from blueapi.worker.task import Task
 
 # Reusable client patch decorator
 patch_client_session = patch(
@@ -303,3 +304,46 @@ async def test_submit_permission_dependency(result, context: AbstractContextMana
 
 async def test_submit_permission_dependency_without_opa():
     assert await submit_permission(None, Mock()) is None
+
+
+@patch_client_session
+async def test_can_access_session_invalid_session_is_false(
+    session: MagicMock, opa_config: OpaConfig
+):
+    client = OpaClient(instrument="p45", config=opa_config)
+
+    assert not await client.can_access_session("not a session", "foo_bar")
+    session().post.assert_not_called()
+
+
+@pytest.mark.parametrize("result", [True, False])
+async def test_user_client_can_access_task(result: bool):
+    opa = MagicMock(spec=OpaClient)
+    opa.can_access_session = AsyncMock(return_value=result)
+    user_client = OpaUserClient(opa, "foo_bar")
+
+    task = Task(name="foo", metadata={"user": "jd2", "instrument_session": "cm1-1"})
+
+    assert await user_client.can_access_task(task) is result
+    opa.can_access_session.assert_called_once_with("cm1-1", "foo_bar")
+
+
+async def test_user_client_task_without_session_not_accessible():
+    opa = MagicMock(spec=OpaClient)
+    opa.can_access_session = AsyncMock(return_value=True)
+    user_client = OpaUserClient(opa, "foo_bar")
+
+    assert not await user_client.can_access_task(Task(name="foo"))
+    opa.can_access_session.assert_not_called()
+
+
+async def test_user_client_caches_session_access():
+    opa = MagicMock(spec=OpaClient)
+    opa.can_access_session = AsyncMock(return_value=True)
+    user_client = OpaUserClient(opa, "foo_bar")
+
+    for name in ("a", "b", "c"):
+        task = Task(name=name, metadata={"instrument_session": "cm1-1"})
+        assert await user_client.can_access_task(task)
+
+    opa.can_access_session.assert_called_once_with("cm1-1", "foo_bar")

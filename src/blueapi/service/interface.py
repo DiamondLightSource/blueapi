@@ -28,7 +28,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
-from blueapi.utils.serialization import access_blob
+from blueapi.utils.serialization import TILED_FOLDERS, access_blob
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
@@ -120,36 +120,42 @@ def service_account_tiled_client():
     )
 
 
-def _tiled_session_container(tiled_client, instrument: str, instrument_session: str):
-    """The beamline/proposal/visit container runs are written under.
+def _tiled_raw_container(tiled_client, instrument: str, instrument_session: str):
+    """The raw folder of the visit that runs are written under:
+    <instrument>/<instrument_session>/raw.
 
     It almost always exists already, so it is looked up in one request; only the
-    first task for a visit walks the levels and creates what is missing.
+    first task for a visit creates what is missing, including the visit's
+    processed and processing folders.
     """
-    session_blob = access_blob(instrument_session, instrument)
-    proposal = session_blob["proposal"]
+    visit_blob = access_blob(instrument_session, instrument)
     try:
-        return tiled_client[f"{instrument}/{proposal}/{instrument_session}"]
+        return tiled_client[f"{instrument}/{instrument_session}/raw"]
     except KeyError:
         pass
-    # Each level's access blob is the prefix of the full (beamline, proposal,
-    # visit) one, matching the beamline/proposal/session tiers the tiled access
-    # policy expects a container to be tagged with.
-    level_access_blobs = {
-        instrument: {"beamline": instrument},
-        proposal: {"beamline": instrument, "proposal": proposal},
-        instrument_session: session_blob,
+    # The access policy tags each node from its access blob
+    instrument_client = _get_or_create_container(
+        tiled_client, instrument, {"instrument": instrument}
+    )
+    visit_client = _get_or_create_container(
+        instrument_client, instrument_session, visit_blob
+    )
+    folders = {
+        folder: _get_or_create_container(
+            visit_client, folder, access_blob(instrument_session, instrument, folder)
+        )
+        for folder in TILED_FOLDERS
     }
-    for key, blob in level_access_blobs.items():
-        try:
-            tiled_client = tiled_client.create_container(
-                key=key, access_tags=[json.dumps(blob)]
-            )
-        except ClientError as e:
-            if e.response.status_code != status.HTTP_409_CONFLICT:
-                raise
-            tiled_client = tiled_client[key]  # created already, e.g. by another task
-    return tiled_client
+    return folders["raw"]
+
+
+def _get_or_create_container(tiled_client, key: str, blob: dict[str, Any]):
+    try:
+        return tiled_client.create_container(key=key, access_tags=[json.dumps(blob)])
+    except ClientError as e:
+        if e.response.status_code != status.HTTP_409_CONFLICT:
+            raise
+        return tiled_client[key]  # created already, e.g. by another task
 
 
 def teardown() -> None:
@@ -257,7 +263,7 @@ def begin_task(
                 headers=pass_through_headers,
             )
         if (task_ := get_task_by_id(task_id=task.task_id)) is not None:
-            tiled_client = _tiled_session_container(
+            tiled_client = _tiled_raw_container(
                 tiled_client,
                 active_context.run_engine.md["instrument"],
                 task_.task.metadata["instrument_session"],

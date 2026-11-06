@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from inspect import isawaitable
 from multiprocessing.connection import Connection as PipeConnection
 from typing import Any
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from bluesky.protocols import Stoppable
@@ -381,9 +381,9 @@ def test_get_task_by_id(
 
     if tiled_enabled:
         expected_access_tag = {
-            "proposal": "cm12345",
-            "visit": 1,
-            "beamline": "ixx",
+            "instrument": "ixx",
+            "instrument_session": FAKE_INSTRUMENT_SESSION,
+            "folder": "raw",
         }
         expected_metadata["tiled_access_tags"] = [json.dumps(expected_access_tag)]
 
@@ -496,7 +496,7 @@ def _existing_task(instrument_session: str = FAKE_INSTRUMENT_SESSION) -> Trackab
 
 
 def _missing_session_path(key: str):
-    """__getitem__ for a client whose beamline/proposal/visit path doesn't exist."""
+    """__getitem__ for a client whose instrument/visit/raw path doesn't exist."""
     if "/" in key:
         raise KeyError(key)
     return MagicMock()
@@ -513,26 +513,37 @@ def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
     worker().get_task_by_id.return_value = _existing_task()
     root_client = from_uri()
     root_client.__getitem__.side_effect = _missing_session_path
-    proposal_client = root_client.create_container.return_value
-    session_client = proposal_client.create_container.return_value
-    final_client = session_client.create_container.return_value
+    instrument_client = root_client.create_container.return_value
+    visit_client = instrument_client.create_container.return_value
+    folder_clients = {
+        folder: MagicMock(name=folder) for folder in ("raw", "processed", "processing")
+    }
+    visit_client.create_container.side_effect = lambda key, **_: folder_clients[key]
 
     interface.begin_task(WorkerTask(task_id="foo_bar"))
 
+    def blob(folder: str) -> list[str]:
+        return [
+            json.dumps(
+                {
+                    "instrument": "p46",
+                    "instrument_session": "cm12345-1",
+                    "folder": folder,
+                }
+            )
+        ]
+
     root_client.create_container.assert_called_once_with(
-        key="p46", access_tags=[json.dumps({"beamline": "p46"})]
+        key="p46", access_tags=[json.dumps({"instrument": "p46"})]
     )
-    proposal_client.create_container.assert_called_once_with(
-        key="cm12345",
-        access_tags=[json.dumps({"beamline": "p46", "proposal": "cm12345"})],
+    instrument_client.create_container.assert_called_once_with(
+        key="cm12345-1", access_tags=blob("raw")
     )
-    session_client.create_container.assert_called_once_with(
-        key="cm12345-1",
-        access_tags=[
-            json.dumps({"proposal": "cm12345", "visit": 1, "beamline": "p46"})
-        ],
-    )
-    writer.assert_called_once_with(final_client, batch_size=1)
+    assert visit_client.create_container.call_args_list == [
+        call(key=folder, access_tags=blob(folder))
+        for folder in ("raw", "processed", "processing")
+    ]
+    writer.assert_called_once_with(folder_clients["raw"], batch_size=1)
 
 
 @patch("blueapi.service.interface.TiledWriter")
@@ -550,7 +561,7 @@ def test_begin_task_finds_existing_session_in_one_lookup(
 
     interface.begin_task(WorkerTask(task_id="foo_bar"))
 
-    root_client.__getitem__.assert_called_once_with("p46/cm12345/cm12345-1")
+    root_client.__getitem__.assert_called_once_with("p46/cm12345-1/raw")
     root_client.create_container.assert_not_called()
     writer.assert_called_once_with(root_client.__getitem__.return_value, batch_size=1)
 

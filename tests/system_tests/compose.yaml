@@ -69,7 +69,9 @@ services:
       - label=disable
 
   tiled:
-    image: ghcr.io/diamondlightsource/dls-tiled:0.5.0
+    # TODO: pin a dls-tiled release using the central authorisation tiled rules
+    # (DiamondLightSource/dls-tiled branch move-to-central-authz)
+    image: ${TILED_IMAGE:-ghcr.io/diamondlightsource/dls-tiled:0.5.0}
     network_mode: host # Port 8407
     environment:
       - VITE_LOGIN_REDIRECT=false

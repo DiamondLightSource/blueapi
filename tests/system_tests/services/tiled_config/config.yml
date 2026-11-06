@@ -16,12 +16,14 @@ trees:
     tree: catalog
     args:
       uri: "sqlite:////storage/catalog.db"
-      writable_storage: "sqlite:////storage/catalog.db"
+      # Tabular data in its own file: sharing the catalog's SQLite file between
+      # the catalog and tabular (ADBC) drivers corrupts it on tiled >= 0.2.21
+      writable_storage: "sqlite:////storage/data.db"
       init_if_not_exists: true
 
 access_control:
   access_policy: "dls_tiled.policy:DiamondOpenPolicyAgentAuthorizationPolicy"
   args:
-    authorization_provider: "http://localhost:8181/v1/data/diamond/policy/"
+    authorization_provider: "http://localhost:8181/v1/data/diamond/"
     token_audience: account
-    empty_access_blob_public: true
+    empty_access_tags_public: true

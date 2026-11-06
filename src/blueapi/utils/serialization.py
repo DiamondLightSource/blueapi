@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -28,16 +28,24 @@ def serialize(obj: Any) -> Any:
         return obj
 
 
-def access_blob(instrument_session: str, beamline: str) -> dict[str, Any]:
-    if (match := utils.INSTRUMENT_SESSION_RE.match(instrument_session)) is None:
+TiledFolder = Literal["raw", "processed", "processing"]
+
+#: The folders of a visit in tiled, see the dls-tiled access policy
+TILED_FOLDERS: tuple[TiledFolder, ...] = ("raw", "processed", "processing")
+
+
+def access_blob(
+    instrument_session: str, instrument: str, folder: TiledFolder = "raw"
+) -> dict[str, Any]:
+    """The access blob asking tiled's access policy to tag a node as part of
+    the given folder of a visit."""
+    if utils.INSTRUMENT_SESSION_RE.match(instrument_session) is None:
         raise ValueError(
             "Unable to extract proposal and visit from "
             f"instrument session {instrument_session}"
         )
     return {
-        # The full proposal code (e.g. "cm12345"), not just its number - the
-        # tiled access policy strips the letters itself where it needs them.
-        "proposal": match["proposal"],
-        "visit": int(match["visit"]),
-        "beamline": beamline,
+        "instrument": instrument,
+        "instrument_session": instrument_session,
+        "folder": folder,
     }

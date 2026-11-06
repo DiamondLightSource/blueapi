@@ -8,32 +8,44 @@ from blueapi.utils.serialization import access_blob
     [
         (
             "cm12345-1",
-            {"proposal": "cm12345", "visit": 1, "beamline": "ixx"},
+            {"instrument": "ixx", "instrument_session": "cm12345-1", "folder": "raw"},
         ),
         (
             "cm12345-111",
-            {"proposal": "cm12345", "visit": 111, "beamline": "ixx"},
+            {"instrument": "ixx", "instrument_session": "cm12345-111", "folder": "raw"},
         ),
         (
             "cv12345-1",
-            {"proposal": "cv12345", "visit": 1, "beamline": "ixx"},
+            {"instrument": "ixx", "instrument_session": "cv12345-1", "folder": "raw"},
         ),
         (
             "cm12345678-1",
-            {"proposal": "cm12345678", "visit": 1, "beamline": "ixx"},
+            {
+                "instrument": "ixx",
+                "instrument_session": "cm12345678-1",
+                "folder": "raw",
+            },
         ),
         (
             "cm12345678-111",
-            {"proposal": "cm12345678", "visit": 111, "beamline": "ixx"},
+            {
+                "instrument": "ixx",
+                "instrument_session": "cm12345678-111",
+                "folder": "raw",
+            },
         ),
         (
             "cv12345678-111",
-            {"proposal": "cv12345678", "visit": 111, "beamline": "ixx"},
+            {
+                "instrument": "ixx",
+                "instrument_session": "cv12345678-111",
+                "folder": "raw",
+            },
         ),
     ],
 )
 def test_access_blob_regex(input: str, output: dict):
-    assert access_blob(input, beamline="ixx") == output
+    assert access_blob(input, instrument="ixx") == output
 
 
 @pytest.mark.parametrize(
@@ -53,4 +65,13 @@ def test_access_blob_regex_errors(input: str):
         ValueError,
         match=f"Unable to extract proposal and visit from instrument session {input}",
     ):
-        access_blob(input, beamline="ixx")
+        access_blob(input, instrument="ixx")
+
+
+@pytest.mark.parametrize("folder", ["raw", "processed", "processing"])
+def test_access_blob_folder(folder):
+    assert access_blob("cm12345-1", "ixx", folder) == {
+        "instrument": "ixx",
+        "instrument_session": "cm12345-1",
+        "folder": folder,
+    }

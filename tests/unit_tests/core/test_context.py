@@ -46,6 +46,7 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
+from blueapi.core.bluesky_types import BlueapiDevice
 from blueapi.core.context import generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
 from blueapi.utils.invalid_config_error import InvalidConfigError
@@ -244,14 +245,14 @@ def test_only_plans_from_all_in_module_detected(empty_context: BlueskyContext):
 
 def test_add_named_device(empty_context: BlueskyContext, sim_motor: Motor):
     empty_context.register_device(sim_motor)
-    assert empty_context.devices[SIM_MOTOR_NAME] is sim_motor
+    assert empty_context.devices[SIM_MOTOR_NAME].device is sim_motor
 
 
 def test_add_nameless_device(
     empty_context: BlueskyContext, some_configurable: SomeConfigurable
 ):
     empty_context.register_device(some_configurable, "conf")
-    assert empty_context.devices["conf"] is some_configurable
+    assert empty_context.devices["conf"].device is some_configurable
 
 
 def test_add_nameless_device_without_override(
@@ -264,7 +265,7 @@ def test_add_nameless_device_without_override(
 
 def test_override_device_name(empty_context: BlueskyContext, sim_motor: Motor):
     empty_context.register_device(sim_motor, "foo")
-    assert empty_context.devices["foo"] is sim_motor
+    assert empty_context.devices["foo"].device is sim_motor
 
 
 def test_add_devices_from_module(empty_context: BlueskyContext):
@@ -720,7 +721,7 @@ def test_single_device_manager(empty_context: BlueskyContext):
     sdm = StaticDeviceManager(devices={"foo": foo})
     empty_context.with_device_manager(sdm)
 
-    assert empty_context.devices == {"foo": foo}
+    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
 
 
 def test_device_manager_build_error(empty_context: BlueskyContext):
@@ -791,7 +792,7 @@ def test_device_manager_environment_source(empty_context: BlueskyContext):
     with patch("blueapi.core.context.import_module") as imp_mod:
         imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
         empty_context.with_config(env)
-    assert empty_context.devices == {"foo": foo}
+    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
 
 
 def test_non_device_manager_errors(empty_context: BlueskyContext):

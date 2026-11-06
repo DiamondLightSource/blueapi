@@ -191,7 +191,9 @@ def get_plan(name: str) -> PlanModel:
 
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
-    return [DeviceModel.from_device(device) for device in context().devices.values()]
+    return [
+        DeviceModel.from_device(entry.device) for entry in context().devices.values()
+    ]
 
 
 def get_device(name: str) -> DeviceModel:

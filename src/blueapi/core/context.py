@@ -67,21 +67,27 @@ def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
     return isinstance(val, target) and is_compatible_args(val, target, args)
 
 
-def generic_bounds(val: BlueapiDevice, target: type) -> tuple[type, ...]:
-    for base in getattr(val, "__orig_bases__", ()):
+def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
+    unwrapped = val.device if isinstance(val, BlueapiDevice) else val
+    for base in getattr(unwrapped, "__orig_bases__", ()):
         if (get_origin(base) or base) == target:
             return get_args(base)
     return ()
 
 
-def is_compatible_args(val: BlueapiDevice, target: type, args: tuple[type, ...] | None):
+def is_compatible_args(
+    val: Device | BlueapiDevice, target: type, args: tuple[type, ...] | None
+):
+    unwrapped = val.device if isinstance(val, BlueapiDevice) else val
     return (not args) or all(
         actual is Any
         or type(actual) is TypeVar
         or type(expected) is TypeVar
         or expected == actual
         or issubclass(actual, expected)
-        for expected, actual in zip(args, generic_bounds(val, target), strict=False)
+        for expected, actual in zip(
+            args, generic_bounds(unwrapped, target), strict=False
+        )
     )
 
 

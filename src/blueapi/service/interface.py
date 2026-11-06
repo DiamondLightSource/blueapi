@@ -140,11 +140,12 @@ def _tiled_raw_container(tiled_client, instrument: str, instrument_session: str)
     visit_client = _get_or_create_container(
         instrument_client, instrument_session, visit_blob
     )
+    # raw last, as finding it is what tells later tasks the visit is complete
     folders = {
         folder: _get_or_create_container(
             visit_client, folder, access_blob(instrument_session, instrument, folder)
         )
-        for folder in TILED_FOLDERS
+        for folder in sorted(TILED_FOLDERS, key=lambda folder: folder == "raw")
     }
     return folders["raw"]
 

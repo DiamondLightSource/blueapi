@@ -539,9 +539,10 @@ def test_begin_task_creates_tiled_containers(worker, context, from_uri, writer):
     instrument_client.create_container.assert_called_once_with(
         key="cm12345-1", access_tags=blob("raw")
     )
+    # raw last: finding it means the visit's other folders exist too
     assert visit_client.create_container.call_args_list == [
         call(key=folder, access_tags=blob(folder))
-        for folder in ("raw", "processed", "processing")
+        for folder in ("processed", "processing", "raw")
     ]
     writer.assert_called_once_with(folder_clients["raw"], batch_size=1)
 

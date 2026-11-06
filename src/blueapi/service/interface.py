@@ -7,6 +7,9 @@ from multiprocessing.connection import Connection
 from typing import Any
 
 from bluesky.callbacks.tiled_writer import TiledWriter
+from bluesky.protocols import Readable, Reading
+from bluesky.run_engine import call_in_bluesky_event_loop
+from bluesky.utils import maybe_await
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from fastapi import status
@@ -340,6 +343,18 @@ def get_python_env(
     """Retrieve information about the Python environment"""
     scratch = config().scratch
     return get_python_environment(config=scratch, name=name, source=source)
+
+
+def read_device(addr: str) -> dict[str, Reading[Any]]:
+    device = context().find_device(addr)
+
+    if not isinstance(device, Readable):
+        raise TypeError("Requested device is not readable")
+
+    return call_in_bluesky_event_loop(
+        maybe_await(device.read()),
+        timeout=10.0,
+    )
 
 
 @dataclass

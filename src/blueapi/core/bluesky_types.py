@@ -1,5 +1,6 @@
 import inspect
 from collections.abc import Callable, Generator, Mapping
+from dataclasses import dataclass
 from typing import (
     Any,
     Protocol,
@@ -132,3 +133,11 @@ class WatchableStatus(Status, Protocol):
         """
 
         ...
+
+
+@dataclass
+class BlueapiDevice:
+    """Wrapper around Device held in the context.
+    At the moment this just holds the Device but will later hold child device trees"""
+
+    device: Device

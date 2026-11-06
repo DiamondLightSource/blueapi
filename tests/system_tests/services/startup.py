@@ -104,11 +104,11 @@ def general_mappers(audience: str) -> dict[str, Any]:
     }
 
 
-def beamline_service_account_mappers() -> dict[str, Any]:
+def instrument_service_account_mappers(audience: str) -> dict[str, Any]:
     return {
         "protocolMappers": [
             hardcoded_claim_mapper(
-                "beamline",
+                "instrument",
                 "adsim",
                 extra_config={
                     "lightweight.claim": "false",
@@ -116,7 +116,7 @@ def beamline_service_account_mappers() -> dict[str, Any]:
                 },
             ),
             audience_mapper(
-                "tiled-writer",
+                audience,
                 name="tiled",
                 extra_config={"id.token.claim": "false", "lightweight.claim": "false"},
             ),
@@ -207,8 +207,10 @@ def create_web_client(
 
 
 @create_client
-def create_beamline_service_account_client(secret: str = "secret") -> dict[str, Any]:
-    payload = beamline_service_account_mappers()
+def create_instrument_service_account_client(
+    audience: str, secret: str = "secret"
+) -> dict[str, Any]:
+    payload = instrument_service_account_mappers(audience)
     payload.update(
         secret=secret,
         standardFlowEnabled=False,
@@ -252,7 +254,13 @@ def create_clients() -> None:
         secret="tiled-secret",
         root_url="http://localhost:4181",
     )
-    create_beamline_service_account_client(client_id="tiled-writer")
+    create_instrument_service_account_client(
+        client_id="tiled-writer", audience="tiled-writer"
+    )
+    # Writes processed data to tiled
+    create_instrument_service_account_client(
+        client_id="processing-tiled-writer", audience="processing_tiled_writer"
+    )
 
     # A system-test service account for the admin user plus each of USERS.
     for fedid in ("admin", *USERS):

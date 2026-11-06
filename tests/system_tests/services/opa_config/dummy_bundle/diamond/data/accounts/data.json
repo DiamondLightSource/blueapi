@@ -1,0 +1,5 @@
+{
+  "admin": {"groups": ["super_admin"]},
+  "alice": {"sessions": ["12345-1"]},
+  "bob": {"sessions": ["12345-2"]}
+}

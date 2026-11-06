@@ -301,12 +301,12 @@
                     "type": "string"
                 },
                 "tiled_service_account_check": {
-                    "default": "blueapi/tiled_service_account_for_beamline",
+                    "default": "blueapi/tiled_service_account_for_instrument",
                     "title": "Tiled Service Account Check",
                     "type": "string"
                 },
                 "submit_task_check": {
-                    "default": "blueapi/write_to_beamline_visit",
+                    "default": "session/access",
                     "title": "Submit Task Check",
                     "type": "string"
                 },

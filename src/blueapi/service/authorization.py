@@ -33,7 +33,7 @@ class OpaClient:
             endpoint,
             json={
                 "input": {
-                    "beamline": self._instrument,
+                    "instrument": self._instrument,
                     "audience": self._audience,
                     **data,
                 }
@@ -55,7 +55,7 @@ class OpaClient:
     async def require_tiled_service_account(self, token: str):
         if not await self._call_opa(
             self._config.tiled_service_account_check,
-            {"token": token, "beamline": self._instrument},
+            {"token": token},
         ):
             raise ValueError(
                 f"Tiled service account is not valid for '{self._instrument}'"
@@ -70,7 +70,8 @@ class OpaClient:
             {
                 "token": token,
                 "proposal": int(match["proposal_number"]),
-                "visit": int(match["visit"]),
+                "instrument_session": int(match["visit"]),
+                "proposal_category": match["code"].upper(),
             },
         ):
             raise HTTPException(

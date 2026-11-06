@@ -5,14 +5,16 @@ include:
 
 services:
   numtracker:
-    image: ghcr.io/diamondlightsource/numtracker:1.0.2
+    # TODO: pin a numtracker release that sends instrument/instrument_session
+    # to OPA (DiamondLightSource/numtracker branch move-to-central-authz)
+    image: ${NUMTRACKER_IMAGE:-ghcr.io/diamondlightsource/numtracker:1.0.2}
     network_mode: host # Port 8406
     environment:
-      - NUMTRACKER_AUTH_HOST=http://localhost:8181
+      - NUMTRACKER_AUTHZ_HOST=http://localhost:8181
       - NUMTRACKER_PORT=8406
       - NUMTRACKER_LOG_LEVEL=info
-      - NUMTRACKER_AUTH_ACCESS=v1/data/diamond/policy/numtracker/write_to_beamline_visit
-      - NUMTRACKER_AUTH_ADMIN=v1/data/diamond/policy/admin/configure_beamline
+      - NUMTRACKER_AUTHZ_ACCESS=v1/data/diamond/session/access
+      - NUMTRACKER_AUTHZ_ADMIN=v1/data/diamond/admin/configure_instrument
     security_opt:
       - label=disable
 
@@ -80,14 +82,21 @@ services:
     security_opt:
       - label=disable
 
+  # Central authorisation OPA (gitlab.diamond.ac.uk/auth-auth/authorisation),
+  # built from a local checkout. With no BUNDLER_BEARER_TOKEN it serves the
+  # data in /dummy_bundle, which we replace with the system-test data.
   opa:
-    image: openpolicyagent/opa:1.21.2-static-debug  # debug: entrypoint.sh needs a shell
+    build:
+      context: ${AUTHORISATION_REPO:-../../../authorisation}
+    image: localhost/diamond-authorisation:system-test
     network_mode: host # Port 8181
     volumes:
-      - "./services/opa_config:/mnt"
+      - ./services/opa_config/dummy_bundle:/dummy_bundle:ro
     environment:
       - ISSUER=http://localhost:8081/realms/master
-    entrypoint: "sh /mnt/entrypoint.sh"
+    depends_on:
+      keycloak:
+        condition: service_healthy
     security_opt:
       - label=disable
 

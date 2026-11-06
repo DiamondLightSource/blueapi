@@ -1,0 +1,7 @@
+{
+  "adsim": {
+    "session_refs": ["CM12345-1", "CM12345-2"],
+    "session_proposals": [12345],
+    "awarded_proposals": [12345]
+  }
+}

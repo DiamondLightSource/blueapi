@@ -42,6 +42,7 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     AsyncDevice,
+    BlueapiDevice,
     Device,
     Plan,
     PlanGenerator,
@@ -66,14 +67,14 @@ def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
     return isinstance(val, target) and is_compatible_args(val, target, args)
 
 
-def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
+def generic_bounds(val: BlueapiDevice, target: type) -> tuple[type, ...]:
     for base in getattr(val, "__orig_bases__", ()):
         if (get_origin(base) or base) == target:
             return get_args(base)
     return ()
 
 
-def is_compatible_args(val: Device, target: type, args: tuple[type, ...] | None):
+def is_compatible_args(val: BlueapiDevice, target: type, args: tuple[type, ...] | None):
     return (not args) or all(
         actual is Any
         or type(actual) is TypeVar
@@ -128,7 +129,7 @@ class BlueskyContext:
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
-    devices: dict[str, Device] = field(default_factory=dict)
+    devices: dict[str, BlueapiDevice] = field(default_factory=dict)
     plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
@@ -196,10 +197,16 @@ class BlueskyContext:
         """
 
         if isinstance(addr, str):
-            list_addr = list(addr.split("."))
-            return self.find_device(list_addr)
-        else:
-            return find_component(self.devices, addr)
+            return self.find_device(addr.split("."))
+        # self.devices stores BlueapiDevice wrappers: unwrap the top-level device here
+        # find_component will then look up child devices (like the 'x' in 'motor.x') as
+        # attributes of raw device
+        head, tail = addr[0], addr[1:]
+        entry = self.devices.get(head)
+        device = entry.device if entry else None
+        if tail:
+            return find_component(device, tail)
+        return device
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
@@ -358,7 +365,7 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self.devices[name] = device
+        self.devices[name] = BlueapiDevice(device)
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""
@@ -409,11 +416,12 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
+                    # devices are wrapped in BlueapiDevice, so check entry.device
                     json_schema["enum"] = sorted(
                         [
                             name
-                            for name, device in self.devices.items()
-                            if isinstance(device, cls.origin or target)
+                            for name, entry in self.devices.items()
+                            if isinstance(entry.device, cls.origin or target)
                         ]
                     )
                     if cls.args:

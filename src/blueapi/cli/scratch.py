@@ -67,6 +67,7 @@ def setup_scratch(
     scratch_install(
         *(config.root / repo.name for repo in config.repositories),
         timeout=install_timeout,
+        locked_repo=config.locked_repo,
     )
 
 
@@ -116,7 +117,11 @@ def ensure_repo(
         )
 
 
-def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> None:
+def scratch_install(
+    *paths: Path,
+    timeout: float = _DEFAULT_INSTALL_TIMEOUT,
+    locked_repo: Path | None = None,
+) -> None:
     """
     Install scratch packages. Make blueapi aware of repositories checked out in
     the scratch area. Make it automatically follow code changes to those repositories
@@ -126,19 +131,38 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
     Args:
         paths: List of Paths to the checked out repositories
         timeout: Time to wait for installation subprocess
+        locked_repo: Repository to install first from its uv.lock, if any
     """
     if not paths:
         return
     LOGGER.info("Installing packages")
-    for path in paths:
-        _validate_directory(path)
-        args = ["uv", "pip", "install", "-e", str(path)]
-        process = Popen(args)
-        process.wait(timeout=timeout)
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Failed to install packages: Exit Code: {process.returncode}"
+    if locked_repo:
+        uv_lock_path = locked_repo / "uv.lock"
+        if not uv_lock_path.exists():
+            raise FileNotFoundError(
+                f"Installing from a uv lock file was requested, but no lock file "
+                f"exists at {uv_lock_path}. Check that uv.lock exists in your "
+                "repository."
             )
+        # Sync the locked repo into the environment blueapi is running in.
+        # --inexact stops uv removing packages not in the lock (e.g. blueapi).
+        _run_install(["uv", "sync", "--locked", "--inexact", str(locked_repo)], timeout)
+    # With a lock, install the rest without dependencies to keep locked versions.
+    deps = ["--no-deps"] if locked_repo else []
+    for path in paths:
+        if locked_repo and path.resolve() == locked_repo.resolve():
+            continue
+        _validate_directory(path)
+        _run_install(["uv", "pip", "install", *deps, "-e", str(path)], timeout)
+
+
+def _run_install(args: list[str], timeout: float) -> None:
+    process = Popen(args)
+    process.wait(timeout=timeout)
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Failed to install packages: Exit Code: {process.returncode}"
+        )
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:

@@ -394,7 +394,6 @@ def delete_submitted_task(
 @secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
 @start_as_current_span(TRACER)
 async def get_tasks(
-    fedid: Fedid,
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
     opa: Annotated[OpaUserClient, Depends(opa)],
     task_status: TaskStatusEnum | None = None,
@@ -534,7 +533,6 @@ _ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
 async def set_state(
     state_change_request: StateChangeRequest,
     response: Response,
-    fedid: Fedid,
     opa: Annotated[OpaUserClient, Depends(opa)],
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
 ) -> WorkerState:

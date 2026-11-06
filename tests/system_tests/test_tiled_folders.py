@@ -170,3 +170,48 @@ def test_raw_writer_cannot_write_processed():
         writer[folder_path("processed")].create_container(
             key=f"raw-{uuid.uuid4()}", access_tags=new_node_tags("processed")
         )
+
+
+# Envoy routes on the instrument in the path, so tags have to match the path
+
+
+def test_instrument_node_must_be_named_after_instrument():
+    writer = tiled_as("tiled-writer")
+
+    with pytest.raises(ClientError) as e:
+        writer.create_container(
+            key=f"not-{INSTRUMENT}", access_tags=blob(instrument=INSTRUMENT)
+        )
+    assert e.value.response.status_code == 403
+
+
+def test_visit_node_must_be_named_after_visit():
+    writer = tiled_as("tiled-writer")
+
+    with pytest.raises(ClientError) as e:
+        writer[INSTRUMENT].create_container(
+            key="cm12345-2",
+            access_tags=blob(instrument=INSTRUMENT, instrument_session=VISIT),
+        )
+    assert e.value.response.status_code == 403
+
+
+def test_visit_has_only_the_three_folders():
+    writer = tiled_as("tiled-writer")
+
+    with pytest.raises(ClientError) as e:
+        writer[f"{INSTRUMENT}/{VISIT}"].create_container(
+            key="elsewhere", access_tags=new_node_tags("raw")
+        )
+    assert e.value.response.status_code == 403
+
+
+def test_node_takes_its_folders_tag():
+    # The raw writer may write in processing, but not with raw's tag there
+    writer = tiled_as("tiled-writer")
+
+    with pytest.raises(ClientError) as e:
+        writer[folder_path("processing")].create_container(
+            key=f"raw-{uuid.uuid4()}", access_tags=new_node_tags("raw")
+        )
+    assert e.value.response.status_code == 403

@@ -77,7 +77,8 @@ services:
       - VITE_LOGIN_REDIRECT=false
     volumes:
       - ./services/tiled_config:/deploy/config
-    command: ["tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]
+    # dls-tiled serve tells the access policy where nodes are created
+    command: ["dls-tiled", "serve", "config", "--host", "0.0.0.0", "--port", "8407"]
     depends_on:
       keycloak:
         condition: service_healthy

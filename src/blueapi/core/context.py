@@ -157,7 +157,9 @@ class BlueskyContext:
 
             async def _update_scan_num(md: dict[str, Any]) -> int:
                 scan = await numtracker.create_scan(
-                    md["instrument_session"], md["instrument"]
+                    md["instrument_session"],
+                    md["instrument"],
+                    md.get("data_session_subdirectory"),
                 )
                 md["data_session_directory"] = str(scan.scan.directory.path)
                 md["detector_file_template"] = nt_conf.detector_file_template

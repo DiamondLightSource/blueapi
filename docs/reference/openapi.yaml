@@ -301,6 +301,13 @@ components:
           description: Values for parameters to plan, if any
           title: Params
           type: object
+        subdirectory:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Subdirectory of the instrument session's data directory to
+            write this task's scans to, if numtracker is configured to use one
+          title: Subdirectory
       required:
       - name
       - instrument_session
@@ -459,7 +466,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.6.0
+  version: 1.7.0
 openapi: 3.1.0
 paths:
   /api/v1/devices:

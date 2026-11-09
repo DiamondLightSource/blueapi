@@ -63,7 +63,7 @@ class NumtrackerClient:
         self._headers = headers
 
     async def create_scan(
-        self, instrument_session: str, instrument: str
+        self, instrument_session: str, instrument: str, sub: str | None = None
     ) -> NumtrackerScanMutationResponse:
         """
         Create a new scan with numtracker.
@@ -73,25 +73,38 @@ class NumtrackerClient:
             e.g. cm12345-1
 
             instrument: The instrument to write data on e.g. i22
+
+            sub: Optional subdirectory of the session directory to write the
+            scan to e.g. sample1/calibration
         """
 
         query = {
-            "query": dedent(f"""
-            mutation{{
+            "query": dedent("""
+            mutation(
+                $instrument: String!,
+                $instrumentSession: String!,
+                $sub: Subdirectory
+            ){
                 scan(
-                    instrument: "{instrument}",
-                    instrumentSession: "{instrument_session}"
-                    ) {{
-                    directory{{
+                    instrument: $instrument,
+                    instrumentSession: $instrumentSession,
+                    sub: $sub
+                    ) {
+                    directory{
                         instrumentSession
                         instrument
                         path
-                    }}
+                    }
                     scanFile
                     scanNumber
-                }}
-            }}
-            """)
+                }
+            }
+            """),
+            "variables": {
+                "instrument": instrument,
+                "instrumentSession": instrument_session,
+                "sub": sub,
+            },
         }
 
         async with httpx.AsyncClient() as client:

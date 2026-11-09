@@ -6,6 +6,7 @@ from multiprocessing.connection import Connection as PipeConnection
 from typing import Any
 from unittest.mock import ANY, MagicMock, Mock, patch
 
+import bluesky.plans as bp
 import pytest
 from bluesky.protocols import Stoppable
 from bluesky.utils import MsgGenerator
@@ -42,7 +43,7 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils.invalid_config_error import InvalidConfigError
-from blueapi.utils.numtracker import NumtrackerClient
+from blueapi.utils.numtracker import NumtrackerClient, NumtrackerScanMutationResponse
 from blueapi.worker.event import (
     TaskResult,
     TaskStatus,
@@ -799,7 +800,47 @@ async def test_numtracker_create_scan_called_with_arguments_from_metadata(
     scan_id = ctx.run_engine.scan_id_source(ctx.run_engine.md)
     assert isawaitable(scan_id) and await scan_id
 
-    mock_create_scan.assert_called_once_with("ab123", "p46")
+    mock_create_scan.assert_called_once_with("ab123", "p46", None)
+
+
+@patch("blueapi.service.interface.worker")
+def test_numtracker_subdirectory_is_per_task(mock_worker, nt_response):
+    conf = ApplicationConfig(
+        numtracker=NumtrackerConfig(
+            url=HttpUrl("https://numtracker-example.com/graphql")
+        ),
+        env=EnvironmentConfig(metadata=MetadataConfig(instrument="p46")),
+    )
+    interface.set_config(conf)
+    ctx = interface.context()
+
+    def two_runs() -> MsgGenerator:
+        yield from bp.count([])
+        yield from bp.count([])
+
+    ctx.register_plan(two_runs)
+
+    with patch.object(
+        NumtrackerClient,
+        "create_scan",
+        return_value=NumtrackerScanMutationResponse.model_validate(nt_response["data"]),
+    ) as mock_create_scan:
+        for subdirectory in ("sample1", None):
+            interface.submit_task(
+                TaskRequest(
+                    name="two_runs",
+                    instrument_session="ab123",
+                    subdirectory=subdirectory,
+                )
+            )
+            mock_worker.return_value.submit_task.call_args.args[0].do_task(ctx)
+
+    assert [c.args for c in mock_create_scan.call_args_list] == [
+        ("ab123", "p46", "sample1"),
+        ("ab123", "p46", "sample1"),
+        ("ab123", "p46", None),
+        ("ab123", "p46", None),
+    ]
 
 
 async def test_update_scan_num_side_effect_sets_data_session_directory_in_re_md(

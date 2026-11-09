@@ -344,13 +344,18 @@ def mock_jwks_fetch(json_web_keyset: JWK):
 
 
 @pytest.fixture
-def nt_query() -> dict[str, str]:
+def nt_query() -> dict[str, Any]:
     return {
         "query": dedent("""
-            mutation{
+            mutation(
+                $instrument: String!,
+                $instrumentSession: String!,
+                $sub: Subdirectory
+            ){
                 scan(
-                    instrument: "p46",
-                    instrumentSession: "ab123"
+                    instrument: $instrument,
+                    instrumentSession: $instrumentSession,
+                    sub: $sub
                     ) {
                     directory{
                         instrumentSession
@@ -361,7 +366,8 @@ def nt_query() -> dict[str, str]:
                     scanNumber
                 }
             }
-            """)
+            """),
+        "variables": {"instrument": "p46", "instrumentSession": "ab123", "sub": None},
     }
 
 

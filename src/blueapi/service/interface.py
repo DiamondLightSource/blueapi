@@ -211,6 +211,8 @@ def submit_task(
         metadata = {}
 
     metadata["instrument_session"] = task_request.instrument_session
+    if task_request.subdirectory is not None:
+        metadata["data_session_subdirectory"] = task_request.subdirectory
     if context().tiled_conf is not None:
         md = config().env.metadata
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set

@@ -108,6 +108,8 @@ class Task(BlueapiBaseModel):
         )
         plan = ctx.plan_functions[self.name]
         prepared_args, prepared_kwargs = self.prepare_params(ctx)
+        # RunEngine.md persists between tasks, subdirectory must not carry over
+        ctx.run_engine.md.pop("data_session_subdirectory", None)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(plan(*prepared_args, **prepared_kwargs))
         if isinstance(result, tuple):  # pragma: no cover

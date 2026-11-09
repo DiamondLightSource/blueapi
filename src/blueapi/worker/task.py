@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from inspect import Parameter, signature
 from typing import Any, Self, TypedDict
 
-from pydantic import Field, TypeAdapter, ValidationError
+from pydantic import Field, ValidationError
 
 from blueapi.core import BlueskyContext
 from blueapi.utils import BlueapiBaseModel
@@ -61,43 +61,52 @@ class Task(BlueapiBaseModel):
     def _inner_prepare_params(
         self, ctx: BlueskyContext
     ) -> tuple[list[Any], Mapping[str, Any]]:
-        plan = ctx.plans[self.name]
-        func = ctx.plan_functions[self.name]
+        """Prepare positional and keyword arguments for a plan invocation.
 
-        sig = signature(func)
+        Bind the task's supplied arguments to the plan's signature, then validate
+        them using the plan's Pydantic model. This also resolves injected device
+        names to the corresponding devices in the context and applies parameter
+        defaults defined by the model.
+
+        Construct the positional and keyword arguments according to the plan's
+        parameter kinds, ensuring that positional-only, variadic, and
+        keyword-only parameters are handled correctly.
+
+        Args:
+            ctx: The context containing the registered plan and its associated
+                parameter model.
+
+        Returns:
+            A tuple containing the prepared positional and keyword arguments
+            to pass to the plan.
+        """
+        plan = ctx.plans[self.name]
+
+        sig = signature(plan.plan_function)
         bound = sig.bind_partial(*self.args, **self.params)
 
-        # Only validate explicitly supplied arguments. This allows Pydantic's
-        # default/default_factory to provide injected defaults.
-        adapter = TypeAdapter(plan.model)
-        validated = adapter.validate_python(bound.arguments)
+        validated = plan.model.model_validate(bound.arguments)
 
         args: list[Any] = []
         kwargs: dict[str, Any] = {}
 
         for name, parameter in sig.parameters.items():
-            supplied = name in bound.arguments
+            value = getattr(validated, name)
 
-            if supplied:
-                value = getattr(validated, name)
-
-                match parameter.kind:
-                    case Parameter.POSITIONAL_ONLY:
+            match parameter.kind:
+                case Parameter.POSITIONAL_ONLY:
+                    args.append(value)
+                case Parameter.VAR_POSITIONAL:
+                    args.extend(value)
+                case Parameter.VAR_KEYWORD:
+                    kwargs.update(value)
+                case Parameter.POSITIONAL_OR_KEYWORD:
+                    if name in bound.arguments and name not in self.params:
                         args.append(value)
-                    case Parameter.VAR_POSITIONAL:
-                        args.extend(value)
-                    case Parameter.POSITIONAL_OR_KEYWORD:
-                        if name in self.params:
-                            kwargs[name] = value
-                        else:
-                            args.append(value)
-                    case Parameter.KEYWORD_ONLY:
+                    else:
                         kwargs[name] = value
-                    case Parameter.VAR_KEYWORD:
-                        kwargs.update(value)
-            else:
-                # Let the generated Pydantic model provide the default.
-                kwargs[name] = getattr(validated, name)
+                case Parameter.KEYWORD_ONLY:
+                    kwargs[name] = value
 
         return args, kwargs
 
@@ -106,7 +115,7 @@ class Task(BlueapiBaseModel):
             f"Asked to run plan {self.name} with {self.params} and "
             f"metadata {self.metadata} for all runs"
         )
-        plan = ctx.plan_functions[self.name]
+        plan = ctx.plans[self.name].plan_function
         prepared_args, prepared_kwargs = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(plan(*prepared_args, **prepared_kwargs))

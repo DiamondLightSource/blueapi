@@ -129,7 +129,6 @@ class BlueskyContext:
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
-    plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
     _warned_name_clash: bool = field(default=False, init=False, repr=False)
@@ -329,9 +328,11 @@ class BlueskyContext:
         )
         LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
-            name=plan.__name__, model=model, description=plan.__doc__
+            name=plan.__name__,
+            model=model,
+            plan_function=plan,
+            description=plan.__doc__,
         )
-        self.plan_functions[plan.__name__] = plan
         return plan
 
     def register_device(self, device: Device, name: str | None = None) -> None:

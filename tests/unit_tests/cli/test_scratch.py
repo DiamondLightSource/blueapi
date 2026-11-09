@@ -62,6 +62,53 @@ def test_scratch_install_installs_path(
     )
 
 
+@patch("blueapi.cli.scratch.Popen")
+def test_scratch_install_with_uv_lock(
+    mock_popen: Mock,
+    directory_path_with_sgid: Path,
+):
+    mock_process = Mock()
+    mock_process.returncode = 0
+    mock_popen.return_value = mock_process
+
+    scratch_install(directory_path_with_sgid, use_uv_lock=True, timeout=1.0)
+
+    mock_popen.assert_called_once_with(
+        ["uv", "sync", "--inexact"], cwd=directory_path_with_sgid
+    )
+
+
+@patch("blueapi.cli.scratch.Popen")
+@patch("blueapi.cli.scratch.LOGGER")
+def test_scratch_install_ignores_uv_lock_with_multiple_repos(
+    mock_logger: Mock,
+    mock_popen: Mock,
+    directory_path_with_sgid: Path,
+):
+    mock_process = Mock()
+    mock_process.returncode = 0
+    mock_popen.return_value = mock_process
+
+    scratch_install(
+        directory_path_with_sgid,
+        directory_path_with_sgid,
+        use_uv_lock=True,
+        timeout=1.0,
+    )
+
+    mock_logger.warning.assert_called_once_with(
+        "use_uv_lock is ignored when installing multiple repositories"
+    )
+    mock_popen.assert_has_calls(
+        [
+            call(["uv", "pip", "install", "-e", str(directory_path_with_sgid)]),
+            call().wait(timeout=1.0),
+            call(["uv", "pip", "install", "-e", str(directory_path_with_sgid)]),
+            call().wait(timeout=1.0),
+        ]
+    )
+
+
 def test_scratch_install_fails_on_file(file_path: Path):
     with pytest.raises(KeyError):
         scratch_install(file_path, timeout=1.0)
@@ -348,6 +395,7 @@ def test_setup_scratch_iterates_repos(
             call(
                 directory_path_with_sgid / "foo",
                 directory_path_with_sgid / "bar",
+                use_uv_lock=False,
                 timeout=120.0,
             ),
         ]

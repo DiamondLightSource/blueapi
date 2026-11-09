@@ -49,7 +49,6 @@ from .bluesky_types import (
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
-from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,26 +67,20 @@ def is_compatible(val: Device, target: type, args: tuple[type, ...] | None):
 
 
 def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
-    unwrapped = val.device if isinstance(val, BlueapiDevice) else val
-    for base in getattr(unwrapped, "__orig_bases__", ()):
+    for base in getattr(val, "__orig_bases__", ()):
         if (get_origin(base) or base) == target:
             return get_args(base)
     return ()
 
 
-def is_compatible_args(
-    val: Device | BlueapiDevice, target: type, args: tuple[type, ...] | None
-):
-    unwrapped = val.device if isinstance(val, BlueapiDevice) else val
+def is_compatible_args(val: Device, target: type, args: tuple[type, ...] | None):
     return (not args) or all(
         actual is Any
         or type(actual) is TypeVar
         or type(expected) is TypeVar
         or expected == actual
         or issubclass(actual, expected)
-        for expected, actual in zip(
-            args, generic_bounds(unwrapped, target), strict=False
-        )
+        for expected, actual in zip(args, generic_bounds(val, target), strict=False)
     )
 
 
@@ -203,15 +196,11 @@ class BlueskyContext:
 
         if isinstance(addr, str):
             return self.find_device(addr.split("."))
-        # self.devices stores BlueapiDevice wrappers: unwrap the top-level device here
-        # find_component will then look up child devices (like the 'x' in 'motor.x') as
-        # attributes of raw device
-        head, tail = addr[0], addr[1:]
-        entry = self.devices.get(head)
-        device = entry.device if entry else None
-        if tail:
-            return find_component(device, tail)
-        return device
+
+        head, *tail = addr
+        if entry := self.devices.get(head):
+            return entry.find_component(tail)
+        return None
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:

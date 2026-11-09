@@ -374,7 +374,7 @@ class BlueskyContext:
             return
 
         for _, child in device.children():
-            if not child.name or self._add_device(child.name, child):
+            if child.name and self._add_device(child.name, child):
                 self._register_children(child)
 
     def _add_device(self, name: str, device: Device) -> bool:

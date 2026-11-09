@@ -81,9 +81,8 @@ class Task(BlueapiBaseModel):
             to pass to the plan.
         """
         plan = ctx.plans[self.name]
-        func = ctx.plan_functions[self.name]
 
-        sig = signature(func)
+        sig = signature(plan.plan_function)
         bound = sig.bind_partial(*self.args, **self.params)
 
         validated = plan.model.model_validate(bound.arguments)
@@ -116,7 +115,7 @@ class Task(BlueapiBaseModel):
             f"Asked to run plan {self.name} with {self.params} and "
             f"metadata {self.metadata} for all runs"
         )
-        plan = ctx.plan_functions[self.name]
+        plan = ctx.plans[self.name].plan_function
         prepared_args, prepared_kwargs = self.prepare_params(ctx)
         ctx.run_engine.md.update(self.metadata)
         result = ctx.run_engine(plan(*prepared_args, **prepared_kwargs))

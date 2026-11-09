@@ -53,6 +53,2629 @@
                     "types": []
                 }
             ]
+        },
+        {
+            "name": "det-driver",
+            "protocols": [
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf",
+            "protocols": [
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "Flyable",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta",
+            "protocols": [
+                {
+                    "name": "Checkable",
+                    "types": []
+                },
+                {
+                    "name": "Flyable",
+                    "types": []
+                },
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Stoppable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Configurable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-motor_egu",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-motor_resolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-steps_per_revolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-units_per_revolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-encoder_resolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-velocity",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-offset",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-user_setpoint",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-max_velocity",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-acceleration_time",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-precision",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-deadband",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-motor_done_move",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-low_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-high_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-dial_low_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-dial_high_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-offset_freeze_switch",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-high_limit_switch",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-low_limit_switch",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-output_link",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-set_use_switch",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-x-motor_stop",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-motor_egu",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-motor_resolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-steps_per_revolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-units_per_revolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-encoder_resolution",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-velocity",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-offset",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-user_setpoint",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-max_velocity",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-acceleration_time",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-precision",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-deadband",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-motor_done_move",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-low_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-high_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-dial_low_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-dial_high_limit_travel",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-offset_freeze_switch",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-high_limit_switch",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-low_limit_switch",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-output_link",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-set_use_switch",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "stage-theta-motor_stop",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-port_name",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-unique_id",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-nd_attributes_file",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size_x",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size_y",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size_z",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size0",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size1",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_size2",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-color_mode",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-data_type",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-array_counter",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-ad_core_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-driver_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-acquire_time",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-acquire_period",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-num_images",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-image_mode",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-detector_state",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-acquire",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-wait_for_plugins",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-manufacturer",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-model",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-serial_number",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-sdk_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-driver-firmware_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-port_name",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-unique_id",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-nd_attributes_file",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size_x",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size_y",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size_z",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size0",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size1",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_size2",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-color_mode",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-data_type",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-array_counter",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-ad_core_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-driver_version",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_path",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_name",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_path_exists",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_template",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-full_file_name",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_number",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-auto_increment",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-file_write_mode",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-num_capture",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-num_captured",
+            "protocols": [
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-capture",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-create_directory",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-nd_array_port",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-enable_callbacks",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-nd_array_address",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-queue_size",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-position_mode",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-compression",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-num_extra_dims",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-swmr_mode",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-flush_now",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-xml_file_name",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-num_frames_chunks",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-chunk_size_auto",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
+        },
+        {
+            "name": "det-hdf-lazy_open",
+            "protocols": [
+                {
+                    "name": "Movable",
+                    "types": []
+                },
+                {
+                    "name": "Readable",
+                    "types": []
+                },
+                {
+                    "name": "Stageable",
+                    "types": []
+                },
+                {
+                    "name": "Subscribable",
+                    "types": []
+                },
+                {
+                    "name": "Device",
+                    "types": []
+                }
+            ]
         }
     ]
 }

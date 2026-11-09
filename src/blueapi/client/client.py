@@ -1,12 +1,12 @@
 import itertools
 import logging
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from concurrent.futures import Future
 from contextlib import suppress
 from functools import cached_property
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import Broker
@@ -43,7 +43,6 @@ from blueapi.worker.task_worker import TrackableTask
 from .device_cache import DeviceCache
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent
 from .plan_cache import PlanCache
-from .protocols import ClientProtocol
 from .rest import (
     BlueapiRestClient,
     BlueskyRemoteControlError,
@@ -61,7 +60,7 @@ class MissingInstrumentSessionError(Exception):
     pass
 
 
-class BlueapiClient(ClientProtocol):
+class BlueapiClient:
     """Unified client for controlling blueapi"""
 
     _rest: BlueapiRestClient
@@ -120,7 +119,7 @@ class BlueapiClient(ClientProtocol):
     @cached_property
     @start_as_current_span(TRACER)
     def plans(self) -> PlanCache:
-        return PlanCache(self, self._rest.get_plans().plans)
+        return PlanCache(self.run_plan, self._rest.get_plans().plans)
 
     @cached_property
     @start_as_current_span(TRACER)
@@ -320,6 +319,18 @@ class BlueapiClient(ClientProtocol):
         """
 
         return self.active_task
+
+    @start_as_current_span(TRACER, "name", "args", "kwargs")
+    def run_plan(
+        self, name: str, args: tuple[Any, ...], kwargs: Mapping[str, Any]
+    ) -> TaskStatus:
+        req = TaskRequest(
+            name=name,
+            args=list(args),
+            params=kwargs,
+            instrument_session=self.instrument_session,
+        )
+        return self.run_task(req)
 
     @start_as_current_span(TRACER, "task")
     def run_task(

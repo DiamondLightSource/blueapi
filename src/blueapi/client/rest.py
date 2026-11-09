@@ -16,7 +16,6 @@ from websockets.exceptions import InvalidStatus
 from websockets.sync.client import connect
 
 from blueapi import __version__
-from blueapi.client.protocols import ClientObjectRef
 from blueapi.config import RestConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.authentication import JWTAuth, SessionManager
@@ -199,6 +198,11 @@ def _response_json(response: requests.Response) -> Any:
         raise NonJsonResponseError(
             "Response does not contain a valid JSON object"
         ) from exc
+
+
+class ClientObjectRef:
+    name: str
+    model: DeviceModel
 
 
 class BlueapiRestClient:

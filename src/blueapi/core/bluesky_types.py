@@ -25,6 +25,7 @@ from bluesky.protocols import (
     WritesExternalAssets,
 )
 from bluesky.utils import Msg, MsgGenerator
+from ophyd_async.core import AsyncReadable
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel
 
@@ -47,6 +48,7 @@ Device = (
     | Configurable
     | Triggerable
     | AsyncDevice
+    | AsyncReadable
 )
 
 #: Protocols defining interface to hardware

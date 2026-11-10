@@ -48,7 +48,7 @@ server = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "graypy>=2.1.0",
     "aioca",
-    "tiled[client]==0.2.18",
+    "tiled[client]==0.2.21",
     "httpx>=0.28.1",                                 # used by service/numtracker.py and service/authentication.py's TiledAuth
 ]
 

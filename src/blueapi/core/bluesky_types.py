@@ -131,3 +131,22 @@ class WatchableStatus(Status, Protocol):
         """
 
         ...
+
+
+@dataclass
+class BlueapiDevice:
+    """Wrapper around Device held in the context.
+    Also contains find_component function to look up child devices.
+    At the moment this just holds the Device but will later hold child device trees"""
+
+    device: Device
+
+    def find_component(self, addr: list[str]) -> Device | None:
+        dev = self.device
+        for name in addr:
+            dev = getattr(dev, name, None)
+            if dev is None:
+                return None
+            elif not is_bluesky_compatible_device(dev):
+                raise ValueError(f"Found {dev} but it is not a device")
+        return dev

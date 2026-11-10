@@ -42,13 +42,13 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     AsyncDevice,
+    BlueapiDevice,
     Device,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
-from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class BlueskyContext:
     numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
-    devices: dict[str, Device] = field(default_factory=dict)
+    devices: dict[str, BlueapiDevice] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
     _warned_name_clash: bool = field(default=False, init=False, repr=False)
@@ -196,10 +196,12 @@ class BlueskyContext:
         """
 
         if isinstance(addr, str):
-            list_addr = list(addr.split("."))
-            return self.find_device(list_addr)
-        else:
-            return find_component(self.devices, addr)
+            return self.find_device(addr.split("."))
+
+        head, *tail = addr
+        if entry := self.devices.get(head):
+            return entry.find_component(tail)
+        return None
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
@@ -381,8 +383,8 @@ class BlueskyContext:
     def _add_device(self, name: str, device: Device) -> bool:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, device)
-        if existing is not device:
+        existing = self.devices.setdefault(name, BlueapiDevice(device))
+        if existing.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:
@@ -448,11 +450,12 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
+                    # devices are wrapped in BlueapiDevice, so check entry.device
                     json_schema["enum"] = sorted(
                         [
                             name
-                            for name, device in self.devices.items()
-                            if isinstance(device, cls.origin or target)
+                            for name, entry in self.devices.items()
+                            if isinstance(entry.device, cls.origin or target)
                         ]
                     )
                     if cls.args:

@@ -849,6 +849,12 @@
                     "title": "Target Revision",
                     "description": "Revision (branch or tag) to check out when cloning - defaults to remote's HEAD. If a tag is used, the repo will be left in a 'detached head' state.",
                     "type": "string"
+                },
+                "use_uv_lock": {
+                    "title": "Use Uv Lock",
+                    "description": "Install this repository with `uv sync` from its committed uv.lock. Designed for when you have tested your code against a set of dependencies and want them not to move between restarts, e.g. a beamline repository such as village_bluesky. At most one repository may set this. It is installed first; every other repository (e.g. dodal) is then installed editable without its dependencies, so the locked versions are kept.",
+                    "default": false,
+                    "type": "boolean"
                 }
             },
             "additionalProperties": false

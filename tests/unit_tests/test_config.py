@@ -20,6 +20,8 @@ from blueapi.config import (
     ConfigLoader,
     OIDCConfig,
     RestConfig,
+    ScratchConfig,
+    ScratchRepository,
     generate_config_schema,
 )
 from blueapi.utils import InvalidConfigError
@@ -333,6 +335,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     {
                         "name": "dodal",
                         "remote_url": "https://github.com/DiamondLightSource/dodal.git",
+                        "use_uv_lock": False,
                     }
                 ],
             },
@@ -396,6 +399,7 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                     {
                         "name": "dodal",
                         "remote_url": "https://github.com/DiamondLightSource/dodal.git",
+                        "use_uv_lock": False,
                     }
                 ],
             },
@@ -579,3 +583,39 @@ def test_issuer_url_preferred_over_well_known_url(caplog):
 def test_ws_address(url: str, ws_url: str):
     conf = RestConfig.model_validate({"url": url})
     assert conf.ws_address == WebsocketUrl(ws_url)
+
+
+def test_scratch_config_locked_repo_none_by_default():
+    config = ScratchConfig(
+        root=Path("/tmp/scratch"),
+        repositories=[ScratchRepository(name="dodal", remote_url="https://a.com/d")],
+    )
+    assert config.locked_repo is None
+
+
+def test_scratch_config_locked_repo():
+    config = ScratchConfig(
+        root=Path("/tmp/scratch"),
+        repositories=[
+            ScratchRepository(name="dodal", remote_url="https://a.com/d"),
+            ScratchRepository(
+                name="village_bluesky", remote_url="https://a.com/v", use_uv_lock=True
+            ),
+        ],
+    )
+    assert config.locked_repo == Path("/tmp/scratch/village_bluesky")
+
+
+def test_scratch_config_rejects_multiple_locked_repos():
+    with pytest.raises(ValueError, match="Only one repository may set use_uv_lock"):
+        ScratchConfig(
+            root=Path("/tmp/scratch"),
+            repositories=[
+                ScratchRepository(
+                    name="a", remote_url="https://a.com/a", use_uv_lock=True
+                ),
+                ScratchRepository(
+                    name="b", remote_url="https://a.com/b", use_uv_lock=True
+                ),
+            ],
+        )

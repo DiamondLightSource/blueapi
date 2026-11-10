@@ -210,6 +210,19 @@ class ScratchRepository(BlueapiBaseModel):
         default_factory=lambda: None,
     )
 
+    use_uv_lock: bool = Field(
+        description=(
+            "Install this repository with `uv sync` from its committed uv.lock. "
+            "Designed for when you have tested your code against a set of "
+            "dependencies and want them not to move between restarts, e.g. a "
+            "beamline repository such as village_bluesky. At most one repository "
+            "may set this. It is installed first; every other repository (e.g. "
+            "dodal) is then installed editable without its dependencies, so the "
+            "locked versions are kept."
+        ),
+        default=False,
+    )
+
     @field_validator("remote_url")
     @classmethod
     def check_remote_url(cls, value: str) -> str:
@@ -236,6 +249,23 @@ class ScratchConfig(BlueapiBaseModel):
         description="Details of repositories to be cloned and imported into blueapi",
         default_factory=list,
     )
+
+    @property
+    def locked_repo(self) -> Path | None:
+        """Path to the repository with use_uv_lock set, if any."""
+        for repo in self.repositories:
+            if repo.use_uv_lock:
+                return self.root / repo.name
+        return None
+
+    @model_validator(mode="after")
+    def check_single_uv_lock(self) -> Self:
+        locked = [repo.name for repo in self.repositories if repo.use_uv_lock]
+        if len(locked) > 1:
+            raise ValueError(
+                f"Only one repository may set use_uv_lock, found: {locked}"
+            )
+        return self
 
 
 class OIDCConfig(BlueapiBaseModel):

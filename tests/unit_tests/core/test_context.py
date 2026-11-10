@@ -214,8 +214,8 @@ def test_generated_schema(
     # Which child signals exist depends on the upstream Motor class
     expected_movables = sorted(
         name
-        for name, device in devicey_context.devices.items()
-        if isinstance(device, Movable)
+        for name, entry in devicey_context.devices.items()
+        if isinstance(entry.device, Movable)
     )
     assert {"sim", "sim-velocity"} <= set(expected_movables)
     assert schema["properties"] == {
@@ -337,9 +337,11 @@ def test_register_device_registers_children_recursively(
         "table-mount-y-position",
         "table-mount-y-velocity",
     }
-    assert empty_context.devices["table-mount"] is table.mount
-    assert empty_context.devices["table-mount-x"] is table.mount.x
-    assert empty_context.devices["table-mount-x-velocity"] is table.mount.x.velocity
+    assert empty_context.devices["table-mount"].device is table.mount
+    assert empty_context.devices["table-mount-x"].device is table.mount.x
+    assert (
+        empty_context.devices["table-mount-x-velocity"].device is table.mount.x.velocity
+    )
 
 
 def test_child_sharing_parent_name_is_skipped_and_warned_once(
@@ -351,7 +353,7 @@ def test_child_sharing_parent_name_is_skipped_and_warned_once(
     empty_context.register_device(motor)
     empty_context.register_device(SimMotor(name="other"))
 
-    assert empty_context.devices["motor"] is motor
+    assert empty_context.devices["motor"].device is motor
     assert motor.user_readback not in empty_context.devices.values()
     assert empty_context.find_device("motor.user_readback") is motor.user_readback
     records = caplog.get_records("call")
@@ -374,9 +376,9 @@ def test_device_vector_children_are_registered(empty_context: BlueskyContext):
     bank = AxisBank(name="bank")
     empty_context.register_device(bank)
 
-    assert empty_context.devices["bank-axes"] is bank.axes
-    assert empty_context.devices["bank-axes-1"] is bank.axes[1]
-    assert empty_context.devices["bank-axes-2-velocity"] is bank.axes[2].velocity
+    assert empty_context.devices["bank-axes"].device is bank.axes
+    assert empty_context.devices["bank-axes-1"].device is bank.axes[1]
+    assert empty_context.devices["bank-axes-2-velocity"].device is bank.axes[2].velocity
 
 
 def test_overridden_registration_name_does_not_rename_children(
@@ -387,9 +389,9 @@ def test_overridden_registration_name_does_not_rename_children(
     motor = SimMotor(name="motor")
     empty_context.register_device(motor, name="foo")
 
-    assert empty_context.devices["foo"] is motor
-    assert empty_context.devices["motor"] is motor.user_readback
-    assert empty_context.devices["motor-velocity"] is motor.velocity
+    assert empty_context.devices["foo"].device is motor
+    assert empty_context.devices["motor"].device is motor.user_readback
+    assert empty_context.devices["motor-velocity"].device is motor.velocity
 
 
 def test_unrelated_name_collision_keeps_existing_device_and_logs(
@@ -402,9 +404,9 @@ def test_unrelated_name_collision_keeps_existing_device_and_logs(
     stage = Stage(name="stage")
     empty_context.register_device(stage)
 
-    assert empty_context.devices["stage-x"] is sentinel
+    assert empty_context.devices["stage-x"].device is sentinel
     assert "stage-x-position" not in empty_context.devices
-    assert empty_context.devices["stage-y"] is stage.y
+    assert empty_context.devices["stage-y"].device is stage.y
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
@@ -418,7 +420,7 @@ def test_top_level_name_collision_keeps_existing_device_and_logs(
     motor = SimMotor(name="stage-x")
     empty_context.register_device(motor)
 
-    assert empty_context.devices["stage-x"] is stage.x
+    assert empty_context.devices["stage-x"].device is stage.x
     assert motor.velocity not in empty_context.devices.values()
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 

@@ -383,8 +383,8 @@ class BlueskyContext:
     def _add_device(self, name: str, device: Device) -> bool:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, device)
-        if existing is not device:
+        existing = self.devices.setdefault(name, BlueapiDevice(device))
+        if existing.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:

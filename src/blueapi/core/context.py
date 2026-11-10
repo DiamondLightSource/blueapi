@@ -5,7 +5,14 @@ from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
-from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
@@ -32,7 +39,6 @@ from blueapi.config import (
 from blueapi.core.protocols import DeviceManager
 from blueapi.utils import (
     BlueapiPlanModelConfig,
-    NumtrackerClient,
     is_function_sourced_from_module,
     load_module_all,
 )
@@ -42,13 +48,13 @@ from blueapi.utils.path_provider import StartDocumentPathProvider
 from .bluesky_types import (
     BLUESKY_PROTOCOLS,
     AsyncDevice,
+    BlueapiDevice,
     Device,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
     is_bluesky_plan_generator,
 )
-from .device_lookup import find_component
 
 LOGGER = logging.getLogger(__name__)
 
@@ -125,22 +131,21 @@ class BlueskyContext:
         default_factory=lambda: RunEngine(context_managers=[], call_returns_result=True)
     )
     tiled_conf: TiledConfig | None = field(default=None, init=False, repr=False)
-    numtracker: NumtrackerClient | None = field(default=None, init=False, repr=False)
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
-    devices: dict[str, Device] = field(default_factory=dict)
-    plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
+    devices: dict[str, BlueapiDevice] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
+    _warned_name_clash: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self, configuration: ApplicationConfig | None):
         if not configuration:
             return
 
-        if (nt_conf := configuration.numtracker) is not None:
-            if configuration.env.metadata is not None:
-                self.numtracker = NumtrackerClient(url=nt_conf.url)
-            else:
+        if configuration.numtracker is not None:
+            # The numtracker client itself is wired up by the service, see
+            # blueapi.service.interface.context
+            if configuration.env.metadata is None:
                 raise InvalidConfigError(
                     "Numtracker url has been configured, but there is no instrument or"
                     " instrument_session in the environment metadata"
@@ -151,22 +156,6 @@ class BlueskyContext:
             self.run_engine.subscribe(path_provider.run_start, "start")
             self.run_engine.subscribe(path_provider.run_stop, "stop")
             self.path_provider = path_provider
-
-            # local reference so it's available in _update_scan_num
-            numtracker = self.numtracker
-
-            async def _update_scan_num(md: dict[str, Any]) -> int:
-                scan = await numtracker.create_scan(
-                    md["instrument_session"],
-                    md["instrument"],
-                    md.get("data_session_subdirectory"),
-                )
-                md["data_session_directory"] = str(scan.scan.directory.path)
-                md["detector_file_template"] = nt_conf.detector_file_template
-                md["scan_file"] = scan.scan.scan_file
-                return scan.scan.scan_number
-
-            self.run_engine.scan_id_source = _update_scan_num
 
         self.with_config(configuration.env)
 
@@ -198,10 +187,12 @@ class BlueskyContext:
         """
 
         if isinstance(addr, str):
-            list_addr = list(addr.split("."))
-            return self.find_device(list_addr)
-        else:
-            return find_component(self.devices, addr)
+            return self.find_device(addr.split("."))
+
+        head, *tail = addr
+        if entry := self.devices.get(head):
+            return entry.find_component(tail)
+        return None
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
@@ -330,9 +321,11 @@ class BlueskyContext:
         )
         LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
-            name=plan.__name__, model=model, description=plan.__doc__
+            name=plan.__name__,
+            model=model,
+            plan_function=plan,
+            description=plan.__doc__,
         )
-        self.plan_functions[plan.__name__] = plan
         return plan
 
     def register_device(self, device: Device, name: str | None = None) -> None:
@@ -342,6 +335,11 @@ class BlueskyContext:
         attribute which can be used. The attribute can be overridden with the
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
+
+        Children of ophyd-async devices, including signals, are also registered
+        under their own names, e.g. registering "stage" also registers "stage-x"
+        and "stage-x-velocity". If a name is already in use, the existing device
+        is kept and the new one and its children are not registered.
 
         Args:
             device (Device): The device to register
@@ -360,7 +358,39 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self.devices[name] = device
+        if self._add_device(name, device):
+            self._register_children(device)
+
+    def _register_children(self, device: Device) -> None:
+        """Register the children of an ophyd-async device under their own names."""
+
+        if not isinstance(device, AsyncDevice):
+            return
+
+        for _, child in device.children():
+            if child.name and self._add_device(child.name, child):
+                self._register_children(child)
+
+    def _add_device(self, name: str, device: Device) -> bool:
+        """Add a device unless a different one is already registered as name."""
+
+        existing = self.devices.setdefault(name, BlueapiDevice(device))
+        if existing.device is not device:
+            # Expected for e.g. a motor's user_readback, which has the motor's name.
+            # The caller skips its children too, as their names start with this one
+            if not self._warned_name_clash:
+                LOGGER.warning(
+                    "Some devices were not registered as their names are in use, "
+                    "e.g. motor readbacks. Enable debug logging to see which"
+                )
+                self._warned_name_clash = True
+            LOGGER.debug(
+                "Not registering %s or its children, name '%s' is in use",
+                device,
+                name,
+            )
+            return False
+        return True
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""
@@ -411,11 +441,12 @@ class BlueskyContext:
                     json_schema = handler(core_schema)
                     json_schema = handler.resolve_ref_schema(json_schema)
                     json_schema["type"] = qualified_name(target)
+                    # devices are wrapped in BlueapiDevice, so check entry.device
                     json_schema["enum"] = sorted(
                         [
                             name
-                            for name, device in self.devices.items()
-                            if isinstance(device, cls.origin or target)
+                            for name, entry in self.devices.items()
+                            if isinstance(entry.device, cls.origin or target)
                         ]
                     )
                     if cls.args:

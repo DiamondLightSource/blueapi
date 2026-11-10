@@ -5,7 +5,7 @@ import pytest
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
-from blueapi.utils.numtracker import (
+from blueapi.service.numtracker import (
     DirectoryPath,
     NumtrackerClient,
     NumtrackerScanMutationResponse,

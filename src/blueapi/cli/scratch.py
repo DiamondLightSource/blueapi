@@ -1,9 +1,7 @@
-import importlib.metadata
 import logging
 import os
 import stat
 import textwrap
-import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from subprocess import Popen
@@ -11,8 +9,7 @@ from subprocess import Popen
 from git import Repo
 
 from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
-from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
-from blueapi.utils import get_owner_gid, is_sgid_set
+from blueapi.utils import get_owner_gid, is_sgid_set, validate_directory
 
 _DEFAULT_INSTALL_TIMEOUT: float = 300.0
 
@@ -131,7 +128,7 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
         return
     LOGGER.info("Installing packages")
     for path in paths:
-        _validate_directory(path)
+        validate_directory(path)
         args = ["uv", "pip", "install", "-e", str(path)]
         process = Popen(args)
         process.wait(timeout=timeout)
@@ -142,7 +139,7 @@ def scratch_install(*paths: Path, timeout: float = _DEFAULT_INSTALL_TIMEOUT) -> 
 
 
 def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
-    _validate_directory(root_path)
+    validate_directory(root_path)
 
     if required_gid is not None:
         if not is_sgid_set(root_path):
@@ -171,98 +168,3 @@ def _validate_root_directory(root_path: Path, required_gid: int | None) -> None:
             chgrp command.
             """)
             )
-
-
-def _validate_directory(path: Path) -> None:
-    if not path.exists():
-        raise KeyError(f"{path}: No such file or directory")
-    elif path.is_file():
-        raise KeyError(f"{path}: Is a file, not a directory")
-
-
-def _get_project_name_from_pyproject(path: Path) -> str:
-    pyproject_path = path / "pyproject.toml"
-    if pyproject_path.exists():
-        with pyproject_path.open("rb") as file:
-            toml_data = tomllib.load(file)
-        return toml_data.get("project", {}).get("name", "")
-    return ""
-
-
-def _fetch_installed_packages_details() -> list[PackageInfo]:
-    installed_packages = importlib.metadata.distributions()
-    return [
-        PackageInfo(
-            name=dist.metadata["Name"],
-            version=dist.version,
-            location=str(dist.locate_file("")),
-            is_dirty=False,
-        )
-        for dist in installed_packages
-    ]
-
-
-def get_python_environment(
-    config: ScratchConfig | None,
-    name: str | None = None,
-    source: SourceInfo | None = None,
-) -> PythonEnvironmentResponse:
-    """
-    Get the Python environment. This includes all installed packages and
-    the scratch packages.
-    """
-    scratch_packages = {}
-    packages = []
-
-    if config is None:
-        python_env_response = PythonEnvironmentResponse(scratch_enabled=False)
-    else:
-        python_env_response = PythonEnvironmentResponse(scratch_enabled=True)
-        _validate_directory(config.root)
-        for repo in config.repositories:
-            local_directory = config.root / repo.name
-            repo = Repo(local_directory)
-            try:
-                branch = repo.active_branch.name
-            except TypeError:
-                branch = repo.head.commit.hexsha
-
-            is_dirty = repo.is_dirty()
-
-            version = (
-                f"{repo.remotes[0].url} @{branch}"
-                if repo.remotes
-                else f"UNKNOWN REMOTE @{branch}"
-            )
-            package_name = _get_project_name_from_pyproject(local_directory)
-            package_location = ""
-
-            packages.append(
-                PackageInfo(
-                    name=package_name,
-                    version=version,
-                    location=package_location,
-                    source=SourceInfo.SCRATCH,
-                    is_dirty=is_dirty,
-                )
-            )
-        scratch_packages = {p.name: p for p in packages}
-
-    for pkg in _fetch_installed_packages_details():
-        if pkg.name not in scratch_packages:
-            packages.append(pkg)
-        else:
-            scratch_packages[pkg.name].location += f"{pkg.location} &&"
-
-    python_env_response.installed_packages = sorted(
-        packages, key=lambda pkg: pkg.name.lower()
-    )
-    if name:
-        python_env_response.installed_packages = [
-            p for p in python_env_response.installed_packages if p.name == name
-        ]
-    if source:
-        python_env_response.installed_packages = [
-            p for p in python_env_response.installed_packages if p.source == source
-        ]
-    return python_env_response

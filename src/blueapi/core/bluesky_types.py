@@ -136,6 +136,7 @@ class WatchableStatus(Status, Protocol):
 @dataclass
 class BlueapiDevice:
     """Wrapper around Device held in the context.
+    Also contains find_component function to look up child devices.
     At the moment this just holds the Device but will later hold child device trees"""
 
     device: Device

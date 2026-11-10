@@ -551,7 +551,7 @@ dev = [
 requires-dist = [
     { name = "aioca" },
     { name = "aiohttp", specifier = ">=3.13.5" },
-    { name = "bluesky", extras = ["plotting"], git = "https://github.com/bluesky/bluesky.git?rev=main" },
+    { name = "bluesky", extras = ["plotting"], specifier = ">=1.16.0" },
     { name = "bluesky-stomp", specifier = ">=0.1.6" },
     { name = "bluesky-tiled-plugins", specifier = ">=2.0.11" },
     { name = "click", specifier = ">=8.2.0" },
@@ -614,8 +614,8 @@ dev = [
 
 [[package]]
 name = "bluesky"
-version = "1.15.2.dev287+gc3b883b5c"
-source = { git = "https://github.com/bluesky/bluesky.git?rev=main#c3b883b5cf5ef15cacad622c4c17cc66cb29089b" }
+version = "1.16.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cycler" },
     { name = "event-model" },
@@ -628,6 +628,10 @@ dependencies = [
     { name = "toolz" },
     { name = "tqdm" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/24/fb/9d72f62bb19fa10fad013a6039e51162ebaac84713a06a167083c4b68775/bluesky-1.16.0.tar.gz", hash = "sha256:e89884e5eb4e4e502d4f1e929f6862ed6827ad48272a928583bf67d2f1745261", size = 516370, upload-time = "2026-10-29T17:13:07.145Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/ca/ad113309c25d01d2166a0ed17fcdcfa453dbf267147d9e9530928dda82a6/bluesky-1.16.0-py3-none-any.whl", hash = "sha256:674b6547bcab7f4dcaf5d403ce2225d52711cbfa363853ce5e2cf5119b802d60", size = 369254, upload-time = "2026-10-29T17:13:05.466Z" },
 ]
 
 [package.optional-dependencies]
@@ -5284,10 +5288,10 @@ version = "13.0.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.11.5' and python_full_version < '3.12' and sys_platform == 'win32'",
-    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12' and sys_platform == 'emscripten'",
-    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version >= '3.11.5' and python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
@@ -5304,10 +5308,10 @@ version = "14.0.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten'",
+    "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten'",
+    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.12.*' and sys_platform != 'emscripten'",
 ]
 dependencies = [

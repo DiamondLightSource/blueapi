@@ -3,12 +3,12 @@ import logging
 import os
 import stat
 import textwrap
+import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from subprocess import Popen
 
 from git import Repo
-from tomlkit import parse
 
 from blueapi.config import FORBIDDEN_OWN_REMOTE_URL, ScratchConfig
 from blueapi.service.model import PackageInfo, PythonEnvironmentResponse, SourceInfo
@@ -183,8 +183,8 @@ def _validate_directory(path: Path) -> None:
 def _get_project_name_from_pyproject(path: Path) -> str:
     pyproject_path = path / "pyproject.toml"
     if pyproject_path.exists():
-        with pyproject_path.open("r", encoding="utf-8") as file:
-            toml_data = parse(file.read())
+        with pyproject_path.open("rb") as file:
+            toml_data = tomllib.load(file)
         return toml_data.get("project", {}).get("name", "")
     return ""
 

@@ -661,6 +661,7 @@ def test_plan_runs(
         TaskRequest(
             name="abs_set",
             args=["stage.x", 1.0],
+            params={"wait": True},
             instrument_session=VALID_INSTRUMENT_SESSION[User.alice],
         ),
     ],

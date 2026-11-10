@@ -157,7 +157,10 @@ def test_get_devices(context_mock: MagicMock):
     context.register_device(Motor("FOO:", name="my_axis"))
     context_mock.return_value = context
 
-    assert interface.get_devices() == [
+    # Which child signals exist depends on the upstream Motor class
+    devices = interface.get_devices()
+    assert [d.name for d in devices] == list(context.devices)
+    assert devices[:2] == [
         DeviceModel(
             name="my_device",
             protocols=[

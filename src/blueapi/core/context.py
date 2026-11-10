@@ -58,10 +58,11 @@ DEFAULT_PLAN_STUBS = [
     bps.rel_set,
     bps.mv,
     bps.mvr,
+    bps.rd,
+    bps.read,
+    bps.stop,
     bps.sleep,
     bps.wait,
-    bps.rd,
-    bps.stop,
 ]
 
 if "ophyd" in sys.modules:
@@ -140,9 +141,9 @@ class BlueskyContext:
     path_provider: PathProvider | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     devices: dict[str, Device] = field(default_factory=dict)
-    plan_functions: dict[str, PlanGenerator] = field(default_factory=dict)
 
     _reference_cache: dict[type, type] = field(default_factory=dict)
+    _warned_name_clash: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self, configuration: ApplicationConfig | None):
         if not configuration:
@@ -342,9 +343,11 @@ class BlueskyContext:
         )
         LOGGER.debug("Registering plan %s from %s", plan.__name__, plan.__module__)
         self.plans[plan.__name__] = Plan(
-            name=plan.__name__, model=model, description=plan.__doc__
+            name=plan.__name__,
+            model=model,
+            plan_function=plan,
+            description=plan.__doc__,
         )
-        self.plan_functions[plan.__name__] = plan
         return plan
 
     def register_device(self, device: Device, name: str | None = None) -> None:
@@ -354,6 +357,11 @@ class BlueskyContext:
         attribute which can be used. The attribute can be overridden with the
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
+
+        Children of ophyd-async devices, including signals, are also registered
+        under their own names, e.g. registering "stage" also registers "stage-x"
+        and "stage-x-velocity". If a name is already in use, the existing device
+        is kept and the new one and its children are not registered.
 
         Args:
             device (Device): The device to register
@@ -372,7 +380,39 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self.devices[name] = device
+        if self._add_device(name, device):
+            self._register_children(device)
+
+    def _register_children(self, device: Device) -> None:
+        """Register the children of an ophyd-async device under their own names."""
+
+        if not isinstance(device, AsyncDevice):
+            return
+
+        for _, child in device.children():
+            if child.name and self._add_device(child.name, child):
+                self._register_children(child)
+
+    def _add_device(self, name: str, device: Device) -> bool:
+        """Add a device unless a different one is already registered as name."""
+
+        existing = self.devices.setdefault(name, device)
+        if existing is not device:
+            # Expected for e.g. a motor's user_readback, which has the motor's name.
+            # The caller skips its children too, as their names start with this one
+            if not self._warned_name_clash:
+                LOGGER.warning(
+                    "Some devices were not registered as their names are in use, "
+                    "e.g. motor readbacks. Enable debug logging to see which"
+                )
+                self._warned_name_clash = True
+            LOGGER.debug(
+                "Not registering %s or its children, name '%s' is in use",
+                device,
+                name,
+            )
+            return False
+        return True
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

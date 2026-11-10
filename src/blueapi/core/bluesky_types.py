@@ -141,7 +141,7 @@ class BlueapiDevice:
 
     device: Device
 
-    def find_component(self, addr):
+    def find_component(self, addr: list[str]) -> Device | None:
         if not addr:  # for the case when its just the device name with no child device
             return self.device
         head, *tail = addr

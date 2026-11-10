@@ -142,12 +142,11 @@ class BlueapiDevice:
     device: Device
 
     def find_component(self, addr: list[str]) -> Device | None:
-        if not addr:  # for the case when its just the device name with no child device
-            return self.device
-        head, *tail = addr
-        component = getattr(self.device, head, None)
-        if component is None:
-            return None
-        if not is_bluesky_compatible_device(component):
-            raise ValueError(f"Found {component} but it is not a device")
-        return BlueapiDevice(component).find_component(tail)
+        dev = self.device
+        for name in addr:
+            dev = getattr(dev, name, None)
+            if dev is None:
+                return None
+            elif not is_bluesky_compatible_device(dev):
+                raise ValueError(f"Found {dev} but it is not a device")
+        return dev

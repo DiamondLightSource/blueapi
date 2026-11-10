@@ -302,12 +302,10 @@ components:
           title: Params
           type: object
         subdirectory:
-          anyOf:
-          - type: string
-          - type: 'null'
           description: Subdirectory of the instrument session's data directory to
             write this task's scans to, if numtracker is configured to use one
           title: Subdirectory
+          type: string
       required:
       - name
       - instrument_session

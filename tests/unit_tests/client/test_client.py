@@ -497,7 +497,7 @@ def test_run_stomp_ignores_non_matching_events(
 
 
 def test_scripting_interface_returns_result():
-    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1", subdirectory=None)
     client.run_task.return_value = TaskStatus(
         task_id="foobar",
         task_complete=True,
@@ -513,7 +513,7 @@ def test_scripting_interface_returns_result():
 
 
 def test_scripting_interface_raises_exceptions():
-    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1")
+    client = Mock(spec=BlueapiClient, instrument_session="cm12345-1", subdirectory=None)
     client.run_task.return_value = TaskStatus(
         task_id="foobar",
         task_complete=True,
@@ -675,6 +675,16 @@ def test_fluent_instrument_session_setter(client):
     client2 = client.with_instrument_session("cm12345-3")
     assert client is client2
     assert client.instrument_session == "cm12345-3"
+    assert client.subdirectory is None
+
+
+def test_instrument_session_with_subdirectory(client):
+    client2 = client.with_instrument_session("cm12345-3").with_subdirectory("sample1")
+    assert client is client2
+    assert client.subdirectory == "sample1"
+    # Changing session drops the old subdirectory
+    client.instrument_session = "cm12345-4"
+    assert client.subdirectory is None
 
 
 def test_adding_removing_callback(client):

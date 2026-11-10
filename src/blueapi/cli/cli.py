@@ -405,6 +405,16 @@ def listen_to_events(obj: dict) -> None:
         the session must be valid and active and you must be a member of it."""),
     required=True,
 )
+@click.option(
+    "-sub",
+    "--subdirectory",
+    type=str,
+    help=textwrap.dedent("""
+        Subdirectory of the instrument session's data directory to write
+        data to, e.g. a per-sample directory. Passed to numtracker along with
+        the instrument session."""),
+    required=False,
+)
 @click.pass_obj
 @check_connection
 def run_plan(
@@ -414,6 +424,7 @@ def run_plan(
     foreground: bool,
     ws: bool | None,
     instrument_session: str,
+    subdirectory: str | None,
     args: list[Any],
     parameters: TaskParameters,
 ) -> None:
@@ -426,7 +437,11 @@ def run_plan(
 
     client = cast(BlueapiClient, obj["client"])
     task = TaskRequest(
-        name=name, args=args, params=parameters, instrument_session=instrument_session
+        name=name,
+        args=args,
+        params=parameters,
+        instrument_session=instrument_session,
+        subdirectory=subdirectory,
     )
 
     try:

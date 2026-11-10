@@ -21,6 +21,7 @@ from opentelemetry.trace import get_tracer_provider
 
 from blueapi.config import ApplicationConfig, OIDCConfig
 from blueapi.service.model import Cache
+from blueapi.service.numtracker import CREATE_SCAN_MUTATION
 
 
 @pytest.fixture(scope="function")
@@ -343,27 +344,7 @@ def mock_jwks_fetch(json_web_keyset: JWK):
 @pytest.fixture
 def nt_query() -> dict[str, Any]:
     return {
-        "query": dedent("""
-            mutation(
-                $instrument: String!,
-                $instrumentSession: String!,
-                $sub: Subdirectory
-            ){
-                scan(
-                    instrument: $instrument,
-                    instrumentSession: $instrumentSession,
-                    sub: $sub
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """),
+        "query": dedent(CREATE_SCAN_MUTATION),
         "variables": {"instrument": "p46", "instrumentSession": "ab123", "sub": None},
     }
 

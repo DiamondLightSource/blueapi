@@ -11,6 +11,29 @@ from blueapi.utils import BlueapiBaseModel
 LOGGER = logging.getLogger(__name__)
 
 
+CREATE_SCAN_MUTATION = """
+            mutation(
+                $instrument: String!,
+                $instrumentSession: String!,
+                $sub: Subdirectory
+            ){
+                scan(
+                    instrument: $instrument,
+                    instrumentSession: $instrumentSession,
+                    sub: $sub
+                    ) {
+                    directory{
+                        instrumentSession
+                        instrument
+                        path
+                    }
+                    scanFile
+                    scanNumber
+                }
+            }
+            """
+
+
 class DirectoryPath(BlueapiBaseModel):
     """
     Directory location and associated metadata
@@ -79,27 +102,7 @@ class NumtrackerClient:
         """
 
         query = {
-            "query": dedent("""
-            mutation(
-                $instrument: String!,
-                $instrumentSession: String!,
-                $sub: Subdirectory
-            ){
-                scan(
-                    instrument: $instrument,
-                    instrumentSession: $instrumentSession,
-                    sub: $sub
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """),
+            "query": dedent(CREATE_SCAN_MUTATION),
             "variables": {
                 "instrument": instrument,
                 "instrumentSession": instrument_session,

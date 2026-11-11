@@ -184,6 +184,7 @@ def test_plans_iterable(bc: BlueapiClient):
         "step_grid_rscan",
         "mvr",
         "rd",
+        "read",
         "spec_scan",
         "num_grid_scan",
         "wait",

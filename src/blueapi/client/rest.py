@@ -1,6 +1,7 @@
 import json
 import logging
 from collections.abc import Callable, Iterable, Mapping
+from functools import partialmethod
 from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
@@ -308,19 +309,6 @@ class BlueapiRestClient:
             params={"name": name, "source": source},
         )
 
-    def _request_v1(
-        self,
-        suffix: str,
-        target_type: type[T],
-        data: Mapping[str, Any] | None = None,
-        method="GET",
-        get_exception: Callable[[requests.Response], Exception | None] = _exception,
-        params: Mapping[str, Any] | None = None,
-    ) -> T:
-        return self._request_and_deserialize(
-            "/api/v1" + suffix, target_type, data, method, get_exception, params
-        )
-
     @start_as_current_span(TRACER, "method", "data", "suffix")
     def _request_and_deserialize(
         self,
@@ -330,8 +318,9 @@ class BlueapiRestClient:
         method="GET",
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
         params: Mapping[str, Any] | None = None,
+        base_api: str = "",
     ) -> T:
-        url = self._config.url.unicode_string().removesuffix("/") + suffix
+        url = self._config.url.unicode_string().removesuffix("/") + base_api + suffix
         # Get the trace context to propagate to the REST API
         headers = get_context_propagator()
         headers["User-Agent"] = USER_AGENT
@@ -366,6 +355,8 @@ class BlueapiRestClient:
             _response_json(response)
         )
         return deserialized
+
+    _request_v1 = partialmethod(_request_and_deserialize, base_api="/api/v1")
 
     def run_blocking(
         self, req: TaskRequest

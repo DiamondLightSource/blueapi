@@ -101,7 +101,7 @@ def test_create_task_serialization():
 
     BlueapiRestClient.create_task(rest, request)
 
-    rest._request_and_deserialize.assert_called_once_with(
+    rest._request_v1.assert_called_once_with(
         "/tasks",
         TaskResponse,
         method="POST",
@@ -127,7 +127,7 @@ def test_create_task_serialization_error():
 
     with pytest.raises(PydanticSerializationError, match="not serializable"):
         BlueapiRestClient.create_task(rest, request)
-    rest._request_and_deserialize.assert_not_called()
+    rest._request_v1.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -401,7 +401,7 @@ def test_individual_endpoints(
     response: str,
     result: Any,
 ):
-    responses.add(http_method, "http://localhost:8000" + path, body=response)
+    responses.add(http_method, "http://localhost:8000/api/v1" + path, body=response)
 
     method = getattr(rest, method_name)
     actual = method(*args)
@@ -438,7 +438,7 @@ def test_set_state(
 ):
     responses.add(
         PUT,
-        "http://localhost:8000/worker/state",
+        "http://localhost:8000/api/v1/worker/state",
         match=[matchers.json_params_matcher(data)],
         json=response,
     )
@@ -449,7 +449,7 @@ def test_set_state(
 
 @responses.activate
 def test_get_missing_plan(rest: BlueapiRestClient):
-    responses.add(GET, "http://localhost:8000/plans/foo", status=404)
+    responses.add(GET, "http://localhost:8000/api/v1/plans/foo", status=404)
     with pytest.raises(UnknownPlanError):
         rest.get_plan("foo")
 

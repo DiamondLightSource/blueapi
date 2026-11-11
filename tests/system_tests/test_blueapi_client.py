@@ -51,7 +51,7 @@ def login(token_path: Path, user: User) -> BlueapiClient:
     config_file.write_text(yaml.dump(config))
 
     with patch(
-        "blueapi.service.authentication.webbrowser.open_new_tab",
+        "blueapi.client.session.webbrowser.open_new_tab",
         side_effect=lambda url: browser_login(url, user),
     ):
         BlueapiClient.from_config_file(str(config_file)).login(token_path)

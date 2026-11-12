@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from textwrap import dedent
 
 import httpx
 from pydantic import Field, HttpUrl
@@ -12,26 +11,28 @@ LOGGER = logging.getLogger(__name__)
 
 
 CREATE_SCAN_MUTATION = """
-            mutation(
-                $instrument: String!,
-                $instrumentSession: String!,
-                $sub: Subdirectory
-            ){
-                scan(
-                    instrument: $instrument,
-                    instrumentSession: $instrumentSession,
-                    sub: $sub
-                    ) {
-                    directory{
-                        instrumentSession
-                        instrument
-                        path
-                    }
-                    scanFile
-                    scanNumber
-                }
-            }
-            """
+mutation(
+    $instrument: String!,
+    $instrumentSession: String!,
+    $sub: Subdirectory
+){
+    scan(
+        instrument: $instrument,
+        instrumentSession: $instrumentSession,
+        sub: $sub
+        ) {
+        directory{
+            instrumentSession
+            instrument
+            path
+        }
+        scanFile
+        scanNumber
+    }
+}
+"""
+# Collapse whitespace so the query is sent compactly; safe as it has no string literals
+CREATE_SCAN_MUTATION = " ".join(CREATE_SCAN_MUTATION.split())
 
 
 class DirectoryPath(BlueapiBaseModel):
@@ -102,7 +103,7 @@ class NumtrackerClient:
         """
 
         query = {
-            "query": dedent(CREATE_SCAN_MUTATION),
+            "query": CREATE_SCAN_MUTATION,
             "variables": {
                 "instrument": instrument,
                 "instrumentSession": instrument_session,

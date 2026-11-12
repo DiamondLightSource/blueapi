@@ -406,7 +406,7 @@ def listen_to_events(obj: dict) -> None:
     required=True,
 )
 @click.option(
-    "-sub",
+    "-s",
     "--subdirectory",
     type=str,
     help=textwrap.dedent("""

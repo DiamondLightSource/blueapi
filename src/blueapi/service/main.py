@@ -618,6 +618,15 @@ def get_python_environment(
     return runner.run(interface.get_python_env, name, source)
 
 
+@secure_router_v1.get("/device-read/{device}", tags=[Tag.DEVICE])
+@start_as_current_span(TRACER)
+def read_device(
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    device: str,
+):
+    return runner.run(interface.read_device, device)
+
+
 @open_router.get("/healthz", status_code=status.HTTP_200_OK, tags=[Tag.META])
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""

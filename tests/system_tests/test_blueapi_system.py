@@ -3,9 +3,11 @@ import subprocess
 import time
 from asyncio import Queue
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from enum import StrEnum, auto
 from itertools import count
 from pathlib import Path
+from threading import Barrier
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -440,6 +442,38 @@ def test_put_worker_task_fails_if_not_idle(
     rest_client.cancel_current_task(WorkerState.ABORTING)
     rest_client.clear_task(small_task_id)
     rest_client.clear_task(long_task_id)
+
+
+def _wait_for_idle(rest_client: BlueapiRestClient, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    while rest_client.get_state() is not WorkerState.IDLE:
+        assert time.monotonic() < deadline, "Worker did not return to IDLE"
+        time.sleep(0.1)
+
+
+@pytest.mark.parametrize("attempt", range(5))
+def test_concurrent_put_worker_task_returns_409_not_500(
+    rest_client: BlueapiRestClient, long_task: TaskRequest, attempt: int
+):
+    """Two clients starting tasks at the same moment must get one success and one
+    409 Conflict, never a 500 from the worker rejecting the second begin_task."""
+    task_ids = [rest_client.create_task(long_task).task_id for _ in range(2)]
+    barrier = Barrier(len(task_ids))
+
+    def start(task_id: str) -> int | None:
+        barrier.wait()
+        try:
+            rest_client.update_worker_task(WorkerTask(task_id=task_id))
+            return None
+        except BlueskyRemoteControlError as e:
+            return e.args[0]
+
+    with ThreadPoolExecutor(len(task_ids)) as pool:
+        results = list(pool.map(start, task_ids))
+
+    rest_client.cancel_current_task(WorkerState.ABORTING)
+    _wait_for_idle(rest_client)
+    assert sorted(results, key=str) == [409, None]
 
 
 def test_get_worker_state(client: BlueapiClient):

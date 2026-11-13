@@ -90,9 +90,11 @@ resources:
   limits:
     cpu: 2000m
     memory: 4000Mi
+    ephemeral-storage: 8Gi
   requests:
     cpu: 200m
     memory: 400Mi
+    ephemeral-storage: 4Gi
 
 # -- Override resources for init container. By default copies resources of main container.
 initResources: {}

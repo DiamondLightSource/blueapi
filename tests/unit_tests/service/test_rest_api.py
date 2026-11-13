@@ -47,6 +47,7 @@ from blueapi.service.runner import WorkerDispatcher
 from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.worker.task import InvalidTaskParameter, Task, TaskParameterError
 from blueapi.worker.task_worker import TrackableTask
+from blueapi.worker.worker_errors import WorkerBusyError
 
 
 class MockCountModel(BaseModel): ...
@@ -551,6 +552,22 @@ def test_cant_delete_other_users_task(
     assert resp.status_code == 404
 
     mock_runner.run.assert_called_once()
+
+
+def test_put_plan_returns_409_if_worker_becomes_busy(
+    mock_runner: Mock, client: TestClient
+) -> None:
+    def run(function, *args, **kwargs):
+        if function is interface.begin_task:
+            raise WorkerBusyError("Worker is in state RUNNING")
+        return None
+
+    mock_runner.run.side_effect = run
+
+    resp = client.put("/worker/task", json={"task_id": str(uuid.uuid4())})
+
+    assert resp.status_code == status.HTTP_409_CONFLICT
+    assert resp.json() == {"detail": "Worker already active"}
 
 
 def test_set_active_task(client: TestClient) -> None:

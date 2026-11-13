@@ -434,11 +434,17 @@ def set_active_task(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
         )
-    runner.run(
-        interface.begin_task,
-        task=task,
-        pass_through_headers=get_passthrough_headers(request),
-    )
+    try:
+        runner.run(
+            interface.begin_task,
+            task=task,
+            pass_through_headers=get_passthrough_headers(request),
+        )
+    except WorkerBusyError as e:
+        # Another request started a task between the check above and this call
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
+        ) from e
     return task
 
 

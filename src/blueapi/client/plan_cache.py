@@ -80,6 +80,7 @@ class Plan:
             args=list(args),
             params=kwargs,
             instrument_session=self._client.instrument_session,
+            subdirectory=self._client.subdirectory,
         )
         try:
             match self._client.run_task(req):

@@ -38,22 +38,32 @@ class StartDocumentPathProvider(PathProvider):
         example: "detector_file_template": "custom-{device_name}-{scan_id}".
 
         If you do not provide a data_session_directory it will default to "/tmp".
+
+        If the start document has a scan_file in a subdirectory of the data session
+        directory (e.g. "sample1/ixx-1234"), detector files are written alongside it
+        in that subdirectory, which is created if it does not exist.
         """
         if not self._docs:
             raise BlueskyRunStructureError(
                 "Start document not found. This call must be made inside a run."
             )
         else:
-            template = self._docs[-1].get("detector_file_template")
+            doc = self._docs[-1]
+            template = doc.get("detector_file_template")
             if not template:
                 raise ValueError("detector_file_template must be set in metadata")
-            sub_path = template.format_map(
-                self._docs[-1] | {"device_name": device_name}
+            sub_path = template.format_map(doc | {"device_name": device_name})
+            data_session_directory = Path(doc.get("data_session_directory", "/tmp"))
+            # numtracker's scan_file is relative to data_session_directory, write
+            # detector files in the same directory as it ("." if there is no
+            # scan_file or it has no subdirectory)
+            scan_file_directory = Path(doc.get("scan_file", "")).parent
+            return PathInfo(
+                directory_path=data_session_directory / scan_file_directory,
+                filename=sub_path,
+                # Negative depth creates only the directories scan_file adds
+                create_dir_depth=-len(scan_file_directory.parts),
             )
-            data_session_directory = Path(
-                self._docs[-1].get("data_session_directory", "/tmp")
-            )
-            return PathInfo(directory_path=data_session_directory, filename=sub_path)
 
 
 class BlueskyRunStructureError(Exception):

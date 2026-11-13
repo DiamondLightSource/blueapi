@@ -67,6 +67,7 @@ class BlueapiClient(ClientProtocol):
     _rest: BlueapiRestClient
     _events: EventBusClient | None
     _instrument_session: str | None = None
+    _subdirectory: str | None = None
     _callbacks: dict[int, OnAnyEvent]
     _callback_id: itertools.count
 
@@ -137,9 +138,29 @@ class BlueapiClient(ClientProtocol):
     def instrument_session(self, session: str):
         log.debug("Setting instrument_session to %s", session)
         self._instrument_session = session
+        # A subdirectory belongs to a session, don't carry it over to a new one
+        if self._subdirectory is not None:
+            log.info(
+                "Clearing subdirectory %s as instrument_session changed",
+                self._subdirectory,
+            )
+            self._subdirectory = None
 
     def with_instrument_session(self, session: str) -> Self:
         self.instrument_session = session
+        return self
+
+    @property
+    def subdirectory(self) -> str | None:
+        return self._subdirectory
+
+    @subdirectory.setter
+    def subdirectory(self, subdirectory: str | None):
+        log.debug("Setting subdirectory to %s", subdirectory)
+        self._subdirectory = subdirectory
+
+    def with_subdirectory(self, subdirectory: str | None) -> Self:
+        self.subdirectory = subdirectory
         return self
 
     @start_as_current_span(TRACER)

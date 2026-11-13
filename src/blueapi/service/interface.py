@@ -64,7 +64,11 @@ def context() -> BlueskyContext:
     if (nt_conf := config().numtracker) is not None and (nt := numtracker()):
 
         async def _update_scan_num(md: dict[str, Any]) -> int:
-            scan = await nt.create_scan(md["instrument_session"], md["instrument"])
+            scan = await nt.create_scan(
+                md["instrument_session"],
+                md["instrument"],
+                md.get("data_session_subdirectory"),
+            )
             md["data_session_directory"] = str(scan.scan.directory.path)
             md["detector_file_template"] = nt_conf.detector_file_template
             md["scan_file"] = scan.scan.scan_file
@@ -232,6 +236,8 @@ def submit_task(
         metadata = {}
 
     metadata["instrument_session"] = task_request.instrument_session
+    if task_request.subdirectory is not None:
+        metadata["data_session_subdirectory"] = task_request.subdirectory
     if context().tiled_conf is not None:
         md = config().env.metadata
         # We raise an InvalidConfigError on setting tiled_conf if this isn't set

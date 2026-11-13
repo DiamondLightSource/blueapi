@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from textwrap import dedent
 
 import httpx
 from pydantic import Field, HttpUrl
@@ -9,6 +8,31 @@ from pydantic import Field, HttpUrl
 from blueapi.utils import BlueapiBaseModel
 
 LOGGER = logging.getLogger(__name__)
+
+
+CREATE_SCAN_MUTATION = """
+mutation(
+    $instrument: String!,
+    $instrumentSession: String!,
+    $sub: Subdirectory
+){
+    scan(
+        instrument: $instrument,
+        instrumentSession: $instrumentSession,
+        sub: $sub
+        ) {
+        directory{
+            instrumentSession
+            instrument
+            path
+        }
+        scanFile
+        scanNumber
+    }
+}
+"""
+# Collapse whitespace so the query is sent compactly; safe as it has no string literals
+CREATE_SCAN_MUTATION = " ".join(CREATE_SCAN_MUTATION.split())
 
 
 class DirectoryPath(BlueapiBaseModel):
@@ -63,7 +87,7 @@ class NumtrackerClient:
         self._headers = headers
 
     async def create_scan(
-        self, instrument_session: str, instrument: str
+        self, instrument_session: str, instrument: str, sub: str | None = None
     ) -> NumtrackerScanMutationResponse:
         """
         Create a new scan with numtracker.
@@ -73,25 +97,18 @@ class NumtrackerClient:
             e.g. cm12345-1
 
             instrument: The instrument to write data on e.g. i22
+
+            sub: Optional subdirectory of the session directory to write the
+            scan to e.g. sample1/calibration
         """
 
         query = {
-            "query": dedent(f"""
-            mutation{{
-                scan(
-                    instrument: "{instrument}",
-                    instrumentSession: "{instrument_session}"
-                    ) {{
-                    directory{{
-                        instrumentSession
-                        instrument
-                        path
-                    }}
-                    scanFile
-                    scanNumber
-                }}
-            }}
-            """)
+            "query": CREATE_SCAN_MUTATION,
+            "variables": {
+                "instrument": instrument,
+                "instrumentSession": instrument_session,
+                "sub": sub,
+            },
         }
 
         async with httpx.AsyncClient() as client:

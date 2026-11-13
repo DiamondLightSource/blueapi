@@ -75,6 +75,12 @@ class TaskRequest(BlueapiBaseModel):
     instrument_session: str = Field(
         description="Instrument session associated with this task",
     )
+    subdirectory: str | SkipJsonSchema[None] = Field(
+        description="Subdirectory of the instrument session's data directory to "
+        "write this task's scans to, if numtracker is configured to use one",
+        default=None,
+        exclude_if=lambda subdirectory: subdirectory is None,
+    )
 
 
 class DeviceRequest(BlueapiBaseModel):

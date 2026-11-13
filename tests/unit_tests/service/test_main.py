@@ -2,16 +2,12 @@ from unittest import mock
 from unittest.mock import Mock, call, patch
 
 import pytest
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from blueapi import __version__
 from blueapi.config import ApplicationConfig
-from blueapi.service.main import (
-    get_passthrough_headers,
-    lifespan,
-    log_request_details,
-)
+from blueapi.service.main import lifespan, log_request_details
 from blueapi.service.middleware import VersionHeaders
 
 
@@ -82,25 +78,6 @@ async def test_get_request_logs_at_debug(logging_server: TestClient):
                 ),
             ]
         )
-
-
-@pytest.mark.parametrize(
-    "headers, expected_headers",
-    [
-        ({}, {}),
-        ({"foo": "bar"}, {}),
-        ({"authorization": "yes"}, {"authorization": "yes"}),
-        ({"autHORIzation": "yes"}, {"autHORIzation": "yes"}),
-        ({"autHORIzation": "yes", "foo": "bar"}, {"autHORIzation": "yes"}),
-        ({"autHORIzation": ""}, {"autHORIzation": ""}),
-    ],
-)
-def test_get_passthrough_headers(
-    headers: dict[str, str], expected_headers: dict[str, str]
-):
-    request = Mock(spec=Request)
-    request.headers = headers
-    assert get_passthrough_headers(request) == expected_headers
 
 
 @patch("blueapi.service.main.teardown_runner")

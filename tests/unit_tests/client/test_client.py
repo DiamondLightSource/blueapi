@@ -767,18 +767,41 @@ def test_client_login_existing_login(mock_session_manager: Mock, client: Blueapi
 
     mock_session_manager.from_cache.assert_called_once()
     mock_session_manager.from_cache().get_valid_access_token.assert_called_once()
+    mock_session_manager.assert_not_called()
 
 
 @patch("blueapi.client.client.SessionManager")
 def test_client_new_login(mock_session_manager: Mock, client: BlueapiClient):
     manager = Mock()
-    manager.get_valid_access_token.side_effect = ValueError("No existing token")
+    manager.get_valid_access_token.return_value = ""
 
     mock_session_manager.from_cache.return_value = manager
 
     client.login()
 
     mock_session_manager.assert_called_once()
+    mock_session_manager.return_value.start_device_flow.assert_called_once()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_login_without_cache(mock_session_manager: Mock, client: BlueapiClient):
+    mock_session_manager.from_cache.side_effect = FileNotFoundError()
+
+    client.login()
+
+    mock_session_manager.return_value.start_device_flow.assert_called_once()
+
+
+@patch("blueapi.client.client.SessionManager")
+def test_client_login_again_if_server_oidc_config_changed(
+    mock_session_manager: Mock, client: BlueapiClient
+):
+    manager = mock_session_manager.from_cache.return_value
+    manager.is_for.return_value = False
+
+    client.login()
+
+    manager.get_valid_access_token.assert_not_called()
     mock_session_manager.return_value.start_device_flow.assert_called_once()
 
 

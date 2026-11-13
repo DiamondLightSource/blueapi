@@ -28,7 +28,11 @@ from blueapi.client.rest import (
     _create_task_exceptions,
     _exception,
 )
-from blueapi.client.session import SessionCacheManager, SessionManager
+from blueapi.client.session import (
+    AuthenticationServerUnavailableError,
+    SessionCacheManager,
+    SessionManager,
+)
 from blueapi.config import OIDCConfig
 from blueapi.service.model import (
     DeviceModel,
@@ -230,6 +234,7 @@ def test_refresh_if_signature_expired(
     rest_with_auth: BlueapiRestClient,
     mock_authn_server: responses.RequestsMock,
     cached_valid_refresh: Path,
+    new_token: dict[str, Any],
 ):
     environment_id = uuid.uuid4()
     mock_authn_server.stop()  # Cannot use multiple RequestsMock context manager
@@ -248,7 +253,10 @@ def test_refresh_if_signature_expired(
     )
     calls = mock_get_env.calls
     assert len(calls) == 1
-    assert calls[0].request.headers["Authorization"] == "Bearer new_token"
+    assert (
+        calls[0].request.headers["Authorization"]
+        == f"Bearer {new_token['access_token']}"
+    )
 
 
 def test_parameter_error_field():
@@ -590,3 +598,172 @@ def test_run_blocking_connect_error(
     conn = rest.run_blocking(TASK_REQUEST)
     with pytest.raises(exp_err):
         next(iter(conn))
+
+
+def test_rejected_token_is_refreshed_and_request_retried(
+    rest_with_auth: BlueapiRestClient,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+    cached_valid_token_value: str,
+    new_token: dict[str, Any],
+):
+    environment_id = uuid.uuid4()
+    mock_authn_server.stop()
+    unauthorised = mock_authn_server.get(
+        "http://localhost:8000/environment",
+        status=401,
+        match=[
+            responses.matchers.header_matcher(
+                {"Authorization": f"Bearer {cached_valid_token_value}"}
+            )
+        ],
+    )
+    authorised = mock_authn_server.get(
+        "http://localhost:8000/environment",
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
+        match=[
+            responses.matchers.header_matcher(
+                {"Authorization": f"Bearer {new_token['access_token']}"}
+            )
+        ],
+    )
+    with mock_authn_server:
+        result = rest_with_auth.get_environment()
+    assert result.environment_id == environment_id
+    assert unauthorised.call_count == 1
+    assert authorised.call_count == 1
+
+
+def test_request_only_retried_once(
+    rest_with_auth: BlueapiRestClient,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+):
+    mock_authn_server.stop()
+    unauthorised = mock_authn_server.get(
+        "http://localhost:8000/environment", status=401
+    )
+    with mock_authn_server, pytest.raises(UnauthorisedAccessError):
+        rest_with_auth.get_environment()
+    assert unauthorised.call_count == 2
+
+
+def _ws_with_one_update() -> MagicMock:
+    ws = MagicMock()
+    ws.__enter__.return_value.__iter__.return_value = iter(
+        ['{"kind": "update", "data": {"name": "start", "doc":{}, "task_id":"t_uid"}}']
+    )
+    return ws
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_no_empty_bearer_when_logged_out(
+    mock_connect: Mock, oidc_config: OIDCConfig, token_cache_file: Path
+):
+    # Session manager exists but has no cached login
+    rest = BlueapiRestClient(
+        session_manager=SessionManager(
+            oidc_config, SessionCacheManager(token_cache_file)
+        )
+    )
+    mock_connect.return_value = _ws_with_one_update()
+    next(iter(rest.run_blocking(TASK_REQUEST)))
+    assert "Authorization" not in mock_connect.call_args.kwargs["additional_headers"]
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_retries_once_with_refreshed_token(
+    mock_connect: Mock,
+    rest_with_auth: BlueapiRestClient,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+    cached_valid_token_value: str,
+    new_token: dict[str, Any],
+):
+    mock_connect.side_effect = [
+        InvalidStatus(
+            response=Response(status_code=401, reason_phrase="", headers=Headers())
+        ),
+        _ws_with_one_update(),
+    ]
+    next(iter(rest_with_auth.run_blocking(TASK_REQUEST)))
+    sent = [
+        c.kwargs["additional_headers"]["Authorization"]
+        for c in mock_connect.call_args_list
+    ]
+    assert sent == [
+        f"Bearer {cached_valid_token_value}",
+        f"Bearer {new_token['access_token']}",
+    ]
+
+
+@patch("blueapi.client.rest.connect")
+def test_run_blocking_auth_server_unavailable_is_raised(
+    mock_connect: Mock, rest: BlueapiRestClient
+):
+    rest.session_manager = Mock()
+    rest.session_manager.get_valid_access_token.side_effect = (
+        AuthenticationServerUnavailableError("down")
+    )
+    with pytest.raises(AuthenticationServerUnavailableError):
+        next(iter(rest.run_blocking(TASK_REQUEST)))
+    mock_connect.assert_not_called()
+
+
+def test_oidc_config_fetched_without_authentication(
+    rest: BlueapiRestClient, oidc_config: OIDCConfig
+):
+    # e.g. a stale login whose OIDC provider is gone must not block this
+    rest.session_manager = Mock()
+    rest.session_manager.get_valid_access_token.side_effect = (
+        AuthenticationServerUnavailableError("old provider is gone")
+    )
+    with responses.RequestsMock() as mock:
+        call = mock.get(
+            "http://localhost:8000/config/oidc", json=oidc_config.model_dump()
+        )
+        assert rest.get_oidc_config() == oidc_config
+    assert "Authorization" not in call.calls[0].request.headers
+    rest.session_manager.get_valid_access_token.assert_not_called()
+
+
+def test_retry_uses_session_and_follows_redirects(
+    rest_with_auth: BlueapiRestClient,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+    cached_valid_token_value: str,
+    new_token: dict[str, Any],
+):
+    environment_id = uuid.uuid4()
+    mock_authn_server.stop()
+    mock_authn_server.get(
+        "http://localhost:8000/environment",
+        status=401,
+        match=[
+            responses.matchers.header_matcher(
+                {"Authorization": f"Bearer {cached_valid_token_value}"}
+            )
+        ],
+    )
+    mock_authn_server.add(
+        responses.GET,
+        "http://localhost:8000/environment",
+        status=307,
+        headers={"Location": "http://localhost:8000/environment/"},
+        match=[
+            responses.matchers.header_matcher(
+                {"Authorization": f"Bearer {new_token['access_token']}"}
+            )
+        ],
+    )
+    mock_authn_server.get(
+        "http://localhost:8000/environment/",
+        json=EnvironmentResponse(
+            environment_id=environment_id, initialized=True
+        ).model_dump(mode="json"),
+    )
+    with mock_authn_server:
+        result = rest_with_auth.get_environment()
+    assert result.environment_id == environment_id

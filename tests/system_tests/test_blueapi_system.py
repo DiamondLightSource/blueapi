@@ -681,10 +681,13 @@ def test_plan_runs(
 @pytest.mark.usefixtures("numtracker_with_subdirectory")
 def test_plan_runs_with_subdirectory(client_with_stomp: BlueapiClient, scan_id: int):
     start = Queue(maxsize=1)
+    stream_resources = Queue()
 
     def on_event(event: AnyEvent) -> None:
         if isinstance(event, DataEvent) and event.name == "start":
             start.put_nowait(event.doc)
+        if isinstance(event, DataEvent) and event.name == "stream_resource":
+            stream_resources.put_nowait(event.doc)
 
     cb_id = client_with_stomp.add_callback(on_event)
     try:
@@ -700,6 +703,9 @@ def test_plan_runs_with_subdirectory(client_with_stomp: BlueapiClient, scan_id: 
     assert start_doc["data_session_subdirectory"] == "sample1"
     assert start_doc["data_session_directory"] == "/tmp"
     assert start_doc["scan_file"] == f"sample1/adsim-{scan_id}"
+    # Detector files are written alongside the scan file, in the subdirectory
+    resource = stream_resources.get_nowait()
+    assert resource["uri"].endswith(f"/tmp/sample1/adsim-{scan_id}-det.h5")
 
 
 @pytest.mark.parametrize(

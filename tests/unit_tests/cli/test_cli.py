@@ -36,6 +36,7 @@ from blueapi.client.rest import (
 )
 from blueapi.config import (
     ApplicationConfig,
+    OIDCConfig,
     ScratchConfig,
     ScratchRepository,
     generate_config_schema,
@@ -1518,3 +1519,86 @@ def test_run_ws_runs_blocking_plan(mock_client: Mock, runner: CliRunner):
         TaskRequest(name="name", params={}, instrument_session="cm12345-1"),
     )
     assert res.exit_code == 0
+
+
+def test_login_when_oidc_provider_unreachable_keeps_cache(
+    runner: CliRunner,
+    config_with_auth: str,
+    oidc_config: OIDCConfig,
+    cached_valid_refresh: Path,
+):
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as mock:
+        mock.get("http://localhost:8000/config/oidc", json=oidc_config.model_dump())
+        mock.get(
+            "https://auth.example.com/realms/master/.well-known/openid-configuration",
+            body=ConnectionError("down"),
+        )
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+
+    assert result.exit_code == 1
+    assert "could not be reached" in result.output
+    assert "You are still logged in" in result.output
+    assert cached_valid_refresh.exists()
+
+
+def test_login_again_when_server_oidc_config_changed(
+    runner: CliRunner,
+    config_with_auth: str,
+    mock_authn_server: responses.RequestsMock,
+    oidc_config: OIDCConfig,
+    cached_valid_token: Path,
+):
+    mock_authn_server.replace(
+        responses.GET,
+        "http://localhost:8000/config/oidc",
+        json=oidc_config.model_copy(
+            update={"client_audience": "new-audience"}
+        ).model_dump(),
+    )
+    with patch("webbrowser.open_new_tab", return_value=False):
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert "authentication config has changed" in result.output
+    assert "Please login from this URL" in result.output
+
+
+def test_command_when_oidc_provider_unreachable_is_clean_error(
+    runner: CliRunner,
+    config_with_auth: str,
+    cached_valid_refresh: Path,
+):
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as mock:
+        mock.get(
+            "https://auth.example.com/realms/master/.well-known/openid-configuration",
+            body=ConnectionError("down"),
+        )
+        result = runner.invoke(main, ["-c", config_with_auth, "controller", "plans"])
+
+    assert result.exit_code == 1
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert result.output.startswith("Error: Your access token needs refreshing")
+    assert cached_valid_refresh.exists()
+
+
+def test_login_when_blueapi_server_down_is_clean_error(
+    runner: CliRunner, config_with_auth: str, cached_valid_token: Path
+):
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as mock:
+        mock.get("http://localhost:8000/config/oidc", body=ConnectionError("refused"))
+        result = runner.invoke(main, ["-c", config_with_auth, "login"])
+    assert result.exit_code == 1
+    assert result.output == "Error: Failed to establish connection to blueapi server.\n"
+
+
+def test_logout_also_logs_out_legacy_cache(
+    runner: CliRunner,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_authn_server: responses.RequestsMock,
+    cached_valid_token: Path,
+):
+    # cached_valid_token is at tmp_path/blueapi_cache, i.e. the legacy default
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    result = runner.invoke(main, ["logout"])
+    assert result.exit_code == 0
+    assert "Logged out" in result.output
+    assert not cached_valid_token.exists()

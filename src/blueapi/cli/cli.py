@@ -31,7 +31,11 @@ from blueapi.client.rest import (
     UnauthorisedAccessError,
     UnknownPlanError,
 )
-from blueapi.client.session import SessionCacheManager, SessionManager
+from blueapi.client.session import (
+    AuthenticationServerUnavailableError,
+    SessionManager,
+    default_cache_path,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -291,6 +295,8 @@ def check_connection(func: Callable[P, T]) -> Callable[P, T]:
             raise ClickException(
                 "Access denied. Please check your login status and try again."
             ) from e
+        except AuthenticationServerUnavailableError as e:
+            raise ClickException(str(e)) from e
 
     return wrapper
 
@@ -604,23 +610,11 @@ def login(obj: dict) -> None:
     Authenticate with the blueapi using the OIDC (OpenID Connect) flow.
     """
     config: ApplicationConfig = obj["config"]
+    client = BlueapiClient.from_config(config)
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
-        access_token = auth.get_valid_access_token()
-        assert access_token
-        print("Logged in")
-    except Exception:
-        client = BlueapiClient.from_config(config)
-        try:
-            if oidc := client.oidc_config:
-                auth = SessionManager(
-                    oidc, cache_manager=SessionCacheManager(config.auth_token_path)
-                )
-                auth.start_device_flow()
-            else:
-                print("Server is not configured to use authentication!")
-        except NonJsonResponseError as e:
-            print(str(e))
+        client.login(config.auth_token_path)
+    except NonJsonResponseError as e:
+        print(str(e))
 
 
 @main.command(name="logout")
@@ -631,7 +625,13 @@ def logout(obj: dict) -> None:
     """
     config: ApplicationConfig = obj["config"]
     try:
-        auth: SessionManager = SessionManager.from_cache(config.auth_token_path)
+        if config.auth_token_path is None and (legacy := default_cache_path()).exists():
+            # Login cached by an older blueapi at the shared default path; log it
+            # out too so its refresh token is revoked rather than orphaned
+            SessionManager.from_cache(legacy).logout()
+        auth: SessionManager = SessionManager.from_cache(
+            config.auth_token_path, str(config.api.url)
+        )
         auth.logout()
     except FileNotFoundError:
         print("Logged out")

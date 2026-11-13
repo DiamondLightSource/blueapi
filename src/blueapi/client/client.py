@@ -13,7 +13,11 @@ from bluesky_stomp.models import Broker
 from observability_utils.tracing import get_tracer, start_as_current_span
 from pydantic import HttpUrl
 
-from blueapi.client.session import SessionCacheManager, SessionManager
+from blueapi.client.session import (
+    SessionCacheManager,
+    SessionManager,
+    migrate_legacy_cache,
+)
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -90,7 +94,9 @@ class BlueapiClient(ClientProtocol):
     def from_config(cls, config: ApplicationConfig) -> Self:
         session_manager: SessionManager | None = None
         try:
-            session_manager = SessionManager.from_cache(config.auth_token_path)
+            session_manager = SessionManager.from_cache(
+                config.auth_token_path, str(config.api.url)
+            )
         except Exception:
             ...  # Swallow exceptions
         rest = BlueapiRestClient(config.api, session_manager=session_manager)
@@ -657,20 +663,40 @@ class BlueapiClient(ClientProtocol):
         return self._rest.get_python_environment(name=name, source=source)
 
     def login(self, token_path: Path | None = None):
+        """
+        Log in to the server's OIDC provider, reusing a cached login if it is
+        still valid and was made with the same OIDC config the server uses now.
+
+        Raises:
+            AuthenticationServerUnavailableError: If the cached login needs
+                refreshing but the OIDC provider cannot be reached.
+        """
+        oidc = self.oidc_config
+        if oidc is None:
+            print("Server is not configured to use authentication!")
+            return
+        server_url = str(self._rest.url)
+        if token_path is None:
+            migrate_legacy_cache(server_url, oidc)
         try:
-            auth: SessionManager = SessionManager.from_cache(token_path)
-            access_token = auth.get_valid_access_token()
-            assert access_token
-            print("Logged in")
+            auth = SessionManager.from_cache(token_path, server_url)
         except Exception:
-            if oidc := self.oidc_config:
-                auth = SessionManager(
-                    oidc, cache_manager=SessionCacheManager(token_path)
+            auth = None
+        if auth is not None:
+            if not auth.is_for(oidc):
+                print(
+                    "The server's authentication config has changed since "
+                    "you logged in, logging in again"
                 )
-                auth.start_device_flow()
+            elif auth.get_valid_access_token():
+                print("Logged in")
                 self._rest.session_manager = auth
-            else:
-                print("Server is not configured to use authentication!")
+                return
+        auth = SessionManager(
+            oidc, cache_manager=SessionCacheManager(token_path, server_url)
+        )
+        auth.start_device_flow()
+        self._rest.session_manager = auth
 
     def logout(self):
         if sm := self._rest.session_manager:

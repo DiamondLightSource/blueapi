@@ -19,12 +19,12 @@ class EventStream(ABC, Generic[E, S]):
     """
 
     @abstractmethod
-    def subscribe(self, __callback: Callable[[E, str | None], None]) -> S:
+    def subscribe(self, __callback: Callable[[E], None]) -> S:
         """
         Subscribe to new events with a callback
 
         Args:
-            __callback: What to do with each event, optionally takes a correlation id
+            __callback: What to do with each event
 
         Returns:
             S: A unique token representing the subscription
@@ -51,14 +51,14 @@ class EventPublisher(EventStream[E, int]):
     Simple Observable that can be fed values to publish
     """
 
-    _subscriptions: dict[int, Callable[[E, str | None], None]]
+    _subscriptions: dict[int, Callable[[E], None]]
     _count: itertools.count
 
     def __init__(self) -> None:
         self._subscriptions = {}
         self._count = itertools.count()
 
-    def subscribe(self, callback: Callable[[E, str | None], None]) -> int:
+    def subscribe(self, callback: Callable[[E], None]) -> int:
         sub_id = next(self._count)
         self._subscriptions[sub_id] = callback
         return sub_id
@@ -69,19 +69,17 @@ class EventPublisher(EventStream[E, int]):
     def unsubscribe_all(self) -> None:
         self._subscriptions = {}
 
-    def publish(self, event: E, correlation_id: str | None = None) -> None:
+    def publish(self, event: E) -> None:
         """
         Publish a new event to all subscribers
 
         Args:
             event: The event to publish
-            correlation_id: An optional ID that may be used to correlate this
-                event with other events
         """
         errs = []
         for callback in list(self._subscriptions.values()):
             try:
-                callback(event, correlation_id)
+                callback(event)
             except Exception as e:
                 errs.append(e)
         if errs:

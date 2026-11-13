@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from queue import Full
 from typing import Any, TypeVar
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pydantic
 import pytest
@@ -183,9 +183,7 @@ def test_submit_task(
     assert worker.get_tasks() == []
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
 
 
@@ -193,18 +191,12 @@ def test_submit_multiple_tasks(worker: TaskWorker) -> None:
     assert worker.get_tasks() == []
     task_id_1 = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id_1, task=_SIMPLE_TASK)
     ]
     task_id_2 = worker.submit_task(_LONG_TASK)
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id_1, request_id=ANY, task=_SIMPLE_TASK
-        ),
-        TrackableTask.model_construct(
-            task_id=task_id_2, request_id=ANY, task=_LONG_TASK
-        ),
+        TrackableTask.model_construct(task_id=task_id_1, task=_SIMPLE_TASK),
+        TrackableTask.model_construct(task_id=task_id_2, task=_LONG_TASK),
     ]
 
 
@@ -217,16 +209,12 @@ def test_stop_with_task_pending(inert_worker: TaskWorker) -> None:
 def test_restart_leaves_task_pending(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
     worker.stop()
     worker.start()
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
 
 
@@ -234,24 +222,18 @@ def test_submit_before_start_pending(inert_worker: TaskWorker) -> None:
     task_id = inert_worker.submit_task(_SIMPLE_TASK)
     inert_worker.start()
     assert inert_worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
     inert_worker.stop()
     assert inert_worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
 
 
 def test_clear_task(worker: TaskWorker) -> None:
     task_id = worker.submit_task(_SIMPLE_TASK)
     assert worker.get_tasks() == [
-        TrackableTask.model_construct(
-            task_id=task_id, request_id=ANY, task=_SIMPLE_TASK
-        )
+        TrackableTask.model_construct(task_id=task_id, task=_SIMPLE_TASK)
     ]
     assert worker.clear_task(task_id)
     assert worker.get_tasks() == []
@@ -556,7 +538,7 @@ def take_events(
     events: list[E] = []
     future: Future[list[E]] = Future()
 
-    def on_event(event: E, event_id: str | None) -> None:
+    def on_event(event: E) -> None:
         events.append(event)
         if cutoff_predicate(event):
             future.set_result(events)
@@ -592,7 +574,7 @@ def take_events_from_streams(
     events: list[Any] = []
     future: Future[list[Any]] = Future()
 
-    def on_event(event: Any, event_id: str | None) -> None:
+    def on_event(event: Any) -> None:
         print(event)
         events.append(event)
         if cutoff_predicate(event):
@@ -684,19 +666,6 @@ def test_submit_task_span_ok(
     assert worker.get_tasks() == []
     with asserting_span_exporter(exporter, "submit_task", "task.name", "task.params"):
         worker.submit_task(_SIMPLE_TASK)
-
-
-@patch("blueapi.worker.task_worker.get_baggage")
-def test_submit_task_with_correlation_id(
-    mock_get_baggage: Mock,
-    exporter: JsonObjectSpanExporter,
-    worker: TaskWorker,
-) -> None:
-    mock_get_baggage.return_value = "foo"
-    task_id = worker.submit_task(_SIMPLE_TASK)
-    trackable_task = worker.get_task_by_id(task_id)
-    assert trackable_task is not None
-    assert trackable_task.request_id == "foo"
 
 
 def test_clear_task_span_ok(

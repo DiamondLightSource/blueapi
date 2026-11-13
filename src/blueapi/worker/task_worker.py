@@ -16,11 +16,9 @@ from observability_utils.tracing import (
     setup_tracing,
     start_as_current_span,
 )
-from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
 from pydantic import Field
-from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
@@ -67,7 +65,6 @@ class TrackableTask(BlueapiBaseModel):
 
     task_id: str
     task: Task
-    request_id: str | SkipJsonSchema[None] = None
     is_complete: bool = False
     is_pending: bool = True
     errors: list[str] = Field(default_factory=list)
@@ -275,16 +272,7 @@ class TaskWorker:
         task_id: str = str(uuid.uuid4())
         task.metadata["blueapi_task_id"] = task_id
         add_span_attributes({"TaskId": task_id})
-        request_id = get_baggage("correlation_id")
-        # If request id is not a string, we do not pass it into a TrackableTask
-        if not isinstance(request_id, str):
-            LOGGER.warning(f"Invalid correlation id detected: {request_id}")
-            request_id = None
-        trackable_task = TrackableTask(
-            task_id=task_id,
-            request_id=request_id,
-            task=task,
-        )
+        trackable_task = TrackableTask(task_id=task_id, task=task)
         self._pending_tasks[task_id] = trackable_task
         return task_id
 
@@ -303,7 +291,7 @@ class TaskWorker:
 
         task_started = Event()
 
-        def mark_task_as_started(event: WorkerEvent, _: str | None) -> None:
+        def mark_task_as_started(event: WorkerEvent) -> None:
             if (
                 event.task_status is not None
                 and event.task_status.task_id == trackable_task.task_id
@@ -544,7 +532,6 @@ class TaskWorker:
                 task_failed=bool(self._current.errors),
                 result=self._current.outcome,
             )
-            correlation_id = self._current.task_id
             add_span_attributes(
                 {
                     "task_id": self._current.task_id,
@@ -554,7 +541,6 @@ class TaskWorker:
             )
         else:
             task_status = None
-            correlation_id = None
 
         event = WorkerEvent(
             state=self._state,
@@ -562,7 +548,7 @@ class TaskWorker:
             errors=errors,
             warnings=warnings,
         )
-        self._worker_events.publish(event, correlation_id)
+        self._worker_events.publish(event)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
@@ -585,12 +571,10 @@ class TaskWorker:
                         }
                     )
 
-                    correlation_id = self._current.request_id
                     self._data_events.publish(
                         DataEvent(
                             name=name, task_id=self._current.task_id, doc=document
-                        ),
-                        correlation_id,
+                        )
                     )
             else:
                 raise ValueError(
@@ -670,8 +654,7 @@ class TaskWorker:
                 ProgressEvent(
                     task_id=self._current.task_id,
                     statuses=self._status_snapshot,
-                ),
-                self._current.task_id,
+                )
             )
 
 

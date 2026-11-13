@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from inspect import isawaitable
 from multiprocessing.connection import Connection as PipeConnection
 from typing import Any
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bluesky.protocols import Stoppable
@@ -392,7 +392,6 @@ def test_get_task_by_id(
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
-        request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
@@ -424,7 +423,6 @@ def test_submit_task_inserts_metadata(context_mock: MagicMock):
 
     assert interface.get_task_by_id(task_id) == TrackableTask.model_construct(
         task_id=task_id,
-        request_id=ANY,
         task=Task(
             name="my_plan",
             params={},
@@ -464,8 +462,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_failed=False,
                 result=None,
             ),
-        ),
-        "c_id",
+        )
     )
     context().run_engine.unsubscribe.assert_not_called()
     worker().worker_events.unsubscribe.assert_not_called()
@@ -479,8 +476,7 @@ def test_remove_tiled_subscriber(worker, context, from_uri, writer):
                 task_failed=False,
                 result=TaskResult(result=None, type="NoneType"),
             ),
-        ),
-        "c_id",
+        )
     )
     context().run_engine.unsubscribe.assert_called_once_with(17)
     worker().worker_events.unsubscribe.assert_called_once_with(42)
@@ -867,7 +863,7 @@ def test_pipe_events(mock_worker: Mock):
     handler = worker.worker_events.subscribe.call_args[0][0]
 
     evt = Mock()
-    handler(evt, "ignored correlation id")
+    handler(evt)
     tx.send.assert_called_once_with(evt)
 
 
@@ -883,7 +879,7 @@ def test_pipe_events_ignores_broken_pipe(mock_worker: Mock):
 
     tx.send.side_effect = BrokenPipeError()
     # ensure that exceptions are not raised
-    handler(Mock(), "ignored correlation id")
+    handler(Mock())
 
 
 @patch("blueapi.service.interface.worker")

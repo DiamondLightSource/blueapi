@@ -48,7 +48,6 @@ from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 def mock_events() -> EventBusClient:
     mock_events = MagicMock(spec=EventBusClient)
     ctx = Mock()
-    ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(ctx, COMPLETE_EVENT)
     return mock_events
 
@@ -374,7 +373,6 @@ def test_run_stomp_sets_up_control(
     mock_rest.create_task.return_value = TaskResponse(task_id="foo")
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
     ctx = Mock()
-    ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(COMPLETE_EVENT, ctx)
 
     client_with_events.run_stomp(
@@ -395,7 +393,6 @@ def test_run_stomp_fails_on_failing_event(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
 
     ctx = Mock()
-    ctx.correlation_id = "foo"
     mock_events.subscribe_to_all_events = lambda on_event: on_event(FAILED_EVENT, ctx)
 
     on_event = Mock()
@@ -438,7 +435,6 @@ def test_run_stomp_calls_event_callback(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
 
     ctx = Mock()
-    ctx.correlation_id = "foo"
 
     def callback(on_event: Callable[[AnyEvent, MessageContext], None]):
         on_event(test_event, ctx)
@@ -480,7 +476,6 @@ def test_run_stomp_ignores_non_matching_events(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")  # type: ignore
 
     ctx = Mock()
-    ctx.correlation_id = "foo"
 
     def callback(on_event: Callable[[AnyEvent, MessageContext], None]):
         on_event(test_event, ctx)  # type: ignore
@@ -715,7 +710,6 @@ def test_client_callbacks(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
 
     ctx = Mock()
-    ctx.correlation_id = "foo"
 
     def subscribe(on_event: Callable[[AnyEvent, MessageContext], None]):
         on_event(test_event, ctx)
@@ -743,7 +737,6 @@ def test_client_callback_failures(
     mock_rest.update_worker_task.return_value = TaskResponse(task_id="foo")
 
     ctx = Mock()
-    ctx.correlation_id = "foo"
 
     evt = DataEvent(name="start", doc={}, task_id="foo")
 

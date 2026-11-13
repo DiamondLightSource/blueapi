@@ -291,7 +291,6 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
         if topic.name != "public.worker.event":
             return
         ctx = Mock()
-        ctx.correlation_id = task_id
         callback(
             WorkerEvent(
                 state=WorkerState.RUNNING,

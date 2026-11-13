@@ -31,7 +31,7 @@ channels:
           - $ref: "#/components/messages/taggedResourceStream"
           - $ref: "#/components/messages/taggedDatumStream"
 components:
-  messages: # Defined as Components to allow referencing from other APIs. # TODO: Define protocol specific correlationId bindings
+  messages: # Defined as Components to allow referencing from other APIs.
     taggedStartDocument:
       messageId: runStart
       summary: Indicates the start of a Bluesky run based on a previously specified Plan; describes the initial position/metadata of a scan and its involved devices
@@ -182,9 +182,6 @@ components:
           type: string
         replyDestination:
           description: Name of the temporary queue, specified by the caller where they will listen for response messages to requests submitted on the worker.X channels
-          type: string
-        correlationId:
-          description: Unique identifier of an exchange supplied by its originator
           type: string
     workerState:
       description: The state of the Worker.

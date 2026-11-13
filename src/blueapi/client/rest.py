@@ -1,6 +1,7 @@
 import json
 import logging
 from collections.abc import Callable, Iterable, Mapping
+from functools import partialmethod
 from http import HTTPStatus
 from typing import Any, Literal, TypeVar
 
@@ -216,29 +217,29 @@ class BlueapiRestClient:
         self._pool = requests.Session()
 
     def get_plans(self) -> PlanResponse:
-        return self._request_and_deserialize("/plans", PlanResponse)
+        return self._request_v1("/plans", PlanResponse)
 
     def get_plan(self, name: str) -> PlanModel:
         try:
-            return self._request_and_deserialize(f"/plans/{name}", PlanModel)
+            return self._request_v1(f"/plans/{name}", PlanModel)
         except NotFoundError as e:
             raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 
     def get_devices(self) -> DeviceResponse:
-        return self._request_and_deserialize("/devices", DeviceResponse)
+        return self._request_v1("/devices", DeviceResponse)
 
     def get_device(self, name: str) -> DeviceModel:
-        return self._request_and_deserialize(f"/devices/{name}", DeviceModel)
+        return self._request_v1(f"/devices/{name}", DeviceModel)
 
     def get_state(self) -> WorkerState:
-        return self._request_and_deserialize("/worker/state", WorkerState)
+        return self._request_v1("/worker/state", WorkerState)
 
     def set_state(
         self,
         state: Literal[WorkerState.RUNNING, WorkerState.PAUSED],
         defer: bool | None = False,
     ):
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
@@ -246,16 +247,16 @@ class BlueapiRestClient:
         )
 
     def get_task(self, task_id: str) -> TrackableTask:
-        return self._request_and_deserialize(f"/tasks/{task_id}", TrackableTask)
+        return self._request_v1(f"/tasks/{task_id}", TrackableTask)
 
     def get_all_tasks(self) -> TasksListResponse:
-        return self._request_and_deserialize("/tasks", TasksListResponse)
+        return self._request_v1("/tasks", TasksListResponse)
 
     def get_active_task(self) -> WorkerTask:
-        return self._request_and_deserialize("/worker/task", WorkerTask)
+        return self._request_v1("/worker/task", WorkerTask)
 
     def create_task(self, task: TaskRequest) -> TaskResponse:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/tasks",
             TaskResponse,
             method="POST",
@@ -264,12 +265,10 @@ class BlueapiRestClient:
         )
 
     def clear_task(self, task_id: str) -> TaskResponse:
-        return self._request_and_deserialize(
-            f"/tasks/{task_id}", TaskResponse, method="DELETE"
-        )
+        return self._request_v1(f"/tasks/{task_id}", TaskResponse, method="DELETE")
 
     def update_worker_task(self, task: WorkerTask) -> WorkerTask:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/task",
             WorkerTask,
             method="PUT",
@@ -281,7 +280,7 @@ class BlueapiRestClient:
         state: Literal[WorkerState.ABORTING, WorkerState.STOPPING],
         reason: str | None = None,
     ):
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/worker/state",
             target_type=WorkerState,
             method="PUT",
@@ -289,12 +288,10 @@ class BlueapiRestClient:
         )
 
     def get_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize("/environment", EnvironmentResponse)
+        return self._request_v1("/environment", EnvironmentResponse)
 
     def delete_environment(self) -> EnvironmentResponse:
-        return self._request_and_deserialize(
-            "/environment", EnvironmentResponse, method="DELETE"
-        )
+        return self._request_v1("/environment", EnvironmentResponse, method="DELETE")
 
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
@@ -306,7 +303,7 @@ class BlueapiRestClient:
     def get_python_environment(
         self, name: str | None = None, source: SourceInfo | None = None
     ) -> PythonEnvironmentResponse:
-        return self._request_and_deserialize(
+        return self._request_v1(
             "/python_environment",
             PythonEnvironmentResponse,
             params={"name": name, "source": source},
@@ -321,8 +318,9 @@ class BlueapiRestClient:
         method="GET",
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
         params: Mapping[str, Any] | None = None,
+        base_api: str = "",
     ) -> T:
-        url = self._config.url.unicode_string().removesuffix("/") + suffix
+        url = self._config.url.unicode_string().removesuffix("/") + base_api + suffix
         # Get the trace context to propagate to the REST API
         headers = get_context_propagator()
         headers["User-Agent"] = USER_AGENT
@@ -357,6 +355,8 @@ class BlueapiRestClient:
             _response_json(response)
         )
         return deserialized
+
+    _request_v1 = partialmethod(_request_and_deserialize, base_api="/api/v1")
 
     def run_blocking(
         self, req: TaskRequest

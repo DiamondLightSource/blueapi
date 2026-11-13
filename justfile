@@ -71,3 +71,7 @@ repl:
         traceback.print_exception(e, chain=False)
     EOF
     )
+
+[doc('Stream documents from the stomp message bus - see blueapi controller listen')]
+listen FORMAT="full":
+    uv run blueapi -c tests/system_tests/config.yaml controller -o {{ FORMAT }} listen

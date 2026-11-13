@@ -5,15 +5,9 @@ from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
 from types import ModuleType, NoneType, UnionType
-from typing import (
-    Any,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
+import bluesky.plan_stubs as bps
 from bluesky.protocols import HasName
 from bluesky.run_engine import RunEngine
 from ophyd_async.core import NotConnectedError, PathProvider
@@ -58,6 +52,19 @@ from .bluesky_types import (
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_PLAN_STUBS = [
+    bps.abs_set,
+    bps.rel_set,
+    bps.mv,
+    bps.mvr,
+    bps.rd,
+    bps.read,
+    bps.stop,
+    bps.sleep,
+    bps.wait,
+    bps.locate,
+    bps.loc,
+]
 
 if "ophyd" in sys.modules:
     # This is an awful hack/workaround to avoid blueapi hanging on shutdown when
@@ -142,6 +149,9 @@ class BlueskyContext:
         if not configuration:
             return
 
+        for plan_stub in DEFAULT_PLAN_STUBS:
+            self.register_plan(plan_stub)
+
         if configuration.numtracker is not None:
             # The numtracker client itself is wired up by the service, see
             # blueapi.service.interface.context
@@ -196,7 +206,7 @@ class BlueskyContext:
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
-            self.run_engine.md |= config.metadata.model_dump()
+            self.run_engine.md.update(config.metadata.model_dump())
 
         package_map = metadata.packages_distributions()
         packages = {src.module.split(".")[0] for src in config.sources}

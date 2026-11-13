@@ -21,6 +21,7 @@ from blueapi.client.plan_cache import Plan
 from blueapi.client.rest import ServiceUnavailableError, UnauthorisedAccessError
 from blueapi.config import ApplicationConfig
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.core.context import DEFAULT_PLAN_STUBS
 from blueapi.service.model import TaskRequest
 from blueapi.worker.event import WorkerEvent, WorkerState
 
@@ -169,7 +170,8 @@ def test_missing_sub_device(bc: BlueapiClient):
 
 def test_plans_iterable(bc: BlueapiClient):
     names = {plan.name for plan in bc.plans}
-    assert {"count", "sleep", "set_absolute"} <= names
+    assert {"count", "sleep", "abs_set"} <= names
+    assert {stub.__name__ for stub in DEFAULT_PLAN_STUBS} <= names
     assert all(isinstance(plan, Plan) for plan in bc.plans)
 
 
@@ -236,7 +238,7 @@ def test_run_plan_keyword_args(bc: BlueapiClient):
 
 
 def test_run_stub_with_device(bc: BlueapiClient):
-    bc.plans.set_absolute(bc.devices.stage.x, 1.0)
+    bc.plans.abs_set(bc.devices.stage.x, 1.0)
 
 
 def test_removed_callback_not_called(bc: BlueapiClient):

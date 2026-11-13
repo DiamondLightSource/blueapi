@@ -6,9 +6,10 @@ from functools import cache
 from multiprocessing.connection import Connection
 from typing import Any
 
-from bluesky.callbacks.tiled_writer import TiledWriter
+from bluesky.run_engine import RunEngineMetadata
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
+from bluesky_tiled_plugins import TiledWriter
 from fastapi import status
 from tiled.client import from_uri
 from tiled.client.utils import ClientError
@@ -63,7 +64,7 @@ def context() -> BlueskyContext:
     ctx = BlueskyContext(config())
     if (nt_conf := config().numtracker) is not None and (nt := numtracker()):
 
-        async def _update_scan_num(md: dict[str, Any]) -> int:
+        async def _update_scan_num(md: RunEngineMetadata) -> int:
             scan = await nt.create_scan(md["instrument_session"], md["instrument"])
             md["data_session_directory"] = str(scan.scan.directory.path)
             md["detector_file_template"] = nt_conf.detector_file_template

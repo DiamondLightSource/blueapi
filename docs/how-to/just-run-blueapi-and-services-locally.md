@@ -25,6 +25,11 @@ Before starting, ensure you have followed the [Installation instructions](../tut
     - `just repl`: will give you a repl with pre-configured and logged in client
     - `just compose down`: tear down adjacent services
 
+6. On the Diamond network you can also run the NeXus file converter, which writes NeXus files from the documents blueapi publishes to RabbitMQ:
+    - `just compose-diamond`: launch the services above plus the converter
+    - Written files appear in `/tmp/blueapi-nexus` on the host (override with `NEXUS_OUTPUT_DIR`)
+    - `just compose --profile diamond down`: tear down everything, including the converter
+
 Channel Access
 
 To log in through the BlueAPI CLI:

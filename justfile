@@ -24,6 +24,9 @@ init-example-services:
 compose +ARGS="up -d --no-recreate": init-example-services _check-runner
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ ARGS }}
 
+[doc('Bring up the example services plus the NeXus file converter (Diamond registry only)')]
+compose-diamond: (compose "--profile diamond up -d --no-recreate")
+
 [doc('Run the blueapi server with the system test config')]
 serve *OPTS:
     #!/usr/bin/env bash

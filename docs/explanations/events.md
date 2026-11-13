@@ -34,18 +34,9 @@ every time the engine:
 In the latter case, information about the error is also included.
 
 
-## Correlation ID
+## Trace Context
 
-
-When controlling plans programmatically, it can be useful to verify that event model documents really are related to
-the plan you just asked the worker to run. The worker will therefore bundle a correlation ID into the headers of
-messages containing documents.
-
-see also [`Microsoft Playbook on Correlation IDs`](https://microsoft.github.io/code-with-engineering-playbook/observability/correlation-id/)
-
-ActiveMQ will give this header a different name depending on the protocol you use.
-
-| Protocol | Header name      |
-|----------|------------------|
-| JMS      | jms_correlationID|
-| STOMP    | correlation-id   |
+When controlling plans programmatically, it can be useful to verify that events really are related to
+the plan you just asked the worker to run. Every event carries the task ID in its body, and the worker also
+propagates the [OpenTelemetry](https://opentelemetry.io/) trace context in the message headers
+(the W3C `traceparent` header), so events can be tied to the request that started the task.

@@ -440,7 +440,6 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": None,
                 "task": {
                     "name": "sleep",
                     "params": {"time": 0.0},
@@ -453,7 +452,6 @@ def test_get_tasks(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": None,
                 "task": {
                     "name": "first_task",
                     "params": {},
@@ -485,7 +483,6 @@ def test_get_tasks_by_status(mock_runner: Mock, client: TestClient) -> None:
                 "errors": [],
                 "is_complete": True,
                 "is_pending": False,
-                "request_id": None,
                 "task": {
                     "name": "third_task",
                     "params": {},
@@ -649,7 +646,6 @@ def test_get_task(mock_runner: Mock, client: TestClient):
         "errors": [],
         "is_complete": False,
         "is_pending": True,
-        "request_id": None,
         "task": {
             "name": "third_task",
             "params": {},
@@ -704,7 +700,6 @@ def test_get_all_tasks(mock_runner: Mock, client: TestClient):
                 },
                 "is_complete": False,
                 "is_pending": True,
-                "request_id": None,
                 "outcome": None,
                 "errors": [],
             }

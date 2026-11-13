@@ -8,6 +8,7 @@ from types import ModuleType, NoneType
 from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
 from unittest.mock import MagicMock, Mock, patch
 
+import bluesky.plan_stubs as bps
 import pytest
 import responses
 from bluesky.protocols import (
@@ -1051,3 +1052,15 @@ def test_token_url_set_for_tiled(
         )
     )
     assert context.tiled_conf.authentication.token_url == oidc_config.token_endpoint  # type:ignore
+
+
+def test_registering_plan_with_stub_name_overrides_existing_stub():
+    ctx = BlueskyContext(ApplicationConfig())
+    assert ctx.plans["mv"].plan_function is bps.mv
+
+    def mv(custom: int) -> MsgGenerator:
+        yield from ()
+
+    ctx.register_plan(mv)
+    assert ctx.plans["mv"].plan_function is mv
+    assert ctx.plans["mv"].plan_function is not bps.mv

@@ -154,3 +154,24 @@ services:
         condition: service_healthy
     security_opt:
       - label=disable
+
+  # Internal Diamond registry so not pulled in CI, enable with `--profile diamond`
+  nexus:
+    profiles: [diamond]
+    image: gitlab.diamond.ac.uk:5050/daq/d2acq/services/nexus-file-converter:4.1.6
+    network_mode: host # Port 8084
+    environment:
+      - BEAMLINE=adsim
+      # Consume the start/descriptor/event/stop documents blueapi publishes
+      # on /topic/public.worker.event (amq.topic exchange)
+      - SPRING_PROFILES_ACTIVE=rabbitmq
+      - SPRING_RABBITMQ_HOST=localhost
+    volumes:
+      # numtracker's data_session_directory is /tmp/, expose written files on the host
+      - ${NEXUS_OUTPUT_DIR:-/tmp/blueapi-nexus}:/tmp
+    depends_on:
+      - rabbitmq
+    # rabbitmq has no healthcheck, retry until the broker accepts connections
+    restart: on-failure
+    security_opt:
+      - label=disable

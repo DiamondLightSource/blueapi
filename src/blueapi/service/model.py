@@ -25,6 +25,11 @@ class ProtocolInfo(BlueapiBaseModel):
         return f"{self.name}{self.types or ''}"
 
 
+class DeviceTreeModel(BlueapiBaseModel):
+    name: str
+    children: list["DeviceTreeModel"] = Field(default_factory=list)
+
+
 class DeviceModel(BlueapiBaseModel):
     """
     Representation of a device
@@ -34,6 +39,7 @@ class DeviceModel(BlueapiBaseModel):
     protocols: list[ProtocolInfo] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
+    tree: DeviceTreeModel | None = None
 
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":

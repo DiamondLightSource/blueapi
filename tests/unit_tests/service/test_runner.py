@@ -13,6 +13,7 @@ from observability_utils.tracing import (
 )
 from pydantic import BaseModel, ValidationError
 
+from blueapi.model.event import TaskStatus, WorkerEvent, WorkerState
 from blueapi.service import interface
 from blueapi.service.model import EnvironmentResponse
 from blueapi.service.runner import (
@@ -23,7 +24,6 @@ from blueapi.service.runner import (
     _safe_exception_message,
     import_and_run_function,
 )
-from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
 
 
 @pytest.fixture

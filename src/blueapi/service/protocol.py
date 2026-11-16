@@ -19,10 +19,9 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, Field, TypeAdapter
 
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, ProgressEvent, WorkerEvent
+from blueapi.model.task import TaskParameterError
 from blueapi.service.model import TaskRequest
-from blueapi.worker.event import ProgressEvent, WorkerEvent
-from blueapi.worker.task import TaskParameterError
 
 UNKNOWN_PLAN = 4001
 INVALID_ARGS = 4002

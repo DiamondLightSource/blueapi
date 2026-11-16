@@ -3,8 +3,7 @@ from collections.abc import Callable
 from bluesky_stomp.messaging import MessageContext, StompClient
 from bluesky_stomp.models import MessageTopic
 
-from blueapi.core import DataEvent
-from blueapi.worker import ProgressEvent, WorkerEvent
+from blueapi.model.event import DataEvent, ProgressEvent, WorkerEvent
 
 
 class BlueskyStreamingError(Exception):

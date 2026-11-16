@@ -21,7 +21,7 @@ jobs:
     if: github.ref != 'refs/heads/main'
     uses: ./.github/workflows/_tox.yml
     with:
-      tox: pre-commit,type-checking
+      tox: pre-commit,type-checking,import-linter
 
   test:
     if: github.ref != 'refs/heads/main'

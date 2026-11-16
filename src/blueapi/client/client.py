@@ -20,7 +20,14 @@ from blueapi.config import (
     MissingStompConfigurationError,
     RestConfig,
 )
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import (
+    DataEvent,
+    ProgressEvent,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
+from blueapi.model.task import TrackableTask
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -36,9 +43,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils import deprecated
-from blueapi.worker import WorkerEvent, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatus
-from blueapi.worker.task_worker import TrackableTask
 
 from .device_cache import DeviceCache
 from .event_bus import AnyEvent, EventBusClient, OnAnyEvent

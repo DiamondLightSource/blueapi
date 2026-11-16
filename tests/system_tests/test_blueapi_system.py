@@ -30,7 +30,14 @@ from blueapi.config import (
     ConfigLoader,
     OIDCConfig,
 )
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import (
+    DataEvent,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
+from blueapi.model.task import TrackableTask
 from blueapi.service.model import (
     DeviceResponse,
     PlanResponse,
@@ -39,13 +46,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.utils import INSTRUMENT_SESSION_RE
-from blueapi.worker.event import (
-    TaskResult,
-    TaskStatus,
-    WorkerEvent,
-    WorkerState,
-)
-from blueapi.worker.task_worker import TrackableTask
 
 
 class User(StrEnum):

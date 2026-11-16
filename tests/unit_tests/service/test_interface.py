@@ -29,6 +29,14 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core.context import BlueskyContext
+from blueapi.model.event import (
+    TaskResult,
+    TaskStatus,
+    TaskStatusEnum,
+    WorkerEvent,
+    WorkerState,
+)
+from blueapi.model.task import Task, TrackableTask
 from blueapi.service import interface
 from blueapi.service.authentication import TiledAuth
 from blueapi.service.model import (
@@ -43,15 +51,6 @@ from blueapi.service.model import (
 )
 from blueapi.service.numtracker import NumtrackerClient
 from blueapi.utils.invalid_config_error import InvalidConfigError
-from blueapi.worker.event import (
-    TaskResult,
-    TaskStatus,
-    TaskStatusEnum,
-    WorkerEvent,
-    WorkerState,
-)
-from blueapi.worker.task import Task
-from blueapi.worker.task_worker import TrackableTask
 
 FAKE_INSTRUMENT_SESSION = "cm12345-1"
 

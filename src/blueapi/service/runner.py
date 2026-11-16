@@ -20,11 +20,10 @@ from opentelemetry.propagate import get_global_textmap
 from pydantic import TypeAdapter
 
 from blueapi.config import ApplicationConfig
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, ProgressEvent, WorkerEvent
 from blueapi.service import interface
 from blueapi.service.interface import SubHandles, setup, teardown
 from blueapi.service.model import EnvironmentResponse
-from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 # The default multiprocessing start method is fork
 set_start_method("spawn", force=True)

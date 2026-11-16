@@ -1,12 +1,9 @@
 import json
 import logging
-import os
-import stat
 import sys
 import textwrap
 from collections.abc import Callable
 from functools import wraps
-from pathlib import Path
 from pprint import pprint
 from typing import Any, ParamSpec, TypeGuard, TypeVar, cast
 
@@ -19,7 +16,7 @@ from click.exceptions import ClickException
 from click.types import ParamType
 from observability_utils.tracing import setup_tracing
 
-from blueapi import __version__, config
+from blueapi import config
 from blueapi.cli.format import OutputFormat
 from blueapi.client import BlueapiClient
 from blueapi.client.event_bus import AnyEvent, BlueskyStreamingError, EventBusClient
@@ -33,16 +30,18 @@ from blueapi.client.rest import (
 )
 from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import (
+    OTLP_EXPORT_ENABLED,
     ApplicationConfig,
-    ConfigLoader,
 )
-from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
-from blueapi.log import set_up_logging
+from blueapi.model.event import (
+    DataEvent,
+    ProgressEvent,
+    TaskError,
+    TaskResult,
+    WorkerEvent,
+)
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
-from blueapi.worker import ProgressEvent, WorkerEvent
-from blueapi.worker.event import TaskError, TaskResult
 
-from .scratch import setup_scratch
 from .updates import CliEventRenderer
 
 LOGGER = logging.getLogger(__name__)
@@ -97,162 +96,7 @@ def is_str_dict(val: Any) -> TypeGuard[TaskParameters]:
     return isinstance(val, dict) and all(isinstance(k, str) for k in val)
 
 
-@click.group(
-    invoke_without_command=True, context_settings={"auto_envvar_prefix": "BLUEAPI"}
-)
-@click.version_option(version=__version__, prog_name="blueapi")
-@click.option(
-    "-h",
-    "--host",
-    type=str,
-    help=textwrap.dedent(
-        """
-        Hostname for the blueapi instance to use
-
-        Value should be the full URL including scheme (and port if non-default),
-        eg `--host http://localhost:8000`
-        """
-    ),
-)
-@click.option(
-    "-c", "--config", type=Path, help="Path to configuration YAML file", multiple=True
-)
-@click.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value="DEBUG",
-    help="Include DEBUG level logging output",
-)
-@click.option(
-    "-q",
-    "--quiet",
-    "log_level",
-    flag_value="ERROR",
-    help="Reduce logging noise to only show errors",
-)
-@click.pass_context
-def main(
-    ctx: click.Context,
-    config: tuple[Path, ...],
-    host: str | None = None,
-    log_level: str | None = None,
-) -> None:
-    # if no command is supplied, run with the options passed
-
-    # Set umask to DLS standard
-    os.umask(stat.S_IWOTH)
-
-    config_loader = ConfigLoader(ApplicationConfig)
-    try:
-        config_loader.use_values_from_yaml(*config)
-    except FileNotFoundError as fnfe:
-        raise ClickException(f"Config file not found: {fnfe.filename}") from fnfe
-    if host:
-        config_loader.use_values({"api": {"url": host}})
-    if log_level:
-        config_loader.use_values({"logging": {"level": log_level}})
-
-    loaded_config: ApplicationConfig = config_loader.load()
-
-    set_up_logging(loaded_config.logging)
-
-    ctx.ensure_object(dict)
-    ctx.obj["config"] = loaded_config
-
-    if ctx.invoked_subcommand is None:
-        print("Please invoke subcommand!")
-
-
-def _missing_server_extra(e: ImportError) -> ClickException:
-    return ClickException(
-        f"{e.name} is not installed, it is needed to run the server. "
-        "Install it with: pip install blueapi[server]"
-    )
-
-
-@main.command(name="schema")
-@click.option("-o", "--output", type=Path, help="Path to file to save the schema")
-@click.option(
-    "-u",
-    "--update",
-    type=bool,
-    is_flag=True,
-    help="[Development only] update the schema in the documentation",
-)
-def schema(output: Path | None = None, update: bool = False) -> None:
-    """Only import the service functions when starting the service or generating
-    the schema, not the controller as a new FastAPI app will be started each time.
-    """
-    try:
-        from blueapi.service.openapi import (
-            DOCS_SCHEMA_LOCATION,
-            generate_schema,
-            print_schema_as_yaml,
-            write_schema_as_yaml,
-        )
-    except ImportError as e:
-        raise _missing_server_extra(e) from e
-
-    """Generate the schema for the REST API"""
-    schema = generate_schema()
-
-    if update:
-        output = DOCS_SCHEMA_LOCATION
-    if output is not None:
-        write_schema_as_yaml(output, schema)
-    else:
-        print_schema_as_yaml(schema)
-
-
-@click.option(
-    "-o", "--output", type=Path, help="Path to file to save the config schema"
-)
-@click.option(
-    "-u",
-    "--update",
-    type=bool,
-    is_flag=True,
-    help="[Development only] update the config schema in the documentation",
-)
-@main.command(name="config-schema")
-def config_schema(output: Path | None = None, update: bool = False) -> None:
-    from blueapi.config import generate_config_schema
-
-    schema = generate_config_schema()
-    if update:
-        output = config.CONFIG_SCHEMA_LOCATION
-    if output is not None:
-        with output.open("w") as stream:
-            json.dump(schema, stream, indent=4)
-            stream.write("\n")
-    else:
-        print(json.dumps(schema))
-
-
-@main.command(name="serve")
-@click.pass_obj
-def start_application(obj: dict):
-    """Run a worker that accepts plans to run"""
-    config: ApplicationConfig = obj["config"]
-
-    """Only import the service functions when starting the service or generating
-    the schema, not the controller as a new FastAPI app will be started each time.
-    """
-    try:
-        from blueapi.service.main import start
-    except ImportError as e:
-        raise _missing_server_extra(e) from e
-
-    """
-    Set up basic automated instrumentation for the FastAPI app, creating the
-    observability context.
-    """
-    setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
-    start(config)
-
-
-@main.group()
+@click.group()
 @click.option(
     "-o",
     "--output",
@@ -573,16 +417,6 @@ def env(
     print(status)
 
 
-@main.command(name="setup-scratch")
-@click.pass_obj
-def scratch(obj: dict) -> None:
-    config: ApplicationConfig = obj["config"]
-    if config.scratch is not None:
-        setup_scratch(config.scratch)
-    else:
-        raise KeyError("No scratch config supplied")
-
-
 @controller.command(name="get-python-env")
 @click.option("--name", type=str, help="Filter by the name of the installed package")
 @click.option("--source", type=SourceInfo, help="Filter by the source type")
@@ -596,7 +430,7 @@ def get_python_env(obj: dict, name: str, source: SourceInfo) -> None:
     obj["fmt"].display(client.get_python_env(name=name, source=source))
 
 
-@main.command(name="login")
+@click.command(name="login")
 @click.pass_obj
 @check_connection
 def login(obj: dict) -> None:
@@ -623,7 +457,7 @@ def login(obj: dict) -> None:
             print(str(e))
 
 
-@main.command(name="logout")
+@click.command(name="logout")
 @click.pass_obj
 def logout(obj: dict) -> None:
     """
@@ -642,3 +476,6 @@ def logout(obj: dict) -> None:
         ) from e
     except Exception as e:
         raise ClickException(f"Error logging out: {e}") from e
+
+
+CLIENT_COMMANDS = [controller, login, logout]

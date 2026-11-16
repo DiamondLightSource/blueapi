@@ -1,5 +1,5 @@
 import inspect
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -28,7 +28,7 @@ from bluesky.utils import Msg, MsgGenerator
 from ophyd_async.core import Device as AsyncDevice
 from pydantic import BaseModel
 
-from blueapi.utils import BlueapiBaseModel
+from blueapi.model.event import DataEvent  # noqa: F401 - re-exported
 
 PlanGenerator = Callable[..., MsgGenerator]
 
@@ -92,17 +92,6 @@ class Plan:
     model: type[BaseModel]
     plan_function: PlanGenerator
     description: str | None = None
-
-
-class DataEvent(BlueapiBaseModel):
-    """
-    Event representing collection of some data. Conforms to the Bluesky event model:
-    https://github.com/bluesky/event-model
-    """
-
-    name: str
-    doc: Mapping[str, Any]
-    task_id: str
 
 
 @runtime_checkable

@@ -22,6 +22,13 @@ from blueapi.config import (
     OIDCConfig,
     RestConfig,
 )
+from blueapi.model.event import TaskStatus, WorkerEvent, WorkerState
+from blueapi.model.task import (
+    InvalidTaskParameter,
+    Task,
+    TaskParameterError,
+    TrackableTask,
+)
 from blueapi.service import interface, main
 from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
@@ -44,9 +51,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.service.runner import WorkerDispatcher
-from blueapi.worker.event import TaskStatus, WorkerEvent, WorkerState
-from blueapi.worker.task import InvalidTaskParameter, Task, TaskParameterError
-from blueapi.worker.task_worker import TrackableTask
 
 
 class MockCountModel(BaseModel): ...

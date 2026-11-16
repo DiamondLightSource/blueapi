@@ -19,7 +19,8 @@ from blueapi import __version__
 from blueapi.client.protocols import ClientObjectRef
 from blueapi.client.session import JWTAuth, SessionManager
 from blueapi.config import RestConfig
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, ProgressEvent, WorkerEvent, WorkerState
+from blueapi.model.task import TrackableTask
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -43,8 +44,6 @@ from blueapi.service.protocol import (
     Unauthorized,
     Update,
 )
-from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 T = TypeVar("T")
 

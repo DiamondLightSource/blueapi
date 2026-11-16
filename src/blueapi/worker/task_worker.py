@@ -9,6 +9,7 @@ from threading import Event, RLock
 from typing import Any, TypeVar
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
+from bluesky._vendor.super_state_machine.extras import PropertyMachine, ProxyString
 from bluesky.protocols import Status
 from observability_utils.tracing import (
     add_span_attributes,
@@ -19,8 +20,6 @@ from observability_utils.tracing import (
 from opentelemetry.baggage import get_baggage
 from opentelemetry.context import Context, get_current
 from opentelemetry.trace import SpanKind
-from pydantic import Field
-from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.core import (
     OTLP_EXPORT_ENABLED,
@@ -32,21 +31,17 @@ from blueapi.core import (
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
-from blueapi.utils.base_model import BlueapiBaseModel
-from blueapi.utils.thread_exception import handle_all_exceptions
-
-from .event import (
+from blueapi.model.event import (
     ProgressEvent,
-    RawRunEngineState,
     StatusView,
-    TaskError,
-    TaskResult,
     TaskStatus,
     TaskStatusEnum,
     WorkerEvent,
     WorkerState,
 )
-from .task import Task
+from blueapi.model.task import Task, TrackableTask
+from blueapi.utils.thread_exception import handle_all_exceptions
+
 from .worker_errors import WorkerAlreadyStartedError, WorkerBusyError
 
 LOGGER = logging.getLogger(__name__)
@@ -59,25 +54,8 @@ WORKER_THREAD_STATE = "worker thread state"
 
 T = TypeVar("T")
 
-
-class TrackableTask(BlueapiBaseModel):
-    """
-    A representation of a task that the worker recognizes
-    """
-
-    task_id: str
-    task: Task
-    request_id: str | SkipJsonSchema[None] = None
-    is_complete: bool = False
-    is_pending: bool = True
-    errors: list[str] = Field(default_factory=list)
-    outcome: TaskResult | TaskError | None = None
-
-    def set_result(self, result: Any):
-        self.outcome = TaskResult.from_result(result)
-
-    def set_exception(self, err: Exception):
-        self.outcome = TaskError.from_exception(err)
+# The RunEngine can return any of these three types as its state
+RawRunEngineState = PropertyMachine | ProxyString | str
 
 
 class TaskWorker:

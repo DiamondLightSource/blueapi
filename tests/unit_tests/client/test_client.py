@@ -29,6 +29,7 @@ from blueapi.client.rest import (
 )
 from blueapi.config import MissingStompConfigurationError, RestConfig
 from blueapi.core import DataEvent
+from blueapi.model.event import TaskError, TaskResult, TaskStatus
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -41,7 +42,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker import ProgressEvent, WorkerEvent, WorkerState
-from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 
 @pytest.fixture

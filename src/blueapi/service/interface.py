@@ -205,6 +205,19 @@ def get_device(name: str) -> DeviceModel:
     return DeviceModel.from_device(device)
 
 
+def read_device(addr: str) -> dict[str, Reading[Any]]:
+    if not (device := context().find_device(addr)):
+        raise KeyError(addr)
+
+    if not isinstance(device, Readable):
+        raise TypeError("Requested device is not readable")
+
+    return call_in_bluesky_event_loop(
+        maybe_await(device.read()),
+        timeout=10.0,
+    )
+
+
 def submit_task(
     task_request: TaskRequest, metadata: dict[str, Any] | None = None
 ) -> str:
@@ -343,18 +356,6 @@ def get_python_env(
     """Retrieve information about the Python environment"""
     scratch = config().scratch
     return get_python_environment(config=scratch, name=name, source=source)
-
-
-def read_device(addr: str) -> dict[str, Reading[Any]]:
-    device = context().find_device(addr)
-
-    if not isinstance(device, Readable):
-        raise TypeError("Requested device is not readable")
-
-    return call_in_bluesky_event_loop(
-        maybe_await(device.read()),
-        timeout=10.0,
-    )
 
 
 @dataclass

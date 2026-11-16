@@ -1,20 +1,19 @@
 import uuid
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
-from bluesky.protocols import HasName
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.config import OIDCConfig
-from blueapi.core import BLUESKY_PROTOCOLS, Device, Plan
-from blueapi.core.context import generic_bounds
+from blueapi.model.event import WorkerState
+from blueapi.model.task import TrackableTask
 from blueapi.utils import BlueapiBaseModel
-from blueapi.worker import WorkerState
-from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
-_UNKNOWN_NAME = "UNKNOWN"
+if TYPE_CHECKING:
+    from blueapi.core.bluesky_types import Device, Plan
+    from blueapi.worker.task_worker import TaskWorker
 
 
 class ProtocolInfo(BlueapiBaseModel):
@@ -36,18 +35,24 @@ class DeviceModel(BlueapiBaseModel):
     )
 
     @classmethod
-    def from_device(cls, device: Device) -> "DeviceModel":
-        name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_info(device)))
+    def from_device(cls, device: "Device") -> "DeviceModel":
+        # Server only: imported here as the client has no ophyd-async
+        from bluesky.protocols import HasName
 
+        from blueapi.core.bluesky_types import BLUESKY_PROTOCOLS
+        from blueapi.core.context import generic_bounds
 
-def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:
-    for protocol in BLUESKY_PROTOCOLS:
-        if isinstance(device, protocol):
-            yield ProtocolInfo(
-                name=protocol.__name__,
-                types=[arg.__name__ for arg in generic_bounds(device, protocol)],
-            )
+        return cls(
+            name=device.name if isinstance(device, HasName) else "UNKNOWN",
+            protocols=[
+                ProtocolInfo(
+                    name=protocol.__name__,
+                    types=[arg.__name__ for arg in generic_bounds(device, protocol)],
+                )
+                for protocol in BLUESKY_PROTOCOLS
+                if isinstance(device, protocol)
+            ],
+        )
 
 
 class TasksListResponse(BlueapiBaseModel):
@@ -109,7 +114,7 @@ class PlanModel(BlueapiBaseModel):
     )
 
     @classmethod
-    def from_plan(cls, plan: Plan) -> "PlanModel":
+    def from_plan(cls, plan: "Plan") -> "PlanModel":
         return cls(
             name=plan.name,
             schema=plan.model.model_json_schema(),
@@ -151,7 +156,7 @@ class WorkerTask(BlueapiBaseModel):
     )
 
     @classmethod
-    def of_worker(cls, worker: TaskWorker) -> "WorkerTask":
+    def of_worker(cls, worker: "TaskWorker") -> "WorkerTask":
         active = worker.get_active_task()
         if active is not None:
             return WorkerTask(task_id=active.task_id)

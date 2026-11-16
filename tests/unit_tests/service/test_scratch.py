@@ -8,8 +8,8 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import pytest
 from git import Repo
 
-from blueapi.cli.scratch import ensure_repo, scratch_install, setup_scratch
 from blueapi.config import ScratchConfig, ScratchRepository
+from blueapi.service.scratch import ensure_repo, scratch_install, setup_scratch
 from blueapi.utils import get_owner_gid
 
 
@@ -38,7 +38,7 @@ def nonexistant_path(directory_path_with_sgid: Path) -> Path:
     return file_path
 
 
-@patch("blueapi.cli.scratch.Popen")
+@patch("blueapi.service.scratch.Popen")
 def test_scratch_install_installs_path(
     mock_popen: Mock,
     directory_path_with_sgid: Path,
@@ -64,7 +64,7 @@ def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
         scratch_install(nonexistant_path, timeout=1.0)
 
 
-@patch("blueapi.cli.scratch.Popen")
+@patch("blueapi.service.scratch.Popen")
 @pytest.mark.parametrize("code", [1, 2, 65536])
 def test_scratch_install_fails_on_non_zero_exit_code(
     mock_popen: Mock,
@@ -79,7 +79,7 @@ def test_scratch_install_fails_on_non_zero_exit_code(
         scratch_install(directory_path_with_sgid, timeout=1.0)
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_repo_not_cloned_and_validated_if_found_locally(
     mock_repo: Mock,
     directory_path_with_sgid: Path,
@@ -94,7 +94,7 @@ def test_repo_not_cloned_and_validated_if_found_locally(
     mock_repo.clone_from.assert_not_called()
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_repo_cloned_if_not_found_locally(
     mock_repo: Mock,
     nonexistant_path: Path,
@@ -114,7 +114,7 @@ def test_repo_cloned_if_not_found_locally(
     )
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_repo_cloned_with_correct_umask(
     mock_repo: Mock,
     directory_path_with_sgid: Path,
@@ -143,7 +143,7 @@ def test_repo_discovery_errors_if_file_found_with_repo_name(file_path: Path):
         ensure_repo("http://example.com/foo.git", file_path)
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_cloned_repo_changes_to_new_branch(mock_repo, tmp_path: Path):
     repo = MagicMock(name="ClonedRepo", spec=Repo)
     repo.heads.demo = None
@@ -159,7 +159,7 @@ def test_cloned_repo_changes_to_new_branch(mock_repo, tmp_path: Path):
     )
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_existing_repo_not_changed_to_existing_branch(mock_repo, tmp_path: Path):
     (tmp_path / "demo_branch").mkdir()
 
@@ -169,7 +169,7 @@ def test_existing_repo_not_changed_to_existing_branch(mock_repo, tmp_path: Path)
     mock_repo.clone_from.assert_not_called()
 
 
-@patch("blueapi.cli.scratch.Repo")
+@patch("blueapi.service.scratch.Repo")
 def test_existing_repo_not_changed_to_new_branch(mock_repo, tmp_path: Path):
     (tmp_path / "demo_branch").mkdir()
     repo = MagicMock(name="ExistingRepo", spec=Repo)
@@ -182,8 +182,8 @@ def test_existing_repo_not_changed_to_new_branch(mock_repo, tmp_path: Path):
     repo.create_head.assert_not_called()
 
 
-@patch("blueapi.cli.scratch.Repo")
-@patch("blueapi.cli.scratch.LOGGER")
+@patch("blueapi.service.scratch.Repo")
+@patch("blueapi.service.scratch.LOGGER")
 def test_existing_repo_state_checked(
     mock_logger: MagicMock, mock_repo: MagicMock, tmp_path: Path
 ):
@@ -201,8 +201,8 @@ def test_existing_repo_state_checked(
     )
 
 
-@patch("blueapi.cli.scratch.Repo")
-@patch("blueapi.cli.scratch.LOGGER")
+@patch("blueapi.service.scratch.Repo")
+@patch("blueapi.service.scratch.LOGGER")
 def test_existing_repo_unknown_revision(
     mock_logger: MagicMock, mock_repo: MagicMock, tmp_path: Path
 ):
@@ -306,8 +306,8 @@ def test_setup_scratch_succeeds_on_required_gid(
     setup_scratch(config)
 
 
-@patch("blueapi.cli.scratch.ensure_repo")
-@patch("blueapi.cli.scratch.scratch_install")
+@patch("blueapi.service.scratch.ensure_repo")
+@patch("blueapi.service.scratch.scratch_install")
 def test_setup_scratch_iterates_repos(
     mock_scratch_install: Mock,
     mock_ensure_repo: Mock,
@@ -346,8 +346,8 @@ def test_setup_scratch_iterates_repos(
     )
 
 
-@patch("blueapi.cli.scratch.ensure_repo")
-@patch("blueapi.cli.scratch.scratch_install")
+@patch("blueapi.service.scratch.ensure_repo")
+@patch("blueapi.service.scratch.scratch_install")
 def test_setup_scratch_continues_after_failure(
     mock_scratch_install: Mock,
     mock_ensure_repo: Mock,

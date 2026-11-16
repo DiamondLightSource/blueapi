@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 
+from blueapi.model.task import InvalidTaskParameter, TaskParameterError
 from blueapi.service.model import TaskRequest
 from blueapi.service.protocol import (
     Abort,
@@ -13,7 +14,6 @@ from blueapi.service.protocol import (
     Resume,
     Submit,
 )
-from blueapi.worker.task import InvalidTaskParameter, TaskParameterError
 
 
 @pytest.mark.parametrize(

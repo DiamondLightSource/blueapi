@@ -1,5 +1,6 @@
 import uuid
 
+from blueapi.model.event import TaskError, TaskResult, TaskStatus
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -10,7 +11,6 @@ from blueapi.service.model import (
     WorkerTask,
 )
 from blueapi.worker import Task, TrackableTask, WorkerEvent, WorkerState
-from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 PLANS = PlanResponse(
     plans=[

@@ -30,6 +30,8 @@ from blueapi.client.rest import (
 )
 from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import OIDCConfig
+from blueapi.model.event import WorkerState
+from blueapi.model.task import Task, TrackableTask
 from blueapi.service.model import (
     DeviceModel,
     EnvironmentResponse,
@@ -39,9 +41,6 @@ from blueapi.service.model import (
     TasksListResponse,
     WorkerTask,
 )
-from blueapi.worker.event import WorkerState
-from blueapi.worker.task import Task
-from blueapi.worker.task_worker import TrackableTask
 
 TASK_REQUEST = TaskRequest(
     name="foo", params={"one": "two"}, instrument_session="cm12345-1"

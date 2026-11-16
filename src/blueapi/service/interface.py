@@ -14,10 +14,17 @@ from tiled.client import from_uri
 from tiled.client.utils import ClientError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
-from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
+from blueapi.model.event import (
+    DataEvent,
+    ProgressEvent,
+    TaskStatusEnum,
+    WorkerEvent,
+    WorkerState,
+)
+from blueapi.model.task import Task
 from blueapi.service.authentication import TiledAuth
 from blueapi.service.environment import get_python_environment
 from blueapi.service.model import (
@@ -30,8 +37,6 @@ from blueapi.service.model import (
 )
 from blueapi.service.numtracker import NumtrackerClient
 from blueapi.utils.serialization import access_blob
-from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
-from blueapi.worker.task import Task
 from blueapi.worker.task_worker import TaskWorker, TrackableTask
 
 """This module provides interface between web application and underlying Bluesky

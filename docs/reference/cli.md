@@ -10,7 +10,7 @@ option to the `controller` subcommand to 'full', you would need to set the
 environment variable `BLUEAPI_CONTROLLER_OUTPUT=full`.
 
 ```{eval-rst}
-.. click:: blueapi.cli:main
+.. click:: blueapi.__main__:main
    :prog: blueapi
    :show-nested:
 ```

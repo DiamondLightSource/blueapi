@@ -20,7 +20,8 @@ from ophyd_async.core import AsyncStatus
 
 from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, TaskResult, TaskStatusEnum
+from blueapi.model.task import TaskParameterError
 from blueapi.service.model import PlanModel
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
@@ -33,8 +34,6 @@ from blueapi.worker import (
     WorkerEvent,
     WorkerState,
 )
-from blueapi.worker.event import TaskResult, TaskStatusEnum
-from blueapi.worker.task import TaskParameterError
 
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})

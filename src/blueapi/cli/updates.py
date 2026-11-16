@@ -3,7 +3,7 @@ from collections.abc import Mapping
 
 from tqdm import tqdm
 
-from blueapi.worker import ProgressEvent, StatusView, WorkerEvent
+from blueapi.model.event import ProgressEvent, StatusView, WorkerEvent
 
 _BAR_FMT = "{desc}: |{bar}| {percentage:3.0f}% [{elapsed}/{remaining}]"
 

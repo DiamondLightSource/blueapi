@@ -24,7 +24,8 @@ from responses import matchers
 from stomp.connect import StompConnection11 as Connection
 
 from blueapi import __version__
-from blueapi.cli.cli import ParametersType, PositionalArgType, main
+from blueapi.__main__ import main
+from blueapi.cli.cli import ParametersType, PositionalArgType
 from blueapi.cli.format import OutputFormat, fmt_dict
 from blueapi.client.event_bus import BlueskyStreamingError
 from blueapi.client.rest import (
@@ -40,7 +41,15 @@ from blueapi.config import (
     ScratchRepository,
     generate_config_schema,
 )
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import (
+    DataEvent,
+    ProgressEvent,
+    TaskError,
+    TaskResult,
+    TaskStatus,
+    WorkerEvent,
+    WorkerState,
+)
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -50,14 +59,6 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     TaskRequest,
     TaskResponse,
-)
-from blueapi.worker.event import (
-    ProgressEvent,
-    TaskError,
-    TaskResult,
-    TaskStatus,
-    WorkerEvent,
-    WorkerState,
 )
 
 
@@ -90,8 +91,8 @@ def test_main_no_params():
 
 
 @patch("blueapi.service.main.start")
-@patch("blueapi.cli.scratch.setup_scratch")
-@patch("blueapi.cli.cli.os.umask")
+@patch("blueapi.service.scratch.setup_scratch")
+@patch("blueapi.__main__.os.umask")
 @pytest.mark.parametrize("subcommand", ["serve", "setup-scratch"])
 def test_runs_with_umask_002(
     mock_umask: Mock,
@@ -1055,7 +1056,7 @@ def test_generic_base_model_formatting():
     )
 
 
-@patch("blueapi.cli.cli.setup_scratch")
+@patch("blueapi.service.scratch.setup_scratch")
 def test_init_scratch_calls_setup_scratch(mock_setup_scratch: Mock, runner: CliRunner):
     expected_config = ScratchConfig(
         root=Path("/tmp"),
@@ -1387,7 +1388,7 @@ def test_python_env_output_formatting():
 
 @pytest.mark.parametrize("output_flag", [True, False])
 @pytest.mark.parametrize("update", [True, False])
-@patch("blueapi.cli.cli.config.CONFIG_SCHEMA_LOCATION")
+@patch("blueapi.__main__.config.CONFIG_SCHEMA_LOCATION")
 def test_config_schema(
     config_schema_location_mock: Mock,
     runner: CliRunner,

@@ -20,9 +20,8 @@ from blueapi.client.event_bus import AnyEvent
 from blueapi.client.plan_cache import Plan
 from blueapi.client.rest import ServiceUnavailableError, UnauthorisedAccessError
 from blueapi.config import ApplicationConfig
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, WorkerEvent, WorkerState
 from blueapi.service.model import TaskRequest
-from blueapi.worker.event import WorkerEvent, WorkerState
 
 # Tests for the BlueapiClient as a user would drive it: built from a config
 # file, logged in through the OIDC device flow, plans run as methods.

@@ -14,23 +14,14 @@ classifiers = [
 ]
 description = "Lightweight bluesky-as-a-service wrapper application. Also usable as a library."
 dependencies = [
-    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in run plans
-    "ophyd-async>=0.13.5",
+    "bluesky[plotting]>=1.14.0",                     # plotting includes matplotlib, required for BestEffortCallback in the CLI's run command
     "pydantic>=2.0",
-    "pydantic-settings",
-    "stomp-py",
     "PyYAML>=6.0.2",
     "click>=8.2.0",
     "requests",
-    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p - used by the server's /python_environment endpoint and the CLI's scratch setup
-    "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684
     "bluesky-stomp>=0.1.6",
-    "opentelemetry-distro>=0.48b0",
     "observability-utils>=0.1.4",
     "pyjwt[crypto]",
-    "websockets",
-    "tqdm",
-    "packaging",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -38,10 +29,16 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
+# Needed to talk to a running worker: `blueapi controller`, `login`, `logout` and BlueapiClient.
+client = ["websockets", "tqdm", "packaging"]
 
 demo = ["dls-dodal>=3.0.2", "ophyd-async[sim]"]
-# Only needed to run `blueapi serve` (the FastAPI worker service).
+# Needed to run the worker service: `blueapi serve`, `setup-scratch` and `schema`.
 server = [
+    "opentelemetry-distro>=0.48b0",
+    "ophyd-async>=0.13.5",
+    "event-model==1.24.0",                           # https://github.com/DiamondLightSource/blueapi/issues/684
+    "GitPython>=3.1.58",                             #security base min https://github.com/advisories/GHSA-4gmw-gg2m-w46p - used by the /python_environment endpoint and scratch setup
     "fastapi>=0.112.0",
     "uvicorn>=0.52.1",
     "aiohttp>=3.13.5",
@@ -54,9 +51,10 @@ server = [
 
 [dependency-groups]
 dev = [
-    "blueapi[server]",
+    "blueapi[server,client]",
     "ophyd_async[sim]",
     "copier",
+    "import-linter",
     "dls-dodal>=3.0.2",
     "myst-parser",
     "prek",
@@ -97,7 +95,7 @@ client-system-test = [
 ]
 
 [project.scripts]
-blueapi = "blueapi.cli:main"
+blueapi = "blueapi.__main__:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/blueapi"
@@ -112,6 +110,81 @@ required-version = ">=0.13.5"
 
 [tool.setuptools_scm]
 version_file = "src/blueapi/_version.py"
+
+[tool.importlinter]
+root_package = "blueapi"
+include_external_packages = true
+exclude_type_checking_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Client does not depend on the server or its dependencies"
+type = "forbidden"
+source_modules = ["blueapi.client", "blueapi.cli"]
+forbidden_modules = [
+    "blueapi.core",
+    "blueapi.worker",
+    "blueapi.tutorial",
+    "blueapi.utils.path_provider",
+    "blueapi.service.authentication",
+    "blueapi.service.authorization",
+    "blueapi.service.cli",
+    "blueapi.service.environment",
+    "blueapi.service.interface",
+    "blueapi.service.main",
+    "blueapi.service.middleware",
+    "blueapi.service.numtracker",
+    "blueapi.service.openapi",
+    "blueapi.service.runner",
+    "blueapi.service.scratch",
+    # server extra
+    "aioca",
+    "aiohttp",
+    "dodal",
+    "event_model",
+    "fastapi",
+    "git",
+    "graypy",
+    "httpx",
+    "ophyd",
+    "ophyd_async",
+    "starlette",
+    "tiled",
+    "uvicorn",
+]
+ignore_imports = [
+    # DeviceModel.from_device is only called by the server
+    "blueapi.service.model -> blueapi.core.bluesky_types",
+    "blueapi.service.model -> blueapi.core.context",
+    # Optional: graylog handler is only imported if graylog is configured
+    "blueapi.log -> graypy",
+]
+
+[[tool.importlinter.contracts]]
+name = "Server does not depend on the client"
+type = "forbidden"
+source_modules = [
+    "blueapi.config",
+    "blueapi.core",
+    "blueapi.log",
+    "blueapi.model",
+    "blueapi.service",
+    "blueapi.tutorial",
+    "blueapi.utils",
+    "blueapi.worker",
+]
+forbidden_modules = [
+    "blueapi.client",
+    "blueapi.cli",
+    # client extra
+    "packaging",
+    "tqdm",
+    "websockets",
+]
+ignore_imports = [
+    # Backwards compatible aliases, to be removed May 2027
+    "blueapi.service -> blueapi.client.session",
+    "blueapi.service.authentication -> blueapi.client.session",
+]
 
 [tool.pyright]
 typeCheckingMode = "standard"
@@ -136,7 +209,7 @@ source = ["src", "**/site-packages/"]
 [tool.tox]
 skipsdist = true
 # envs to runs automatically with tox -p
-env_list = ["pre-commit", "type-checking", "tests", "docs"]
+env_list = ["pre-commit", "type-checking", "import-linter", "tests", "docs"]
 
 [tool.tox.env_run_base]
 # Pass all environment variables to the test environments
@@ -171,6 +244,10 @@ commands = [
     ],
 ]
 
+[tool.tox.env.import-linter]
+description = "Check the client and server only import what they are allowed to"
+commands = [["lint-imports"]]
+
 [tool.tox.env.tests]
 description = "Run unit tests with coverage"
 commands = [
@@ -190,7 +267,7 @@ commands = [
 ]
 
 [tool.tox.env.client-system-test]
-description = "Run client system tests with blueapi only, no server dependencies"
+description = "Run client system tests with blueapi[client] only, no server dependencies"
 commands = [
     [
         "uv",
@@ -198,6 +275,8 @@ commands = [
         "--isolated", # uv run leaves extra packages in place, so don't reuse the dev venv
         "--locked",
         "--no-default-groups",
+        "--extra",
+        "client",
         "--group",
         "client-system-test",
         "pytest",

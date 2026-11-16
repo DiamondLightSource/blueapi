@@ -30,6 +30,8 @@ from pydantic.json_schema import SkipJsonSchema
 
 from blueapi.utils import BlueapiBaseModel, InvalidConfigError
 
+OTLP_EXPORT_ENABLED = os.environ.get("OTLP_EXPORT_ENABLED") == "true"
+
 LOGGER = logging.getLogger(__name__)
 
 LogLevel = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]

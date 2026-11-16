@@ -35,7 +35,8 @@ from starlette.responses import JSONResponse
 from starlette.status import WS_1007_INVALID_FRAME_PAYLOAD_DATA, WS_1013_TRY_AGAIN_LATER
 
 from blueapi.config import ApplicationConfig, OIDCConfig, Tag
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, ProgressEvent, TaskStatusEnum, WorkerEvent
+from blueapi.model.task import TaskParameterError
 from blueapi.service import interface, protocol
 from blueapi.service.authentication import (
     Fedid,
@@ -56,8 +57,6 @@ from blueapi.service.protocol import (
     Update,
 )
 from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
-from blueapi.worker.task import TaskParameterError
 from blueapi.worker.worker_errors import WorkerBusyError
 
 from .authorization import (

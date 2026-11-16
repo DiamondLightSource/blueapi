@@ -2,8 +2,8 @@ import logging
 from typing import Any
 
 from blueapi.client.rest import InvalidParametersError
+from blueapi.model.event import TaskError, TaskResult, TaskStatus
 from blueapi.service.model import PlanModel, TaskRequest
-from blueapi.worker.event import TaskError, TaskResult, TaskStatus
 
 from .protocols import ClientProtocol
 

@@ -1,7 +1,7 @@
 from typing import Protocol
 
+from blueapi.model.event import TaskStatus
 from blueapi.service.model import DeviceModel, DeviceResponse, TaskRequest
-from blueapi.worker.event import TaskStatus
 
 from .event_bus import OnAnyEvent
 

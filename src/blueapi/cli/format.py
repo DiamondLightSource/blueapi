@@ -10,7 +10,7 @@ from typing import Any, TextIO
 
 from pydantic import BaseModel
 
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.model.event import DataEvent, ProgressEvent, WorkerEvent
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -19,7 +19,6 @@ from blueapi.service.model import (
     PythonEnvironmentResponse,
     SourceInfo,
 )
-from blueapi.worker.event import ProgressEvent, WorkerEvent
 
 FALLBACK = pprint
 NL = "\n"

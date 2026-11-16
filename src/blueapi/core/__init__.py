@@ -1,4 +1,4 @@
-from os import environ
+from blueapi.config import OTLP_EXPORT_ENABLED
 
 from .bluesky_event_loop import configure_bluesky_event_loop
 from .bluesky_types import (
@@ -17,9 +17,8 @@ from .context import BlueskyContext
 from .event import EventPublisher, EventStream
 from .protocols import DeviceManager
 
-OTLP_EXPORT_ENABLED = environ.get("OTLP_EXPORT_ENABLED") == "true"
-
 __all__ = [
+    "OTLP_EXPORT_ENABLED",
     "Plan",
     "PlanGenerator",
     "MsgGenerator",

@@ -88,8 +88,7 @@ def generic_bounds(val: Device, target: type) -> tuple[type, ...]:
 
 def is_compatible_args(val: Device, target: type, args: tuple[type, ...] | None):
     return (not args) or all(
-        expected is Any
-        or actual is Any
+        actual is Any
         or type(actual) is TypeVar
         or type(expected) is TypeVar
         or expected == actual

@@ -54,7 +54,7 @@ _TASK_WITH_METADATA = Task(
 )
 
 
-class FakeDevice(Movable[float]):
+class FakeDevice(Movable[Any]):
     event: threading.Event
 
     def __init__(self, name: str = "fake_device") -> None:

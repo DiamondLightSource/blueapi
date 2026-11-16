@@ -50,7 +50,7 @@ from blueapi.config import (
     TiledConfig,
 )
 from blueapi.core import BlueskyContext, is_bluesky_compatible_device
-from blueapi.core.bluesky_types import BlueapiDevice
+from blueapi.core.bluesky_types import BlueapiDevice, DeviceTree
 from blueapi.core.context import generic_bounds, qualified_name
 from blueapi.core.protocols import DeviceConnectResult, DeviceManager
 from blueapi.utils.invalid_config_error import InvalidConfigError
@@ -901,7 +901,7 @@ def test_single_device_manager(empty_context: BlueskyContext):
     sdm = StaticDeviceManager(devices={"foo": foo})
     empty_context.with_device_manager(sdm)
 
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice(foo, DeviceTree("foo"))}
 
 
 def test_device_manager_build_error(empty_context: BlueskyContext):
@@ -971,7 +971,7 @@ def test_device_manager_environment_source(empty_context: BlueskyContext):
     with patch("blueapi.core.context.import_module") as imp_mod:
         imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
         empty_context.with_config(env)
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice(foo, DeviceTree("foo"))}
 
 
 def test_non_device_manager_errors(empty_context: BlueskyContext):

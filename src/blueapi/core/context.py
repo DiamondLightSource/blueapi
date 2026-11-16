@@ -50,6 +50,7 @@ from .bluesky_types import (
     AsyncDevice,
     BlueapiDevice,
     Device,
+    DeviceTree,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
@@ -196,7 +197,7 @@ class BlueskyContext:
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
-            self.run_engine.md |= config.metadata.model_dump()
+            self.run_engine.md.update(config.metadata.model_dump())
 
         package_map = metadata.packages_distributions()
         packages = {src.module.split(".")[0] for src in config.sources}
@@ -358,23 +359,28 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        if self._add_device(name, device):
-            self._register_children(device)
+        if blueapi_device := self._add_device(name, device):
+            self._register_children(blueapi_device)
 
-    def _register_children(self, device: Device) -> None:
+    def _register_children(self, parent: BlueapiDevice) -> None:
         """Register the children of an ophyd-async device under their own names."""
 
-        if not isinstance(device, AsyncDevice):
+        if not isinstance(parent.device, AsyncDevice):
             return
 
-        for _, child in device.children():
-            if child.name and self._add_device(child.name, child):
-                self._register_children(child)
+        subtrees = []
+        for _, child in parent.device.children():
+            if child.name and (blueapi_device := self._add_device(child.name, child)):
+                self._register_children(blueapi_device)
+                subtrees.append(blueapi_device.tree)
+        parent.tree.children = subtrees
 
-    def _add_device(self, name: str, device: Device) -> bool:
+    def _add_device(self, name: str, device: Device) -> BlueapiDevice | None:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, BlueapiDevice(device))
+        existing = self.devices.setdefault(
+            name, BlueapiDevice(device, DeviceTree(name))
+        )
         if existing.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
@@ -389,8 +395,8 @@ class BlueskyContext:
                 device,
                 name,
             )
-            return False
-        return True
+            return None
+        return existing
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

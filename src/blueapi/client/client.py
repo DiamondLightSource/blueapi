@@ -407,11 +407,7 @@ class BlueapiClient(ClientProtocol):
                         log.error(
                             f"Callback ({cb}) failed for event: {event}", exc_info=e
                         )
-                if (
-                    isinstance(event, WorkerEvent)
-                    and (event.is_complete())
-                    and (ctx.correlation_id == task_id)
-                ):
+                if isinstance(event, WorkerEvent) and event.is_complete():
                     if event.task_status is None:
                         complete.set_exception(
                             BlueskyRemoteControlError(

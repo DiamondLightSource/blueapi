@@ -1,0 +1,26 @@
+# Local dev only. One OTLP endpoint for blueapi, fanned out to the backends.
+# Traces go to both Jaeger and Tempo while the migration to Tempo is ongoing.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/jaeger, otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      exporters: [otlphttp/prometheus]

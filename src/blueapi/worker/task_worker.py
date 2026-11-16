@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 from collections.abc import Iterable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -32,6 +33,7 @@ from blueapi.core import (
 )
 from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
+from blueapi.metrics import TASK_DURATION, setup_metrics
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
 
@@ -152,6 +154,7 @@ class TaskWorker:
         self._broadcast_statuses = broadcast_statuses
         self._current_task_otel_context = None
         setup_tracing("BlueAPIWorker", OTLP_EXPORT_ENABLED)
+        setup_metrics(OTLP_EXPORT_ENABLED)
 
     @start_as_current_span(TRACER, "task_id")
     def clear_task(self, task_id: str) -> str:
@@ -432,16 +435,24 @@ class TaskWorker:
                     self._current = next_task
                     self._current.is_pending = False
                     meta = {"task_id": self._current.task_id}
+                    start = time.monotonic()
+                    outcome = "failure"
                     try:
                         result = self._current.task.do_task(self._ctx)
                         LOGGER.info(
                             "Task ran successfully - returned: %s", result, extra=meta
                         )
                         self._current.set_result(result)
+                        outcome = "success"
                     except Exception as e:
                         LOGGER.error("Task failed", extra=meta)
                         self._current.set_exception(e)
                         self._report_error(e)
+                    finally:
+                        TASK_DURATION.record(
+                            time.monotonic() - start,
+                            {"task.name": next_task.task.name, "outcome": outcome},
+                        )
 
                 with plan_tag_filter_context(next_task.task.name, LOGGER):
                     if self._current_task_otel_context is not None:

@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: blueapi
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

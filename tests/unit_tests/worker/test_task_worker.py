@@ -1197,3 +1197,16 @@ def test_string_default_is_not_treated_as_device_injection():
     # by mistake as the default plan value. The kwargs is provided by pydantic model
     # from schema.
     assert kwargs == {"arg": "primary"}
+
+
+@pytest.mark.parametrize(
+    "task, outcome", [(_SIMPLE_TASK, "success"), (_FAILING_TASK, "failure")]
+)
+def test_task_duration_metric_recorded(worker: TaskWorker, task: Task, outcome: str):
+    with patch("blueapi.worker.task_worker.TASK_DURATION") as duration:
+        begin_task_and_wait_until_complete(worker, worker.submit_task(task))
+
+    duration.record.assert_called_once_with(
+        ANY, {"task.name": task.name, "outcome": outcome}
+    )
+    assert duration.record.call_args.args[0] >= 0

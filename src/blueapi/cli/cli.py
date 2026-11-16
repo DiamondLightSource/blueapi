@@ -38,6 +38,7 @@ from blueapi.config import (
 )
 from blueapi.core import OTLP_EXPORT_ENABLED, DataEvent
 from blueapi.log import set_up_logging
+from blueapi.metrics import setup_metrics
 from blueapi.service.model import DeviceResponse, PlanResponse, SourceInfo, TaskRequest
 from blueapi.worker import ProgressEvent, WorkerEvent
 from blueapi.worker.event import TaskError, TaskResult
@@ -249,6 +250,7 @@ def start_application(obj: dict):
     observability context.
     """
     setup_tracing("BlueAPI", OTLP_EXPORT_ENABLED)
+    setup_metrics(OTLP_EXPORT_ENABLED)
     start(config)
 
 

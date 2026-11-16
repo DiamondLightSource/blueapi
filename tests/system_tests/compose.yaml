@@ -154,3 +154,62 @@ services:
         condition: service_healthy
     security_opt:
       - label=disable
+
+  # Local dev only: `just compose --profile monitoring up -d` then `just serve-monitored`
+  otel-collector:
+    profiles: [monitoring]
+    image: otel/opentelemetry-collector:0.139.0
+    command: ["--config=/etc/otel-collector.yaml"]
+    ports:
+      - "4318:4318" # OTLP http, metrics and traces from blueapi
+    volumes:
+      - ./services/monitoring/otel-collector.yaml:/etc/otel-collector.yaml:ro
+    security_opt:
+      - label=disable
+
+  jaeger:
+    profiles: [monitoring]
+    image: jaegertracing/jaeger:2.11.0
+    ports:
+      - "16686:16686" # UI
+    security_opt:
+      - label=disable
+
+  # Queried through Grafana, it has no UI of its own
+  tempo:
+    profiles: [monitoring]
+    image: grafana/tempo:2.9.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./services/monitoring/tempo.yaml:/etc/tempo.yaml:ro
+    security_opt:
+      - label=disable
+
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.7.3
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --web.enable-otlp-receiver # metrics from the collector
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./services/monitoring/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    security_opt:
+      - label=disable
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:12.3.0
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/blueapi.json
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./services/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    security_opt:
+      - label=disable

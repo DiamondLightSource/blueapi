@@ -1,0 +1,7 @@
+# Local dev only. Nothing is scraped: the collector pushes blueapi's metrics over OTLP
+# (prometheus runs with --web.enable-otlp-receiver)
+otlp:
+  # Turn these resource attributes into labels on every metric
+  promote_resource_attributes:
+    - service.name
+    - service.instrument

@@ -30,6 +30,12 @@ serve *OPTS:
     source tests/system_tests/.env
     uv run blueapi -c {{ TEST_CONFIG }} {{ OPTS }} serve
 
+[doc('Run the server exporting metrics and traces to the monitoring stack (`just compose --profile monitoring up -d`)')]
+serve-monitored *OPTS:
+    #!/usr/bin/env bash
+    source tests/system_tests/services/monitoring/otel.env
+    just serve {{ OPTS }}
+
 [doc('Run a plan using the blueapi CLI')]
 run PLAN PARAMS:
     uv run blueapi -c {{ TEST_CONFIG }} controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'

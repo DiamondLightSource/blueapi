@@ -189,11 +189,9 @@ def _publish_event_streams(
 
 
 def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
-    def forward_message(event: Any, correlation_id: str | None) -> None:
+    def forward_message(event: Any) -> None:
         if (stomp_client_ref := stomp_client()) is not None:
-            stomp_client_ref.send(
-                destination, event, None, correlation_id=correlation_id
-            )
+            stomp_client_ref.send(destination, event, None)
 
     stream.subscribe(forward_message)
 
@@ -288,9 +286,7 @@ def begin_task(
         )
         subscribers.append((active_context.run_engine, tiled_writer_token))
 
-        def remove_callback_when_task_finished(
-            event: WorkerEvent, correlation_id: str | None
-        ) -> None:
+        def remove_callback_when_task_finished(event: WorkerEvent) -> None:
             if (
                 event.task_status
                 and event.task_status.task_id == task.task_id
@@ -373,11 +369,7 @@ class SubHandles:
 def pipe_events(sender: Connection) -> SubHandles:
     tw = worker()
 
-    def handler(
-        worker_event: WorkerEvent | DataEvent | ProgressEvent,
-        _cor_id: str | None,
-    ) -> None:
-
+    def handler(worker_event: WorkerEvent | DataEvent | ProgressEvent) -> None:
         try:
             sender.send(worker_event)
         except BrokenPipeError:

@@ -170,7 +170,7 @@ def test_missing_sub_device(bc: BlueapiClient):
 
 def test_plans_iterable(bc: BlueapiClient):
     names = {plan.name for plan in bc.plans}
-    assert {"count", "sleep", "abs_set"} <= names
+    assert {"count", "num_grid_scan", "list_scan"} <= names
     assert {stub.__name__ for stub in DEFAULT_PLAN_STUBS} <= names
     assert all(isinstance(plan, Plan) for plan in bc.plans)
 

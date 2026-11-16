@@ -1063,4 +1063,3 @@ def test_registering_plan_with_stub_name_overrides_existing_stub():
 
     ctx.register_plan(mv)
     assert ctx.plans["mv"].plan_function is mv
-    assert ctx.plans["mv"].plan_function is not bps.mv

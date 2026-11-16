@@ -37,10 +37,12 @@ HIGH_RESOURCES = {
     "requests": {
         "cpu": "10000m",
         "memory": "100Gi",
+        "ephemeral-storage": "100Gi",
     },
     "limits": {
         "cpu": "20000m",
         "memory": "200Gi",
+        "ephemeral-storage": "200Gi",
     },
 }
 

@@ -1,6 +1,8 @@
 SESSION := "cm12345-1"
 RUNNER := `command -v docker || command -v podman || true`
 
+TEST_CONFIG := "tests/system_tests/config.yaml"
+
 [doc('Start the example services via compose and run the blueapi server')]
 dev-server: compose serve
 
@@ -22,15 +24,18 @@ init-example-services:
 compose +ARGS="up -d --no-recreate": init-example-services _check-runner
     {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ ARGS }}
 
+[doc('Bring up the example services plus the NeXus file converter (Diamond registry only)')]
+compose-diamond: (compose "--profile diamond up -d --no-recreate")
+
 [doc('Run the blueapi server with the system test config')]
 serve *OPTS:
     #!/usr/bin/env bash
     source tests/system_tests/.env
-    uv run blueapi -c tests/system_tests/config.yaml {{ OPTS }} serve
+    uv run blueapi -c {{ TEST_CONFIG }} {{ OPTS }} serve
 
 [doc('Run a plan using the blueapi CLI')]
 run PLAN PARAMS:
-    uv run blueapi -c tests/system_tests/config.yaml controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
+    uv run blueapi -c {{ TEST_CONFIG }} controller run -i {{ SESSION }} {{ PLAN }} '{{ PARAMS }}'
 
 [doc('Regenerate schemas, run pre-commit checks and type checking')]
 lint:
@@ -58,7 +63,7 @@ repl:
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
     from blueapi.client.rest import ServiceUnavailableError
-    bc = BlueapiClient.from_config_file("tests/system_tests/config.yaml").with_instrument_session("cm12345-1")
+    bc = BlueapiClient.from_config_file("{{ TEST_CONFIG }}").with_instrument_session("cm12345-1")
     try:
         bc.login()
     except KeyboardInterrupt:
@@ -71,3 +76,7 @@ repl:
         traceback.print_exception(e, chain=False)
     EOF
     )
+
+[doc('Stream documents from the stomp message bus - see blueapi controller listen')]
+listen FORMAT="full":
+    uv run blueapi -c {{ TEST_CONFIG }} controller -o {{ FORMAT }} listen

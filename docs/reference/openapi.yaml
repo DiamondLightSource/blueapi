@@ -393,9 +393,6 @@ components:
           - $ref: '#/components/schemas/TaskError'
           - type: 'null'
           title: Outcome
-        request_id:
-          title: Request Id
-          type: string
         task:
           $ref: '#/components/schemas/Task'
         task_id:
@@ -464,7 +461,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: BlueAPI Control
-  version: 1.7.0
+  version: 1.7.1
 openapi: 3.1.0
 paths:
   /api/v1/devices:

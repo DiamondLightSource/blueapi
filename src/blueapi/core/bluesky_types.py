@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable, Generator, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import (
     Any,
     Protocol,
@@ -134,12 +134,19 @@ class WatchableStatus(Status, Protocol):
 
 
 @dataclass
+class DeviceTree:
+    name: str
+    children: list["DeviceTree"] = field(default_factory=list)
+
+
+@dataclass
 class BlueapiDevice:
     """Wrapper around Device held in the context.
     Also contains find_component function to look up child devices.
     At the moment this just holds the Device but will later hold child device trees"""
 
     device: Device
+    tree: DeviceTree
 
     def find_component(self, addr: list[str]) -> Device | None:
         dev = self.device

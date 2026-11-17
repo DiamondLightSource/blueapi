@@ -24,7 +24,6 @@ from blueapi.core import (
     OTLP_EXPORT_ENABLED,
     BlueskyContext,
     DataEvent,
-    EventPublisher,
     EventStream,
     WatchableStatus,
 )
@@ -32,6 +31,7 @@ from blueapi.core.bluesky_event_loop import configure_bluesky_event_loop
 from blueapi.log import plan_tag_filter_context
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.utils.thread_exception import handle_all_exceptions
+from blueapi.worker.cache import EventCache
 
 from .event import (
     ProgressEvent,
@@ -109,9 +109,7 @@ class TaskWorker:
     _status_lock: RLock
     _status_snapshot: dict[str, StatusView]
     _completed_statuses: set[str]
-    _worker_events: EventPublisher[WorkerEvent]
-    _progress_events: EventPublisher[ProgressEvent]
-    _data_events: EventPublisher[DataEvent]
+    _event_cache: EventCache
     _started: Event
     _stopping: Event
     _stopped: Event
@@ -136,9 +134,7 @@ class TaskWorker:
         self._warnings = []
         self._task_channel = Queue(maxsize=1)
         self._current = None
-        self._worker_events = EventPublisher()
-        self._progress_events = EventPublisher()
-        self._data_events = EventPublisher()
+        self._event_cache = EventCache()
         self._status_lock = RLock()
         self._status_snapshot = {}
         self._completed_statuses = set()
@@ -322,6 +318,7 @@ class TaskWorker:
         if self._started.is_set():
             raise WorkerAlreadyStartedError("Worker is already running")
         self._wait_until_stopped()
+        self._event_cache.start()
         run_worker_in_own_thread(self)
         self._wait_until_started()
 
@@ -338,6 +335,7 @@ class TaskWorker:
         else:
             LOGGER.info("Stopping worker: nothing to do")
         self._wait_until_stopped()
+        self._event_cache.shutdown()
         add_span_attributes({WORKER_THREAD_STATE: "STOPPED"})
         LOGGER.info("Stopped")
 
@@ -477,7 +475,7 @@ class TaskWorker:
         Returns:
             EventStream[WorkerEvent, int]: Subscribable stream of events
         """
-        return self._worker_events
+        return self._event_cache.worker_events
 
     @property
     def progress_events(self) -> EventStream[ProgressEvent, int]:
@@ -486,7 +484,7 @@ class TaskWorker:
         Returns:
             EventStream[ProgressEvent, int]: Subscribable stream of events
         """
-        return self._progress_events
+        return self._event_cache.progress_events
 
     @property
     def data_events(self) -> EventStream[DataEvent, int]:
@@ -495,7 +493,7 @@ class TaskWorker:
         Returns:
             EventStream[DataEvent, int]: Subscribable stream of events
         """
-        return self._data_events
+        return self._event_cache.data_events
 
     @start_as_current_span(TRACER, "raw_new_state", "raw_old_state")
     def _on_state_change(
@@ -548,7 +546,8 @@ class TaskWorker:
             errors=errors,
             warnings=warnings,
         )
-        self._worker_events.publish(event)
+        id = self._current.task_id if self._current else None
+        self._event_cache.push(task_id=id, event=event)
 
     def _on_document(self, name: str, document: Mapping[str, Any]) -> None:
         if self._current is not None:
@@ -570,11 +569,11 @@ class TaskWorker:
                             "document": str(document),
                         }
                     )
-
-                    self._data_events.publish(
+                    self._event_cache.push(
+                        self._current.task_id,
                         DataEvent(
                             name=name, task_id=self._current.task_id, doc=document
-                        )
+                        ),
                     )
             else:
                 raise ValueError(
@@ -650,11 +649,12 @@ class TaskWorker:
         if self._current is None:
             raise ValueError("Got a status update without an active task!")
         else:
-            self._progress_events.publish(
+            self._event_cache.push(
+                self._current.task_id,
                 ProgressEvent(
                     task_id=self._current.task_id,
                     statuses=self._status_snapshot,
-                )
+                ),
             )
 
 

@@ -29,6 +29,13 @@ class DeviceTreeModel(BlueapiBaseModel):
     name: str
     children: list["DeviceTreeModel"] = Field(default_factory=list)
 
+    @classmethod
+    def from_tree(cls, tree: DeviceTree) -> "DeviceTreeModel":  # noqa: F821
+        return cls(
+            name=tree.name,
+            children=[cls.from_tree(child) for child in tree.children],
+        )
+
 
 class DeviceModel(BlueapiBaseModel):
     """
@@ -42,9 +49,13 @@ class DeviceModel(BlueapiBaseModel):
     tree: DeviceTreeModel | None = None
 
     @classmethod
-    def from_device(cls, device: Device) -> "DeviceModel":
+    def from_device(cls, device: Device, tree: DeviceTree) -> "DeviceModel":  # noqa: F821
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_info(device)))
+        return cls(
+            name=name,
+            protocols=list(_protocol_info(device)),
+            tree=DeviceTreeModel.from_tree(tree) if tree else None,
+        )
 
 
 def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:

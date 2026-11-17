@@ -574,7 +574,7 @@ requires-dist = [
     { name = "graypy", marker = "extra == 'server'", specifier = ">=2.1.0" },
     { name = "httpx", marker = "extra == 'server'", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "observability-utils", specifier = ">=0.1.4" },
+    { name = "observability-utils", specifier = ">=0.1.6rc0" },
     { name = "opentelemetry-distro", specifier = ">=0.48b0" },
     { name = "opentelemetry-instrumentation-fastapi", marker = "extra == 'server'", specifier = ">=0.48b0" },
     { name = "ophyd-async", specifier = ">=0.13.5" },
@@ -4050,7 +4050,7 @@ wheels = [
 
 [[package]]
 name = "observability-utils"
-version = "0.1.5"
+version = "0.1.6rc0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi", extra = ["all"] },
@@ -4059,9 +4059,9 @@ dependencies = [
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "stomp-py" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/5e/ed9eaaa95dc32e215c15a87a708f8644ce16f0bbdcfd93c96cbcc2369406/observability_utils-0.1.5.tar.gz", hash = "sha256:ce9b0052f4ef1d9b19b8ae6fac9d0ad0e5c6451a095bed4038f277bbabeeea53", size = 32975, upload-time = "2025-07-11T14:09:12.991Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/68/e7938e681b29beefca727092dd06103f0ca84799cd43e603172cce9a7848/observability_utils-0.1.6rc0.tar.gz", hash = "sha256:2cdce0617953b29d36f7c4dca62a5d0991ee8e35fa52d9393cc6781da1249177", size = 183427, upload-time = "2026-11-17T18:19:32.42Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/6c/a7a997fbfb7fac5aa51f2d2a0b9812941921dafa659ebec26ede6e629f9c/observability_utils-0.1.5-py3-none-any.whl", hash = "sha256:eb6b125b94de96593b3704bfc845357410ee0074c4a5f758c6505b8506e85161", size = 18363, upload-time = "2025-07-11T14:09:12.166Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/dd/564cfb2cbd4ae1a9e64bc02be923e02df31d7f6088450f690d3f61c835b4/observability_utils-0.1.6rc0-py3-none-any.whl", hash = "sha256:800a553b65a2063bb6ff64383cf6f018463b5582066d9d2985b4ebe9822b52d1", size = 18321, upload-time = "2026-11-17T18:19:31.026Z" },
 ]
 
 [[package]]

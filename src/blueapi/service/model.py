@@ -4,6 +4,7 @@ from enum import StrEnum
 from typing import Annotated, Any
 
 from bluesky.protocols import HasName
+from ophyd_async.core import Signal
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
@@ -34,11 +35,20 @@ class DeviceModel(BlueapiBaseModel):
     protocols: list[ProtocolInfo] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
+    source: str | None = Field(
+        description="Source of device, eg. PV name", default=None
+    )
 
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_info(device)))
+
+        source = None
+
+        if isinstance(device, Signal):
+            source = device.source
+
+        return cls(name=name, protocols=list(_protocol_info(device)), source=source)
 
 
 def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:

@@ -31,6 +31,7 @@ type-annotated plans. For example, take the following plan:
 import bluesky.plans as bp
 from blueapi.core import MsgGenerator
 
+
 def my_plan(foo: str, bar: int) -> MsgGenerator:
     yield from bp.scan(...)
 ```

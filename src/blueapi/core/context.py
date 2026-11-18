@@ -50,7 +50,6 @@ from .bluesky_types import (
     AsyncDevice,
     BlueapiDevice,
     Device,
-    DeviceTree,
     Plan,
     PlanGenerator,
     is_bluesky_compatible_device,
@@ -362,25 +361,25 @@ class BlueskyContext:
         if blueapi_device := self._add_device(name, device):
             self._register_children(blueapi_device)
 
-    def _register_children(self, parent: BlueapiDevice) -> None:
+    def _register_children(self, root: BlueapiDevice) -> None:
         """Register the children of an ophyd-async device under their own names."""
-
-        if not isinstance(parent.device, AsyncDevice):
-            return
-
-        subtrees = []
-        for _, child in parent.device.children():
-            if child.name and (blueapi_device := self._add_device(child.name, child)):
-                self._register_children(blueapi_device)
-                subtrees.append(blueapi_device.tree)
-        parent.tree.children = subtrees
+        buffer: list[BlueapiDevice] = [root]
+        while buffer:
+            dev = buffer.pop(0)
+            if not isinstance(dev.device, AsyncDevice):
+                continue
+            for attr, child in dev.device.children():
+                if child.name and (
+                    blueapi_device := self._add_device(child.name, child)
+                ):
+                    blueapi_device.parent = dev
+                    dev.children[attr] = blueapi_device
+                    buffer.append(blueapi_device)
 
     def _add_device(self, name: str, device: Device) -> BlueapiDevice | None:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(
-            name, BlueapiDevice(device, DeviceTree(name))
-        )
+        existing = self.devices.setdefault(name, BlueapiDevice(name, device))
         if existing.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one

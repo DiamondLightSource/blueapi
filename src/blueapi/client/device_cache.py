@@ -85,6 +85,10 @@ class DeviceRef(ClientObjectRef):
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
+        try:
+            self.children[name]
+        except NotFoundError as e:
+            raise AttributeError(f"No child device named '{name}' available") from e
         return self._cache[f"{self.name}.{name}"]
 
     def __dir__(self):

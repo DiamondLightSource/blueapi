@@ -87,7 +87,7 @@ class DeviceRef(ClientObjectRef):
             raise AttributeError(f"No child device named {name}")
         try:
             self.children[name]
-        except NotFoundError as e:
+        except KeyError as e:
             raise AttributeError(f"No child device named '{name}' available") from e
         return self._cache[f"{self.name}.{name}"]
 

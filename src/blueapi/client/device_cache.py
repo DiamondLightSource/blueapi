@@ -86,10 +86,11 @@ class DeviceRef(ClientObjectRef):
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
         try:
-            self.children[name]
+            return self.children[name]
         except KeyError as e:
-            raise AttributeError(f"No child device named '{name}' available") from e
-        return self._cache[f"{self.name}.{name}"]
+            raise AttributeError(
+                f"No child device named '{self.name}' available"
+            ) from e
 
     def __dir__(self):
         return [*super().__dir__(), *self.children]

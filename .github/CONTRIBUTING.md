@@ -89,10 +89,10 @@ This is especially true for reviewers of your contribution. Please be respectful
 of their time when creating large changes.
 
 If the solution is not something you would have been able to implement without
-the LLM, time should be spent increasing understanding around the project before
+the LLM, time should be spent increasing understanding of the project before
 attempting a fix.
 
-LLM use MUST be disclosed where used.
+LLM generated code must be disclosed.
 
 ### LLM Generated Documentation
 

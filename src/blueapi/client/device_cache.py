@@ -89,7 +89,7 @@ class DeviceRef(ClientObjectRef):
             return self.children[name]
         except KeyError as e:
             raise AttributeError(
-                f"No child device named '{self.children[name]}' available"
+                f"{self.name} doesn't have a child named {name}"
             ) from e
 
     def __dir__(self):

@@ -144,6 +144,7 @@ def client_with_cors(
 @dataclass
 class MinimalDevice(Stoppable):
     name: str
+    children = {}
 
     def stop(self, success: bool = True):
         pass
@@ -254,8 +255,9 @@ def test_get_devices(mock_runner: Mock, client: TestClient) -> None:
             {
                 "name": "my-device",
                 "protocols": [{"name": "Stoppable", "types": []}],
+                "children": {},
             }
-        ]
+        ],
     }
 
 
@@ -270,6 +272,7 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     assert response.json() == {
         "name": "my-device",
         "protocols": [{"name": "Stoppable", "types": []}],
+        "children": {},
     }
 
 

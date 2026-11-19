@@ -810,7 +810,8 @@ def test_device_output_formatting():
                         "name": "Movable",
                         "types": [
                           "ComplexType"
-                        ]
+                        ],
+                        "children":{},
                       }
                     ]
                   }

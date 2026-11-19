@@ -136,13 +136,16 @@ class WatchableStatus(Status, Protocol):
 @dataclass
 class BlueapiDevice:
     """Wrapper around Device held in the context.
-    Also contains find_component function to look up child devices.
-    At the moment this just holds the Device but will later hold child device trees"""
+    Also hold child device tree which is a nested dictionary and find_component
+    function to look up child devices."""
 
     name: str
     device: Device
     parent: "BlueapiDevice | None" = field(default=None, repr=False, compare=False)
     children: dict[str, "BlueapiDevice"] = field(default_factory=dict)
+
+    def create_tree(self) -> dict[str, Any]:
+        return {child.name: child.create_tree() for child in self.children.values()}
 
     def find_component(self, addr: list[str]) -> Device | None:
         dev = self.device

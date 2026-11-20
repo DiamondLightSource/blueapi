@@ -272,6 +272,8 @@ class BlueskyContext:
         for device in build_result.devices.values():
             self.register_device(device)
 
+        self.register_children()
+
         if errs := build_result.build_errors:
             LOGGER.warning(
                 f"{errs} errors while building devices",
@@ -364,7 +366,7 @@ class BlueskyContext:
 
         self._add_device(name, device)
 
-    def _register_children(self) -> None:
+    def register_children(self) -> None:
         """Register the children of every top-level device,
         once they are all registered."""
         buffer = deque(d for d in self.devices.values() if d.parent is None)

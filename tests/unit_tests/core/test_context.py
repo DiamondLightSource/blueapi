@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from inspect import Parameter
 from pathlib import Path
 from types import ModuleType, NoneType
-from typing import Any, Generic, TypeVar, Union, get_args, get_type_hints
+from typing import Any, TypeVar, Union, get_args, get_type_hints
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -741,9 +741,7 @@ def test_plan_models_not_auto_camelcased(empty_context: BlueskyContext):
 
 
 def test_generic_bounds_with_generic_base():
-    T = TypeVar("T")
-
-    class Base(Generic[T]):
+    class Base[T]:
         pass
 
     class Derived(Base[int]):
@@ -754,9 +752,7 @@ def test_generic_bounds_with_generic_base():
 
 
 def test_generic_bounds_with_multiple_bases():
-    T = TypeVar("T")
-
-    class Base1(Generic[T]):
+    class Base1[T]:
         pass
 
     class Base2:
@@ -781,9 +777,6 @@ def test_generic_bounds_with_no_bases():
     assert generic_bounds(derived_instance, Base) == ()  # type: ignore
 
 
-T = TypeVar("T")
-
-
 class CustomClass: ...
 
 
@@ -803,7 +796,7 @@ qualified_name_test_data = [
     (list[int], "list"),
     (dict[str, int], "dict"),
     (CustomClass, "core.test_context.CustomClass"),
-    (T, "Any"),
+    (TypeVar("T"), "Any"),
     (GenericClass, "core.test_context.GenericClass"),
     (OuterClass.InnerClass, "core.test_context.OuterClass.InnerClass"),
 ]

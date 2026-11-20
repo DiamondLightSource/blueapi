@@ -4,7 +4,7 @@ import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from queue import Full
-from typing import Any, TypeVar
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pydantic
@@ -518,9 +518,6 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
         elif isinstance(expected, DataEvent):
             assert isinstance(actual, DataEvent)
             assert actual.name == expected.name
-
-
-E = TypeVar("E")
 
 
 def take_n_events[E](

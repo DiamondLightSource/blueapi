@@ -7,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Literal, Self, cast
 
 import requests
 import yaml
@@ -384,9 +384,6 @@ class ApplicationConfig(BlueapiBaseModel):
                 & (self.opa == other.opa)
             )
         return False
-
-
-C = TypeVar("C", bound=BaseModel)
 
 
 class ConfigLoader[C: BaseModel]:

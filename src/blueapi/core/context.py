@@ -114,9 +114,6 @@ def is_bluesky_type(typ: Any) -> bool:
     )
 
 
-C = TypeVar("C", covariant=True)
-
-
 @dataclass
 class BlueskyContext:
     """
@@ -551,7 +548,7 @@ class BlueskyContext:
             return root[new_types] if root else typ  # type: ignore
         return typ
 
-    def _composite_factory(self, composite_class: type[C]) -> Callable[[], C]:
+    def _composite_factory[C](self, composite_class: type[C]) -> Callable[[], C]:
         def _inject_composite():
             if issubclass(composite_class, BaseModel):
                 devices = {

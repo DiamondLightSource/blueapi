@@ -2,13 +2,6 @@ import itertools
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TypeVar
-
-#: Event type
-E = TypeVar("E")
-
-#: Subscription token type
-S = TypeVar("S")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +39,7 @@ class EventStream[E, S](ABC):
         """
 
 
-class EventPublisher(EventStream[E, int]):
+class EventPublisher[E](EventStream[E, int]):
     """
     Simple Observable that can be fed values to publish
     """

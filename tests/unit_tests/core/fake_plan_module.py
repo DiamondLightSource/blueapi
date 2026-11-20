@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Any, TypeVar
+from typing import Any
 from typing import Generator as DeprecatedGenerator  # noqa: UP035
 
 from bluesky.utils import Msg, MsgGenerator
@@ -9,7 +9,6 @@ from tests.unit_tests.core.fake_util_module import (
 )
 
 PlanReturningStr = MsgGenerator[str]
-T = TypeVar("T")
 
 
 # Valid plans

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from multiprocessing import Pipe
 from multiprocessing.connection import Connection
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, TypeVar
+from typing import Any
 from unittest.mock import MagicMock, Mock, NonCallableMock, patch
 
 import pytest
@@ -219,9 +219,6 @@ def test_clear_message_for_wrong_return(started_runner: WorkerDispatcher):
         match="1 validation error for int",
     ):
         run_rpc_function(wrong_return_type, int)
-
-
-T = TypeVar("T")
 
 
 class SimpleModel(BaseModel):

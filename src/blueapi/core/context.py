@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections import deque
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
@@ -336,6 +337,9 @@ class BlueskyContext:
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
+        Only register the top-level device. Child devices get registered in the
+        'register_children' function.
+
         Children of ophyd-async devices, including signals, are also registered
         under their own names, e.g. registering "stage" also registers "stage-x"
         and "stage-x-velocity". If a name is already in use, the existing device
@@ -358,29 +362,27 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        if blueapi_device := self._add_device(name, device):
-            self._register_children(blueapi_device)
+        self._add_device(name, device)
 
-    def _register_children(self, root: BlueapiDevice) -> None:
-        """Register the children of an ophyd-async device under their own names."""
-        buffer: list[BlueapiDevice] = [root]
+    def _register_children(self) -> None:
+        """Register the children of every top-level device,
+        once they are all registered."""
+        buffer = deque(d for d in self.devices.values() if d.parent is None)
         while buffer:
-            dev = buffer.pop(0)
-            if not isinstance(dev.device, AsyncDevice):
+            parent = buffer.popleft()
+            if not isinstance(parent.device, AsyncDevice):
                 continue
-            for attr, child in dev.device.children():
-                if child.name and (
-                    blueapi_device := self._add_device(child.name, child)
-                ):
-                    blueapi_device.parent = dev
-                    dev.children[attr] = blueapi_device
-                    buffer.append(blueapi_device)
+            for attr, device in parent.device.children():
+                if device.name and (child := self._add_device(device.name, device)):
+                    child.parent = parent
+                    parent.children[attr] = child
+                    buffer.append(child)
 
     def _add_device(self, name: str, device: Device) -> BlueapiDevice | None:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, BlueapiDevice(name, device))
-        if existing.device is not device:
+        wrapped = self.devices.setdefault(name, BlueapiDevice(name, device))
+        if wrapped.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:
@@ -395,7 +397,7 @@ class BlueskyContext:
                 name,
             )
             return None
-        return existing
+        return wrapped
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

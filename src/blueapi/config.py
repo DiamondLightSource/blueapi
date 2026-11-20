@@ -7,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, cast
 
 import requests
 import yaml
@@ -389,7 +389,7 @@ class ApplicationConfig(BlueapiBaseModel):
 C = TypeVar("C", bound=BaseModel)
 
 
-class ConfigLoader(Generic[C]):
+class ConfigLoader[C: BaseModel]:
     """
     Small utility class for loading config from various sources.
     You must define a config schema as a dataclass (or series of

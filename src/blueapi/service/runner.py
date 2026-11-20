@@ -209,7 +209,7 @@ class InvalidRunnerStateError(Exception):
 class RpcError(Exception): ...
 
 
-def import_and_run_function(
+def import_and_run_function[T](
     module_name: str,
     function_name: str,
     expected_type: type[T] | None,
@@ -228,7 +228,7 @@ def import_and_run_function(
     return _valid_return(value, expected_type)
 
 
-def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
+def _valid_return[T](value: Any, expected_type: type[T] | None = None) -> T:
     if expected_type is None:
         return value
     else:

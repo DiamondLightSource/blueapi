@@ -278,7 +278,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def check_connection(func: Callable[P, T]) -> Callable[P, T]:
+def check_connection[**P, T](func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from multiprocessing import Pipe
 from multiprocessing.connection import Connection
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 from unittest.mock import MagicMock, Mock, NonCallableMock, patch
 
 import pytest
@@ -234,7 +234,7 @@ class NestedModel(BaseModel):
     c: bool
 
 
-class GenericModel(BaseModel, Generic[T]):
+class GenericModel[T](BaseModel):
     a: T
     b: str
 

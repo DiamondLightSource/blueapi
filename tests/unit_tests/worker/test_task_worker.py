@@ -523,7 +523,7 @@ def assert_running_count_plan_produces_ordered_worker_and_data_events(
 E = TypeVar("E")
 
 
-def take_n_events(
+def take_n_events[E](
     stream: EventStream[E, Any],
     num: int,
 ) -> Future[list[E]]:
@@ -531,7 +531,7 @@ def take_n_events(
     return take_events(stream, lambda _: next(count) >= num)
 
 
-def take_events(
+def take_events[E](
     stream: EventStream[E, Any],
     cutoff_predicate: Callable[[E], bool],
 ) -> Future[list[E]]:

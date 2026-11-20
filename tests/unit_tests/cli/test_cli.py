@@ -812,7 +812,8 @@ def test_device_output_formatting():
                           "ComplexType"
                         ]
                       }
-                    ]
+                    ],
+                    "children": {}
                   }
                 ]
                 """)

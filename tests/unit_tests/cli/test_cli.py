@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, TypeVar
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -141,11 +141,8 @@ class MyModel(BaseModel):
     id: str
 
 
-ComplexType = TypeVar("ComplexType")
-
-
 @dataclass
-class MyDevice(Movable[ComplexType]):
+class MyDevice[ComplexType](Movable[ComplexType]):
     name: str
 
     @AsyncStatus.wrap

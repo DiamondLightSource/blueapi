@@ -145,6 +145,7 @@ p = pytest.param
 def test_plan_param_forwarding(args, kwargs):
     client = Mock()
     client.instrument_session = "cm12345-1"
+    client.subdirectory = None
     plan = Plan("foobar", FULL_PLAN, client)
 
     plan(*args, **kwargs)
@@ -158,6 +159,7 @@ def test_plan_param_forwarding(args, kwargs):
 def test_plan_invalid_param_mapping():
     client = Mock()
     client.instrument_session = "cm12345-1"
+    client.subdirectory = None
     client.run_task.side_effect = InvalidParametersError(
         [
             ParameterError(

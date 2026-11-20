@@ -52,6 +52,33 @@ def test_start_document_path_provider_with_default_template_returns_correct_path
     )
 
 
+@pytest.mark.parametrize(
+    "scan_file,directory,create_dir_depth",
+    [
+        ("p01-22", "/p01/ab123", 0),
+        ("sample1/p01-22", "/p01/ab123/sample1", -1),
+        ("sample1/calibration/p01-22", "/p01/ab123/sample1/calibration", -2),
+    ],
+)
+def test_start_document_path_provider_writes_alongside_scan_file(
+    start_doc_default_template: dict,
+    scan_file: str,
+    directory: str,
+    create_dir_depth: int,
+):
+    pp = StartDocumentPathProvider()
+    pp.run_start(
+        name="start",
+        start_document=start_doc_default_template | {"scan_file": scan_file},  # type: ignore
+    )
+
+    assert pp("det") == PathInfo(
+        directory_path=PosixPath(directory),
+        filename="p01-22-det",
+        create_dir_depth=create_dir_depth,
+    )
+
+
 @pytest.fixture
 def start_doc_custom_template() -> dict:
     return {

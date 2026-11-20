@@ -29,6 +29,7 @@ dependencies = [
     "websockets",
     "tqdm",
     "packaging",
+    "authlib>=1.9.6",
 ]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -80,7 +81,6 @@ dev = [
     "mock",
     "jwcrypto",
     "deepdiff",
-    "respx",
     "pytest-xdist[psutil]",
     "httpx2>=2.5.0",
     "playwright>=1.63.0",

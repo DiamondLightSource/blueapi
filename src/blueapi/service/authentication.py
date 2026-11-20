@@ -6,6 +6,7 @@ from typing import Annotated, Any
 
 import httpx
 import jwt
+from authlib.integrations.requests_client import OAuth2Session
 from fastapi import Depends, HTTPException
 from fastapi.requests import HTTPConnection
 from fastapi.security.utils import get_authorization_scheme_param
@@ -25,25 +26,40 @@ class TiledAuth(httpx.Auth):
     def __init__(self, tiled_auth: ServiceAccount):
         if tiled_auth.token_url == "":
             raise RuntimeError("Token URL is not set please check oidc config")
-        self._tiled_auth: ServiceAccount = tiled_auth
+        self._client = OAuth2Session(
+            tiled_auth.client_id,
+            tiled_auth.client_secret.get_secret_value(),
+            token_endpoint=tiled_auth.token_url,
+            token_endpoint_auth_method="client_secret_post",
+            grant_type="client_credentials",
+        )
         self._sync_lock = threading.RLock()
 
-    def get_access_token(self):
+    requires_request_body = True  # body is replayed on the 401 retry
+
+    def get_access_token(self, stale: str | None = None) -> str:
+        """Cached client_credentials token, re-fetched when expired or rejected"""
         with self._sync_lock:
-            response = httpx.post(
-                self._tiled_auth.token_url,
-                data={
-                    "client_id": self._tiled_auth.client_id,
-                    "client_secret": self._tiled_auth.client_secret.get_secret_value(),
-                    "grant_type": "client_credentials",
-                },
-            )
-            response.raise_for_status()
-            return response.json().get("access_token")
+            token = self._client.token
+            if (
+                not token
+                or token["access_token"] == stale
+                # is_expired() is None when the IdP sends no expiry: don't cache
+                or token.is_expired(leeway=self._client.leeway) is not False
+            ):
+                token = self._client.fetch_token()
+            return token["access_token"]
 
     def sync_auth_flow(self, request):
-        request.headers["Authorization"] = f"Bearer {self.get_access_token()}"
-        yield request
+        access_token = self.get_access_token()
+        request.headers["Authorization"] = f"Bearer {access_token}"
+        response = yield request
+        if response.status_code == HTTP_401_UNAUTHORIZED:
+            # Revoked or keys rotated before expiry: fetch a new token, retry once.
+            # stale= stops concurrent 401s each fetching their own replacement.
+            new_token = self.get_access_token(stale=access_token)
+            request.headers["Authorization"] = f"Bearer {new_token}"
+            yield request
 
 
 def unchecked_bearer_token(req: HTTPConnection) -> str | None:

@@ -5,13 +5,15 @@ import os
 import time
 import webbrowser
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from functools import cached_property
-from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
 
 import jwt
 import requests
+from authlib.integrations.requests_client import OAuth2Session, OAuthError
+from authlib.oauth2.rfc8628 import DEVICE_CODE_GRANT_TYPE
 from pydantic import TypeAdapter
 from requests.auth import AuthBase
 
@@ -154,47 +156,62 @@ class SessionManager:
                 f"to log out from the server.{e}"
             )
 
-    def _refresh_auth_token(self, refresh_token: str) -> str:
-        response = requests.post(
-            self._server_config.token_endpoint,
-            data={
-                "client_id": self._server_config.client_id,
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+    @cached_property
+    def _oauth_session(self) -> OAuth2Session:
+        # One pooled session per manager rather than a leaked one per call.
+        # Public client: client_id goes in the body, no client secret
+        return OAuth2Session(
+            self._server_config.client_id, token_endpoint_auth_method="none"
         )
-        if response.status_code == HTTPStatus.OK:
-            token = response.json()
-            self._cache_manager.save_cache(
-                Cache(
-                    oidc_config=self._server_config,
-                    refresh_token=token["refresh_token"],
-                    id_token=token["id_token"],
-                    access_token=token["access_token"],
-                ),
+
+    def _save_token(self, token: Mapping[str, Any]) -> None:
+        self._cache_manager.save_cache(
+            Cache(
+                oidc_config=self._server_config,
+                refresh_token=token["refresh_token"],
+                id_token=token["id_token"],
+                access_token=token["access_token"],
             )
-            return token["access_token"]
-        else:
+        )
+
+    def _refresh_auth_token(self, refresh_token: str) -> str:
+        try:
+            token = self._oauth_session.refresh_token(
+                self._server_config.token_endpoint, refresh_token=refresh_token
+            )
+        except (OAuthError, requests.HTTPError) as e:
+            # Network and 5xx errors propagate so a temporary outage does not
+            # throw away a still-valid refresh token; a 4xx means it was rejected
+            response = getattr(e, "response", None)
+            if response is not None and response.status_code >= 500:
+                raise
             self.delete_cache()
             return ""
+        self._save_token(token)
+        return token["access_token"]
 
     def poll_for_token(
         self, device_code: str, polling_interval: float, expires_in: float
     ) -> dict[str, Any]:
         expiry_time: float = time.time() + expires_in
         while time.time() < expiry_time:
-            response = requests.post(
-                self._server_config.token_endpoint,
-                data={
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-                    "device_code": device_code,
-                    "client_id": self._server_config.client_id,
-                },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-            if response.status_code == HTTPStatus.OK:
-                return response.json()
+            try:
+                return dict(
+                    self._oauth_session.fetch_token(
+                        self._server_config.token_endpoint,
+                        grant_type=DEVICE_CODE_GRANT_TYPE,
+                        device_code=device_code,
+                    )
+                )
+            except OAuthError as e:
+                # RFC 8628 3.5: keep polling while pending, back off on slow_down
+                if e.error == "slow_down":
+                    polling_interval += 5
+                elif e.error != "authorization_pending":
+                    raise
+            except (requests.HTTPError, ValueError):
+                # 5xx or non-JSON (e.g. gateway 429 page): transient, keep polling
+                pass
             time.sleep(polling_interval)
 
         raise TimeoutError("Polling timed out")
@@ -215,23 +232,14 @@ class SessionManager:
 
         response_json: dict[str, Any] = response.json()
         device_code = cast(str, response_json.get("device_code"))
-        interval = cast(float, response_json.get("interval"))
+        # RFC 8628 3.2: interval is optional, default 5 seconds
+        interval = float(response_json.get("interval", 5))
         expires_in = cast(float, response_json.get("expires_in"))
         webbrowser.open_new_tab(response_json["verification_uri_complete"])
         print(
             f"Please login from this URL:- {response_json['verification_uri_complete']}"
         )
-        auth_token_json: dict[str, Any] = self.poll_for_token(
-            device_code, interval, expires_in
-        )
-        self._cache_manager.save_cache(
-            Cache(
-                oidc_config=self._server_config,
-                refresh_token=auth_token_json["refresh_token"],
-                id_token=auth_token_json["id_token"],
-                access_token=auth_token_json["access_token"],
-            )
-        )
+        self._save_token(self.poll_for_token(device_code, interval, expires_in))
         print("Logged in and cached new token")
 
 

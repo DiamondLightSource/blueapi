@@ -144,9 +144,6 @@ class BlueapiDevice:
     parent: "BlueapiDevice | None" = field(default=None, repr=False, compare=False)
     children: dict[str, "BlueapiDevice"] = field(default_factory=dict)
 
-    def create_tree(self) -> dict[str, Any]:
-        return {child.name: child.create_tree() for child in self.children.values()}
-
     def find_component(self, addr: list[str]) -> Device | None:
         dev = self.device
         for name in addr:

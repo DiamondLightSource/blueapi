@@ -10,14 +10,14 @@ from observability_utils.tracing import (
     get_tracer,
     start_as_current_span,
 )
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, HttpUrl, TypeAdapter, ValidationError
 from pydantic_core import PydanticSerializationError
 from websockets.exceptions import InvalidStatus
-from websockets.sync.client import connect
+from websockets.sync.client import ClientConnection, connect
 
 from blueapi import __version__
 from blueapi.client.protocols import ClientObjectRef
-from blueapi.client.session import JWTAuth, SessionManager
+from blueapi.client.session import SessionManager
 from blueapi.config import RestConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.service.model import (
@@ -201,6 +201,24 @@ def _response_json(response: requests.Response) -> Any:
         ) from exc
 
 
+def _access_token(session_manager: SessionManager | None) -> str:
+    return session_manager.get_valid_access_token() if session_manager else ""
+
+
+def _replacement_token(session_manager: SessionManager | None, rejected: str) -> str:
+    """A different token to retry with after `rejected` was refused, or """ ""
+    if not (session_manager and rejected):
+        return ""
+    token = session_manager.get_valid_access_token(rejected_token=rejected)
+    return token if token != rejected else ""
+
+
+def _with_bearer(headers: Mapping[str, str], token: str) -> dict[str, str]:
+    if not token:
+        return dict(headers)
+    return {**headers, "Authorization": f"Bearer {token}"}
+
+
 class BlueapiRestClient:
     _config: RestConfig
     session_manager: SessionManager | None
@@ -214,6 +232,10 @@ class BlueapiRestClient:
         self._config = config or RestConfig()
         self.session_manager = session_manager
         self._pool = requests.Session()
+
+    @property
+    def url(self) -> HttpUrl:
+        return self._config.url
 
     def get_plans(self) -> PlanResponse:
         return self._request_and_deserialize("/plans", PlanResponse)
@@ -298,7 +320,11 @@ class BlueapiRestClient:
 
     def get_oidc_config(self) -> OIDCConfig | None:
         try:
-            return self._request_and_deserialize("/config/oidc", OIDCConfig)
+            # Unauthenticated: a stale cached login (possibly for an OIDC provider
+            # the server no longer uses) must not stop us finding the new config
+            return self._request_and_deserialize(
+                "/config/oidc", OIDCConfig, authenticated=False
+            )
         except NoContentError:
             # Server is not using authentication
             return None
@@ -321,20 +347,31 @@ class BlueapiRestClient:
         method="GET",
         get_exception: Callable[[requests.Response], Exception | None] = _exception,
         params: Mapping[str, Any] | None = None,
+        authenticated: bool = True,
     ) -> T:
         url = self._config.url.unicode_string().removesuffix("/") + suffix
         # Get the trace context to propagate to the REST API
         headers = get_context_propagator()
         headers["User-Agent"] = USER_AGENT
-        try:
-            response = self._pool.request(
+        session_manager = self.session_manager if authenticated else None
+
+        def send(token: str) -> requests.Response:
+            return self._pool.request(
                 method,
                 url,
                 json=data,
                 params=params,
-                headers=headers,
-                auth=JWTAuth(self.session_manager),
+                headers=_with_bearer(headers, token),
             )
+
+        try:
+            token = _access_token(session_manager)
+            response = send(token)
+            if response.status_code == HTTPStatus.UNAUTHORIZED and (
+                new_token := _replacement_token(session_manager, token)
+            ):
+                # Token rejected (revoked, clock skew...): refresh and retry once
+                response = send(new_token)
         except requests.exceptions.ConnectionError as ce:
             raise ServiceUnavailableError() from ce
         exception = get_exception(response)
@@ -362,39 +399,55 @@ class BlueapiRestClient:
         self, req: TaskRequest
     ) -> Iterable[DataEvent | WorkerEvent | ProgressEvent]:
         url = self._config.ws_address.unicode_string().rstrip("/") + "/api/v2/run_plan"
+        with self._connect_websocket(url) as ws:
+            ws.send(Submit(task=req).model_dump_json(fallback=_task_model_fallback))
+            for message in ws:
+                event = ControlResponse.validate_json(message)
+                match event:
+                    case Update(data=data):
+                        yield data
+                    case InvalidArgs(errors=errors):
+                        raise InvalidParametersError(
+                            [
+                                ParameterError(
+                                    loc=e.loc, msg=e.msg, type=e.type, input=e.input
+                                )
+                                for e in errors
+                            ]
+                        )
+                    case PlanNotFound(plan_name=name):
+                        raise UnknownPlanError(message=name)
+                    case ServerBusy():
+                        raise BlueskyRemoteControlError(409, "Server is busy")
+                    case Unauthorized():
+                        raise UnauthorisedAccessError(
+                            403, "Not authorized to submit task"
+                        )
+
+    def _connect_websocket(self, url: str) -> ClientConnection:
+        """
+        Open the websocket, refreshing the token and retrying once if the
+        handshake is rejected as unauthenticated.
+        """
         headers = get_context_propagator()
-        if self.session_manager:
-            auth = self.session_manager.get_valid_access_token()
-            headers["Authorization"] = f"Bearer {auth}"
-        try:
-            with connect(
+
+        def open_with(token: str) -> ClientConnection:
+            return connect(
                 url,
-                additional_headers=headers,
+                additional_headers=_with_bearer(headers, token),
                 user_agent_header=USER_AGENT,
-            ) as ws:
-                ws.send(Submit(task=req).model_dump_json(fallback=_task_model_fallback))
-                for message in ws:
-                    event = ControlResponse.validate_json(message)
-                    match event:
-                        case Update(data=data):
-                            yield data
-                        case InvalidArgs(errors=errors):
-                            raise InvalidParametersError(
-                                [
-                                    ParameterError(
-                                        loc=e.loc, msg=e.msg, type=e.type, input=e.input
-                                    )
-                                    for e in errors
-                                ]
-                            )
-                        case PlanNotFound(plan_name=name):
-                            raise UnknownPlanError(message=name)
-                        case ServerBusy():
-                            raise BlueskyRemoteControlError(409, "Server is busy")
-                        case Unauthorized():
-                            raise UnauthorisedAccessError(
-                                403, "Not authorized to submit task"
-                            )
+            )
+
+        token = _access_token(self.session_manager)
+        try:
+            try:
+                return open_with(token)
+            except InvalidStatus as istat:
+                if istat.response.status_code == HTTPStatus.UNAUTHORIZED and (
+                    new_token := _replacement_token(self.session_manager, token)
+                ):
+                    return open_with(new_token)
+                raise
         except InvalidStatus as istat:
             match istat.response.status_code:
                 case 401 | 403:

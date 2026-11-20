@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import partial
 from queue import Full, Queue
 from threading import Event, RLock
-from typing import Any, TypeVar
+from typing import Any
 
 from bluesky._vendor.super_state_machine.errors import TransitionError
 from bluesky.protocols import Status
@@ -54,8 +54,6 @@ TRACER = get_tracer("task_worker")
 
 DEFAULT_START_STOP_TIMEOUT: float = 30.0
 WORKER_THREAD_STATE = "worker thread state"
-
-T = TypeVar("T")
 
 
 class TrackableTask(BlueapiBaseModel):

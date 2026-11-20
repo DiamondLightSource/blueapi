@@ -2,18 +2,11 @@ import itertools
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Generic, TypeVar
-
-#: Event type
-E = TypeVar("E")
-
-#: Subscription token type
-S = TypeVar("S")
 
 LOGGER = logging.getLogger(__name__)
 
 
-class EventStream(ABC, Generic[E, S]):
+class EventStream[E, S](ABC):
     """
     Generic representation of the Observable pattern
     """
@@ -46,7 +39,7 @@ class EventStream(ABC, Generic[E, S]):
         """
 
 
-class EventPublisher(EventStream[E, int]):
+class EventPublisher[E](EventStream[E, int]):
     """
     Simple Observable that can be fed values to publish
     """

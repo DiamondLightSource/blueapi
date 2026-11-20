@@ -504,7 +504,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests" },
     { name = "stomp-py" },
-    { name = "tiled", extras = ["client"], marker = "extra == 'server'", specifier = "==0.2.18" },
+    { name = "tiled", extras = ["client"], marker = "extra == 'server'", specifier = "==0.2.22" },
     { name = "tqdm" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.52.1" },
     { name = "websockets" },
@@ -5132,10 +5132,10 @@ wheels = [
 
 [[package]]
 name = "tiled"
-version = "0.2.18"
+version = "0.2.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "httpx" },
+    { name = "httpx2" },
     { name = "json-merge-patch" },
     { name = "jsonpatch" },
     { name = "jsonschema" },
@@ -5147,9 +5147,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/e5/558ce54947c9385b74129589ac91b20a54b4e7c327ac7749c272badb338d/tiled-0.2.18.tar.gz", hash = "sha256:2f3943260c46824b162796fcb8a43c3d02f41205e2ccefc64e365b18b6ec1e27", size = 2785181, upload-time = "2026-09-02T21:50:09.616Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/6d/10387ad9ff43ae289339f4e2308f6c431670e5ae2c354662b618229b3ea2/tiled-0.2.22.tar.gz", hash = "sha256:a02290edd66eb48a24cdd19fdb7fe0bebdbd7e754e66b4e9f50d7dfe721301a5", size = 3915436, upload-time = "2026-11-18T09:06:23.861Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/70/85966182bc5fd7a5edd63290849ee4b7ebba8f61375780b782b1427f0bed/tiled-0.2.18-py3-none-any.whl", hash = "sha256:416079d4b5c9acc5498197d48c05a951ee8f7c699ac3b07920ae907a8da7fa06", size = 1848867, upload-time = "2026-09-02T21:50:07.226Z" },
+    { url = "https://files.pythonhosted.org/packages/71/7a/0bb60375fb17cec87e6af262cbd811f68c6a5fe33e7b3208594df725bc4d/tiled-0.2.22-py3-none-any.whl", hash = "sha256:7731e54a5438a017a64bffaea453d7734634bda9baba0ab365f35ab689cae6a3", size = 1956248, upload-time = "2026-11-18T09:06:21.417Z" },
 ]
 
 [package.optional-dependencies]

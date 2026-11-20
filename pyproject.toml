@@ -212,6 +212,7 @@ commands = [
         "pytest",
         "tests/system_tests",
         "--ignore=tests/system_tests/test_blueapi_client.py",
+        "--ignore=tests/system_tests/test_andor_timestamps.py", # needs i08-1, run by hand
         "--cov=blueapi",
         "--cov-report",
         "term",

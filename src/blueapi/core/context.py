@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections import deque
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
@@ -193,7 +194,7 @@ class BlueskyContext:
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
-            self.run_engine.md |= config.metadata.model_dump()
+            self.run_engine.md.update(config.metadata.model_dump())
 
         package_map = metadata.packages_distributions()
         packages = {src.module.split(".")[0] for src in config.sources}
@@ -268,6 +269,8 @@ class BlueskyContext:
         for device in build_result.devices.values():
             self.register_device(device)
 
+        self.register_children()
+
         if errs := build_result.build_errors:
             LOGGER.warning(
                 f"{errs} errors while building devices",
@@ -333,6 +336,9 @@ class BlueskyContext:
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
+        Only register the top-level device. Child devices get registered in the
+        'register_children' function.
+
         Children of ophyd-async devices, including signals, are also registered
         under their own names, e.g. registering "stage" also registers "stage-x"
         and "stage-x-velocity". If a name is already in use, the existing device
@@ -355,24 +361,27 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        if self._add_device(name, device):
-            self._register_children(device)
+        self._add_device(name, device)
 
-    def _register_children(self, device: Device) -> None:
-        """Register the children of an ophyd-async device under their own names."""
+    def register_children(self) -> None:
+        """Register the children of every top-level device,
+        once they are all registered."""
+        buffer = deque(d for d in self.devices.values() if d.parent is None)
+        while buffer:
+            parent = buffer.popleft()
+            if not isinstance(parent.device, AsyncDevice):
+                continue
+            for attr, device in parent.device.children():
+                if device.name and (child := self._add_device(device.name, device)):
+                    child.parent = parent
+                    parent.children[attr] = child
+                    buffer.append(child)
 
-        if not isinstance(device, AsyncDevice):
-            return
-
-        for _, child in device.children():
-            if child.name and self._add_device(child.name, child):
-                self._register_children(child)
-
-    def _add_device(self, name: str, device: Device) -> bool:
+    def _add_device(self, name: str, device: Device) -> BlueapiDevice | None:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, BlueapiDevice(device))
-        if existing.device is not device:
+        wrapped = self.devices.setdefault(name, BlueapiDevice(name, device))
+        if wrapped.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:
@@ -386,8 +395,8 @@ class BlueskyContext:
                 device,
                 name,
             )
-            return False
-        return True
+            return None
+        return wrapped
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

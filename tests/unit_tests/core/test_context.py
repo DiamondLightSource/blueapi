@@ -660,7 +660,7 @@ class ConcreteStoppable(Stoppable):
     def name(self) -> str:
         return "Concrete"
 
-    def stop(self, success: bool = True):
+    def stop(self, *, success: bool = True):
         pass
 
 
@@ -894,7 +894,7 @@ def test_single_device_manager(empty_context: BlueskyContext):
     sdm = StaticDeviceManager(devices={"foo": foo})
     empty_context.with_device_manager(sdm)
 
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice("foo", foo)}
 
 
 def test_device_manager_build_error(empty_context: BlueskyContext):
@@ -964,7 +964,7 @@ def test_device_manager_environment_source(empty_context: BlueskyContext):
     with patch("blueapi.core.context.import_module") as imp_mod:
         imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
         empty_context.with_config(env)
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice("foo", foo)}
 
 
 def test_non_device_manager_errors(empty_context: BlueskyContext):

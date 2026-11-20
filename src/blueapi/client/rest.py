@@ -2,7 +2,7 @@ import json
 import logging
 from collections.abc import Callable, Iterable, Mapping
 from http import HTTPStatus
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 
 import requests
 from observability_utils.tracing import (
@@ -45,8 +45,6 @@ from blueapi.service.protocol import (
 )
 from blueapi.worker import TrackableTask, WorkerState
 from blueapi.worker.event import ProgressEvent, WorkerEvent
-
-T = TypeVar("T")
 
 TRACER = get_tracer("rest")
 
@@ -313,7 +311,7 @@ class BlueapiRestClient:
         )
 
     @start_as_current_span(TRACER, "method", "data", "suffix")
-    def _request_and_deserialize(
+    def _request_and_deserialize[T](
         self,
         suffix: str,
         target_type: type[T],

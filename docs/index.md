@@ -21,8 +21,12 @@ Documentation is split into [four categories](https://diataxis.fr), also accessi
 :maxdepth: 2
 tutorials
 ```
+<<<<<<< before updating
 
 +++
+=======
+:::{card-footer}
+>>>>>>> after updating
 Tutorials for installation and typical usage. New users start here.
 :::
 
@@ -32,8 +36,12 @@ Tutorials for installation and typical usage. New users start here.
 :maxdepth: 2
 how-to
 ```
+<<<<<<< before updating
 
 +++
+=======
+:::{card-footer}
+>>>>>>> after updating
 Practical step-by-step guides for the more experienced user.
 :::
 
@@ -43,8 +51,12 @@ Practical step-by-step guides for the more experienced user.
 :maxdepth: 2
 explanations
 ```
+<<<<<<< before updating
 
 +++
+=======
+:::{card-footer}
+>>>>>>> after updating
 Explanations of how it works and why it works that way.
 :::
 
@@ -54,8 +66,12 @@ Explanations of how it works and why it works that way.
 :maxdepth: 2
 reference
 ```
+<<<<<<< before updating
 
 +++
+=======
+:::{card-footer}
+>>>>>>> after updating
 Technical reference material including APIs and release notes.
 :::
 

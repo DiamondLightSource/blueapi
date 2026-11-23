@@ -32,7 +32,7 @@ def file_path(directory_path_with_sgid: Path) -> Generator[Path]:
 
 
 @pytest.fixture
-def nonexistant_path(directory_path_with_sgid: Path) -> Path:
+def nonexistent_path(directory_path_with_sgid: Path) -> Path:
     file_path = directory_path_with_sgid / str(uuid.uuid4())
     assert not file_path.exists()
     return file_path
@@ -59,9 +59,9 @@ def test_scratch_install_fails_on_file(file_path: Path):
         scratch_install(file_path, timeout=1.0)
 
 
-def test_scratch_install_fails_on_nonexistant_path(nonexistant_path: Path):
+def test_scratch_install_fails_on_nonexistent_path(nonexistent_path: Path):
     with pytest.raises(KeyError):
-        scratch_install(nonexistant_path, timeout=1.0)
+        scratch_install(nonexistent_path, timeout=1.0)
 
 
 @patch("blueapi.cli.scratch.Popen")
@@ -97,18 +97,18 @@ def test_repo_not_cloned_and_validated_if_found_locally(
 @patch("blueapi.cli.scratch.Repo")
 def test_repo_cloned_if_not_found_locally(
     mock_repo: Mock,
-    nonexistant_path: Path,
+    nonexistent_path: Path,
 ):
     repo = MagicMock(spec=Repo)
     # No branch is specified so raise error if branches are checked
     del repo.heads
     mock_repo.clone_from.return_value = repo
 
-    ensure_repo("http://example.com/foo.git", nonexistant_path)
+    ensure_repo("http://example.com/foo.git", nonexistent_path)
     mock_repo.assert_not_called()
     mock_repo.clone_from.assert_called_once_with(
         "http://example.com/foo.git",
-        nonexistant_path,
+        nonexistent_path,
         branch=None,
         filter="blob:none",
     )
@@ -218,10 +218,10 @@ def test_existing_repo_unknown_revision(
     )
 
 
-def test_setup_scratch_fails_on_nonexistant_root(
-    nonexistant_path: Path,
+def test_setup_scratch_fails_on_nonexistent_root(
+    nonexistent_path: Path,
 ):
-    config = ScratchConfig(root=nonexistant_path, repositories=[])
+    config = ScratchConfig(root=nonexistent_path, repositories=[])
     with pytest.raises(KeyError):
         setup_scratch(config)
 

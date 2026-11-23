@@ -29,7 +29,7 @@ jobs:
           stale-issue-label: awaiting-response
           stale-issue-message: "@DiamondLightSource/developers-daq-core this issue has had no activity for 3 days and still needs triage. See [response times](https://github.com/DiamondLightSource/blueapi/blob/main/.github/CONTRIBUTING.md#response-times)."
           # Ignore everything opened before this workflow was introduced. Set to the merge date.
-          start-date: "2026-11-15T00:00:00Z"
+          start-date: "2026-11-23T00:00:00Z"
 
       - name: Close issues waiting on the reporter
         uses: actions/stale@v11

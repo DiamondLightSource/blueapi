@@ -240,7 +240,7 @@ def valid_token_with_jwt_invalid_audience(rsa_private_key: str) -> dict[str, Any
 
 @pytest.fixture
 def new_token(rsa_private_key: str) -> dict[str, Any]:
-    return _make_token("new_token", -100, +1700, rsa_private_key)
+    return _make_token("new_token", -100, +1700, rsa_private_key, jwt_access_token=True)
 
 
 @pytest.fixture
@@ -309,6 +309,7 @@ def mock_authn_server(
     requests_mock.post(
         oidc_well_known["token_endpoint"],
         status=400,
+        json={"error": "invalid_grant", "error_description": "Token is not active"},
         match=[
             responses.matchers.urlencoded_params_matcher(
                 {

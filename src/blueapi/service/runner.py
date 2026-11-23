@@ -8,7 +8,7 @@ from importlib import import_module
 from multiprocessing import Pool, set_start_method
 from multiprocessing.connection import Connection, Pipe
 from multiprocessing.pool import Pool as PoolClass
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from observability_utils.tracing import (
     get_context_propagator,
@@ -31,9 +31,6 @@ set_start_method("spawn", force=True)
 
 LOGGER = logging.getLogger(__name__)
 TRACER = get_tracer("runner")
-
-P = ParamSpec("P")
-T = TypeVar("T")
 
 BLANK_REPORT = "The source message was blank"
 
@@ -116,7 +113,7 @@ class WorkerDispatcher:
             )
 
     @start_as_current_span(TRACER, "function", "args", "kwargs")
-    def run(
+    def run[**P, T](
         self,
         function: Callable[P, T],
         *args: P.args,
@@ -209,7 +206,7 @@ class InvalidRunnerStateError(Exception):
 class RpcError(Exception): ...
 
 
-def import_and_run_function(
+def import_and_run_function[T](
     module_name: str,
     function_name: str,
     expected_type: type[T] | None,
@@ -228,7 +225,7 @@ def import_and_run_function(
     return _valid_return(value, expected_type)
 
 
-def _valid_return(value: Any, expected_type: type[T] | None = None) -> T:
+def _valid_return[T](value: Any, expected_type: type[T] | None = None) -> T:
     if expected_type is None:
         return value
     else:

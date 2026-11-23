@@ -1,0 +1,58 @@
+name: Triage
+
+# schedule and issue_comment only ever run the copy of this file on main,
+# so nothing here takes effect until it has been reviewed and merged.
+on:
+  schedule:
+    - cron: "0 9 * * 1-5"
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    if: github.repository == 'DiamondLightSource/blueapi' && github.event_name != 'issue_comment'
+    runs-on: ubuntu-latest
+    steps:
+      # PRs are left out: the round-robin reviewer already has a review request,
+      # and stale can't tell whether a PR is waiting on the reviewer or the author.
+      - name: Nudge the core team on untriaged issues
+        uses: actions/stale@v11
+        with:
+          only-issue-labels: needs-triage
+          days-before-stale: 3
+          days-before-close: -1
+          days-before-pr-stale: -1
+          stale-issue-label: awaiting-response
+          stale-issue-message: "@DiamondLightSource/developers-daq-core this issue has had no activity for 3 days and still needs triage. See [response times](https://github.com/DiamondLightSource/blueapi/blob/main/.github/CONTRIBUTING.md#response-times)."
+          # Ignore everything opened before this workflow was introduced. Set to the merge date.
+          start-date: "2026-11-23T00:00:00Z"
+
+      - name: Close issues waiting on the reporter
+        uses: actions/stale@v11
+        with:
+          only-labels: needs-info
+          days-before-stale: 30
+          days-before-close: 7
+          days-before-pr-stale: -1
+          stale-issue-label: stale
+          stale-issue-message: "This issue has been waiting for more information for 30 days. It will be closed in 7 days unless there is a reply."
+          close-issue-message: "Closing as there was no reply. Please comment with the requested details and we will reopen it."
+          close-issue-reason: not_planned
+
+  # A reply from the reporter hands the issue back to the core team,
+  # so needs-info never closes an issue that is waiting on us.
+  reporter-replied:
+    if: >-
+      github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
+      github.event.comment.user.login == github.event.issue.user.login &&
+      contains(github.event.issue.labels.*.name, 'needs-info')
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue edit "$NUMBER" -R "$GITHUB_REPOSITORY" --remove-label needs-info,stale --add-label needs-triage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}

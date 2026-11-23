@@ -1,0 +1,3 @@
+# Requests a review from the core team on every PR. GitHub's team
+# auto-assignment (round robin) then picks one member, see CONTRIBUTING.md.
+* @DiamondLightSource/developers-daq-core

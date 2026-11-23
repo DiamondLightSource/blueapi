@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.13"
 # dependencies = [
 #   "mantelo==2.2.1",
 #   "requests"
@@ -292,7 +292,7 @@ def configure_numtracker():
     response.raise_for_status()
     if response.json().get("errors") is not None:
         raise Exception(response.json())
-    print(">> Configurated numtracker")
+    print(">> Configured numtracker")
 
 
 if __name__ == "__main__":

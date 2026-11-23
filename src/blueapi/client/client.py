@@ -13,6 +13,7 @@ from bluesky_stomp.models import Broker
 from observability_utils.tracing import get_tracer, start_as_current_span
 from pydantic import HttpUrl
 
+from blueapi.client.session import SessionCacheManager, SessionManager
 from blueapi.config import (
     ApplicationConfig,
     ConfigLoader,
@@ -20,7 +21,6 @@ from blueapi.config import (
     RestConfig,
 )
 from blueapi.core.bluesky_types import DataEvent
-from blueapi.service.authentication import SessionCacheManager, SessionManager
 from blueapi.service.model import (
     DeviceModel,
     DeviceResponse,
@@ -407,11 +407,7 @@ class BlueapiClient(ClientProtocol):
                         log.error(
                             f"Callback ({cb}) failed for event: {event}", exc_info=e
                         )
-                if (
-                    isinstance(event, WorkerEvent)
-                    and (event.is_complete())
-                    and (ctx.correlation_id == task_id)
-                ):
+                if isinstance(event, WorkerEvent) and event.is_complete():
                     if event.task_status is None:
                         complete.set_exception(
                             BlueskyRemoteControlError(

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, TypeVar
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -141,11 +141,8 @@ class MyModel(BaseModel):
     id: str
 
 
-ComplexType = TypeVar("ComplexType")
-
-
 @dataclass
-class MyDevice(Movable[ComplexType]):
+class MyDevice[ComplexType](Movable[ComplexType]):
     name: str
 
     @AsyncStatus.wrap
@@ -291,7 +288,6 @@ def test_run_plan(stomp_client: StompClient, runner: CliRunner):
         if topic.name != "public.worker.event":
             return
         ctx = Mock()
-        ctx.correlation_id = task_id
         callback(
             WorkerEvent(
                 state=WorkerState.RUNNING,

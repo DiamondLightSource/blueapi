@@ -9,10 +9,11 @@ This uses the fact that the new types generated at runtime have access to the co
 :::
 
 ```python
-def my_plan(a: int, b: Readable) -> Plan:
-    ...
+def my_plan(a: int, b: Readable) -> Plan: ...
+
 
 # Becomes
+
 
 class MyPlanModel(BaseModel):
     a: int
@@ -26,6 +27,6 @@ def my_weird_plan(
     b: List[Readable],
     c: Dict[str, Readable],
     d: List[List[Readable]],
-    e: List[Dict[str, Set[Readable]]]) -> Plan:
-    ...
+    e: List[Dict[str, Set[Readable]]],
+) -> Plan: ...
 ```

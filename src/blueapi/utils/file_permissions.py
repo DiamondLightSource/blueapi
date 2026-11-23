@@ -30,3 +30,10 @@ def get_owner_gid(path: Path) -> int:
     """
 
     return path.stat().st_gid
+
+
+def validate_directory(path: Path) -> None:
+    if not path.exists():
+        raise KeyError(f"{path}: No such file or directory")
+    elif path.is_file():
+        raise KeyError(f"{path}: Is a file, not a directory")

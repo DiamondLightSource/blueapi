@@ -229,7 +229,7 @@ async def on_token_error_401(_: Request, __: Exception):
     )
 
 
-@secure_router.get("/", include_in_schema=False)
+@open_router.get("/", include_in_schema=False)
 def root_redirect() -> RedirectResponse:
     """Redirect to docs url"""
     return RedirectResponse(

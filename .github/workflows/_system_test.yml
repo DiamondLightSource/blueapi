@@ -40,7 +40,7 @@ jobs:
         run: uv run --locked playwright install --with-deps chromium
 
       - name: Run tests
-        run: uv run --locked tox -e system-test
+        run: uv run --locked tox -e client-system-test,system-test
 
       - name: Compose logs
         if: failure()

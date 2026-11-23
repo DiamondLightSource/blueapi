@@ -13,13 +13,13 @@ from fastapi import status
 from tiled.client import from_uri
 from tiled.client.utils import ClientError
 
-from blueapi.cli.scratch import get_python_environment
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
 from blueapi.core.bluesky_types import DataEvent
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
 from blueapi.service.authentication import TiledAuth
+from blueapi.service.environment import get_python_environment
 from blueapi.service.model import (
     DeviceModel,
     PlanModel,
@@ -28,6 +28,7 @@ from blueapi.service.model import (
     TaskRequest,
     WorkerTask,
 )
+from blueapi.service.numtracker import NumtrackerClient
 from blueapi.utils.serialization import access_blob
 from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent, WorkerState
 from blueapi.worker.task import Task
@@ -51,8 +52,25 @@ def set_config(new_config: ApplicationConfig):
 
 
 @cache
+def numtracker() -> NumtrackerClient | None:
+    if (nt_conf := config().numtracker) is None:
+        return None
+    return NumtrackerClient(url=nt_conf.url)
+
+
+@cache
 def context() -> BlueskyContext:
     ctx = BlueskyContext(config())
+    if (nt_conf := config().numtracker) is not None and (nt := numtracker()):
+
+        async def _update_scan_num(md: dict[str, Any]) -> int:
+            scan = await nt.create_scan(md["instrument_session"], md["instrument"])
+            md["data_session_directory"] = str(scan.scan.directory.path)
+            md["detector_file_template"] = nt_conf.detector_file_template
+            md["scan_file"] = scan.scan.scan_file
+            return scan.scan.scan_number
+
+        ctx.run_engine.scan_id_source = _update_scan_num
     return ctx
 
 
@@ -157,6 +175,7 @@ def teardown() -> None:
     if (stomp_client_ref := stomp_client()) is not None:
         stomp_client_ref.disconnect()
     context.cache_clear()
+    numtracker.cache_clear()
     worker.cache_clear()
     stomp_client.cache_clear()
     service_account_tiled_client.cache_clear()
@@ -170,11 +189,9 @@ def _publish_event_streams(
 
 
 def _publish_event_stream(stream: EventStream, destination: DestinationBase) -> None:
-    def forward_message(event: Any, correlation_id: str | None) -> None:
+    def forward_message(event: Any) -> None:
         if (stomp_client_ref := stomp_client()) is not None:
-            stomp_client_ref.send(
-                destination, event, None, correlation_id=correlation_id
-            )
+            stomp_client_ref.send(destination, event, None)
 
     stream.subscribe(forward_message)
 
@@ -191,7 +208,9 @@ def get_plan(name: str) -> PlanModel:
 
 def get_devices() -> list[DeviceModel]:
     """Get all available devices in the BlueskyContext"""
-    return [DeviceModel.from_device(device) for device in context().devices.values()]
+    return [
+        DeviceModel.from_device(entry.device) for entry in context().devices.values()
+    ]
 
 
 def get_device(name: str) -> DeviceModel:
@@ -239,7 +258,7 @@ def begin_task(
 
     active_worker = worker()
     active_context = context()
-    if nt := active_context.numtracker:
+    if nt := numtracker():
         nt.set_headers(pass_through_headers or {})
 
     if task.task_id is None:
@@ -267,9 +286,7 @@ def begin_task(
         )
         subscribers.append((active_context.run_engine, tiled_writer_token))
 
-        def remove_callback_when_task_finished(
-            event: WorkerEvent, correlation_id: str | None
-        ) -> None:
+        def remove_callback_when_task_finished(event: WorkerEvent) -> None:
             if (
                 event.task_status
                 and event.task_status.task_id == task.task_id
@@ -352,11 +369,7 @@ class SubHandles:
 def pipe_events(sender: Connection) -> SubHandles:
     tw = worker()
 
-    def handler(
-        worker_event: WorkerEvent | DataEvent | ProgressEvent,
-        _cor_id: str | None,
-    ) -> None:
-
+    def handler(worker_event: WorkerEvent | DataEvent | ProgressEvent) -> None:
         try:
             sender.send(worker_event)
         except BrokenPipeError:

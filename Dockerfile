@@ -29,14 +29,14 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 
 # Sync the project without its dev dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable --no-dev --managed-python
+    uv sync --locked --no-editable --no-dev --extra server --managed-python
 
 RUN uv pip install debugpy
 
 # The runtime stage copies the built venv into a runtime container
 FROM ubuntu:resolute AS runtime
 
-# Add apt-get system dependecies for runtime here if needed
+# Add apt-get system dependencies for runtime here if needed
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \

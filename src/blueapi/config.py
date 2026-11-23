@@ -7,7 +7,7 @@ from enum import StrEnum
 from functools import cached_property
 from pathlib import Path
 from string import Template
-from typing import Annotated, Any, ClassVar, Generic, Literal, Self, TypeVar, cast
+from typing import Annotated, Any, ClassVar, Literal, Self, cast
 
 import requests
 import yaml
@@ -365,7 +365,7 @@ class ApplicationConfig(BlueapiBaseModel):
     """
 
     #: API version to publish in OpenAPI schema
-    REST_API_VERSION: ClassVar[str] = "1.6.0"
+    REST_API_VERSION: ClassVar[str] = "1.6.1"
 
     LICENSE_INFO: ClassVar[dict[str, str]] = {
         "name": "Apache 2.0",
@@ -416,10 +416,7 @@ class ApplicationConfig(BlueapiBaseModel):
         return False
 
 
-C = TypeVar("C", bound=BaseModel)
-
-
-class ConfigLoader(Generic[C]):
+class ConfigLoader[C: BaseModel]:
     """
     Small utility class for loading config from various sources.
     You must define a config schema as a dataclass (or series of

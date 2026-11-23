@@ -60,13 +60,13 @@ def mock_stream_handler_emit() -> Generator[Mock]:
 
 @pytest.fixture
 def mock_graylog_emit() -> Generator[Mock]:
-    with patch("blueapi.log.GELFTCPHandler.emit") as graylog_emit:
+    with patch("graypy.GELFTCPHandler.emit") as graylog_emit:
         yield graylog_emit
 
 
 MOCK_HANDLER_EMIT_STRINGS = [
     "blueapi.log.logging.StreamHandler.emit",
-    "blueapi.log.GELFTCPHandler.emit",
+    "graypy.GELFTCPHandler.emit",
 ]
 
 
@@ -103,7 +103,7 @@ def test_messages_are_tagged_with_instrument(logger, mock_handler_emit):
     "library_logger",
     [bluesky_logger, DODAL_LOGGER, logging.getLogger("ophyd_async")],
 )
-def test_library_logger_intergrations(logger, library_logger, mock_handler_emit):
+def test_library_logger_integrations(logger, library_logger, mock_handler_emit):
     mock_handler_emit.assert_not_called()
     library_logger.info("FOO")
     mock_handler_emit.assert_called()

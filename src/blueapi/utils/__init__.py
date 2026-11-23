@@ -2,13 +2,12 @@ import re
 from collections.abc import Callable, Mapping
 from functools import wraps
 from logging import Logger
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from .base_model import BlueapiBaseModel, BlueapiModelConfig, BlueapiPlanModelConfig
-from .file_permissions import get_owner_gid, is_sgid_set
+from .file_permissions import get_owner_gid, is_sgid_set, validate_directory
 from .invalid_config_error import InvalidConfigError
 from .modules import is_function_sourced_from_module, load_module_all
-from .numtracker import NumtrackerClient
 from .serialization import serialize
 from .thread_exception import handle_all_exceptions
 
@@ -20,16 +19,14 @@ __all__ = [
     "BlueapiModelConfig",
     "BlueapiPlanModelConfig",
     "InvalidConfigError",
-    "NumtrackerClient",
     "report_successful_devices",
     "is_sgid_set",
     "get_owner_gid",
+    "validate_directory",
     "is_function_sourced_from_module",
     "deprecated",
 ]
 
-Args = ParamSpec("Args")
-Return = TypeVar("Return")
 
 # e.g. "cm12345-1" -> proposal="cm12345", code="cm", proposal_number="12345", visit="1"
 INSTRUMENT_SESSION_RE = re.compile(
@@ -52,7 +49,9 @@ def report_successful_devices(
 def deprecated(alternative):
     from warnings import warn
 
-    def deprecated(func: Callable[Args, Return]) -> Callable[Args, Return]:
+    def deprecated[**Args, Return](
+        func: Callable[Args, Return],
+    ) -> Callable[Args, Return]:
         called = False
 
         @wraps(func)

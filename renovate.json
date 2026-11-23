@@ -13,6 +13,18 @@
   },
   "packageRules": [
     {
+      "description": "Low-risk CI actions: automerge if checks pass",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "github/codeql-action",
+        "Azure/setup-helm",
+        "docker/setup-compose-action"
+      ],
+      "automerge": true
+    },
+    {
       "description": "Disable python version as that is managed by python-copier-template",
       "matchManagers": [
         "pyenv"

@@ -3,6 +3,9 @@
   "extends": [
     "config:recommended"
   ],
+  "pre-commit": {
+    "enabled": true
+  },
   "lockFileMaintenance": {
     "description": "Keep uv.lock up to date, merging if tests pass",
     "enabled": true,

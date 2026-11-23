@@ -19,7 +19,7 @@ The topology of the message broker is decoupled from Blueapi, and entirely deplo
 
 RabbitMQ receives messages from Blueapi via its default topic exchange, `amq.topic`. All messages have the routing key `public.worker.event`, so will be forwarded to all queues bound to `amq.topic` with a compatible routing key (eg. `public.worker.event`, `*.*.event` etc.). No default queues exist, meaning that if no downstream services have registered a queue, all messages will be dropped.
 
-In RabbitMQ, different queues can have the same routing key, and consequently receive a copy of the same messages without interfering with each other. In Blueapi a common pair of queues to have is `public.worker.event.nexus` and `stomp-subscription-{random GUID}`, both bound to the `amq.topic` exchange with routing key `public.worker.event`. The prior is for the Nexus Filewriter, and the latter the Blueapi CLI client. In this case both have access to all messages published by Blueapi, but due to automatically declaring seperate queues at subscription, each consumer's message consumption will not deprive the other.
+In RabbitMQ, different queues can have the same routing key, and consequently receive a copy of the same messages without interfering with each other. In Blueapi a common pair of queues to have is `public.worker.event.nexus` and `stomp-subscription-{random GUID}`, both bound to the `amq.topic` exchange with routing key `public.worker.event`. The prior is for the Nexus Filewriter, and the latter the Blueapi CLI client. In this case both have access to all messages published by Blueapi, but due to automatically declaring separate queues at subscription, each consumer's message consumption will not deprive the other.
 
 ## Subscribing to Blueapi Messages
 

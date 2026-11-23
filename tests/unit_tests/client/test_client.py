@@ -90,7 +90,7 @@ def test_print_plans(client: BlueapiClient, capsys: pytest.CaptureFixture):
         assert dev.name in captured.out
 
 
-def test_get_nonexistant_plan(
+def test_get_nonexistent_plan(
     client: BlueapiClient,
 ):
     with pytest.raises(AttributeError):

@@ -36,7 +36,7 @@ RUN uv pip install debugpy
 # The runtime stage copies the built venv into a runtime container
 FROM ubuntu:resolute AS runtime
 
-# Add apt-get system dependecies for runtime here if needed
+# Add apt-get system dependencies for runtime here if needed
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
     # Git required for installing packages at runtime
     git \

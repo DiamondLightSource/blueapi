@@ -292,7 +292,7 @@ def configure_numtracker():
     response.raise_for_status()
     if response.json().get("errors") is not None:
         raise Exception(response.json())
-    print(">> Configurated numtracker")
+    print(">> Configured numtracker")
 
 
 if __name__ == "__main__":

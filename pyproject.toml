@@ -47,6 +47,7 @@ server = [
     "graypy>=2.1.0",
     "aioca",
     "tiled[client]==0.2.18",
+    "bluesky-tiled-plugins",                         # TiledWriter moved here from bluesky in 1.16
     "httpx>=0.28.1",                                 # used by service/numtracker.py and service/authentication.py's TiledAuth
 ]
 

@@ -14,5 +14,5 @@ jobs:
         if: ${{ github.event_name != 'merge_group' }}
         uses: ytanikin/pr-conventional-commits@1.5.2
         with:
-          task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert", "depr"]'
+          task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert", "depr", "dx"]'
           add_label: "false"

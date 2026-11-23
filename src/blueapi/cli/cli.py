@@ -8,7 +8,7 @@ from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
 from pprint import pprint
-from typing import Any, ParamSpec, TypeGuard, TypeVar, cast
+from typing import Any, TypeGuard, cast
 
 import click
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -274,11 +274,7 @@ def controller(ctx: click.Context, output: str) -> None:
     ctx.obj["client"] = BlueapiClient.from_config(config)
 
 
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def check_connection(func: Callable[P, T]) -> Callable[P, T]:
+def check_connection[**P, T](func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:

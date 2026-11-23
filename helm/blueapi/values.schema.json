@@ -34,7 +34,7 @@
         },
         "global": {
             "description": "Global values shared between all subcharts",
-            "$comment": "Added automatically by 'helm schema' to allow this chart to be used as a Helm dependency, as the `additionalProperties` setting would otherwise collide with Helm's special 'global' values key.",
+            "$comment": "Added automatically by 'helm schema' to allow this chart to be used as a Helm dependency, as this schema would otherwise not allow Helm's special 'global' values key.",
             "type": [
                 "object",
                 "null"
@@ -307,7 +307,7 @@
             "type": "array"
         },
         "tracing": {
-            "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters",
+            "description": "Configure tracing: opentelemetry-collector.tracing should be available in all Diamond clusters -- Exclude health probe requests from tracing by default to prevent spamming",
             "type": "object",
             "properties": {
                 "fastapi": {
@@ -704,6 +704,7 @@
                 "well_known_url": {
                     "title": "Well Known Url",
                     "description": "URL to fetch OIDC config from the provider",
+                    "deprecated": true,
                     "anyOf": [
                         {
                             "type": "string"

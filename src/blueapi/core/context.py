@@ -222,6 +222,9 @@ class BlueskyContext:
                             f"{name} in module {mod} is not a device manager"
                         )
                     self.with_device_manager(manager, mock)
+
+        self.register_children()
+
         if not self.devices:
             LOGGER.warning(
                 "Context had no devices after loading environment - are all modules "
@@ -268,8 +271,6 @@ class BlueskyContext:
 
         for device in build_result.devices.values():
             self.register_device(device)
-
-        self.register_children()
 
         if errs := build_result.build_errors:
             LOGGER.warning(
@@ -337,12 +338,11 @@ class BlueskyContext:
         the parameter must be used to name it.
 
         Only register the top-level device. Child devices get registered in the
-        'register_children' function.
-
-        Children of ophyd-async devices, including signals, are also registered
-        under their own names, e.g. registering "stage" also registers "stage-x"
-        and "stage-x-velocity". If a name is already in use, the existing device
-        is kept and the new one and its children are not registered.
+        'register_children' function. This is called by the 'with_config' function after
+        top-level devices have been registered. E.g., top-level devices like 'stage' and
+        'table' are registered first and then their children devices 'stage-x' and
+        'table-mount'. If a name is already in use, the existing device is kept and
+        the new one and its children are not registered.
 
         Args:
             device (Device): The device to register

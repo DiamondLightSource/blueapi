@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from blueapi.utils import get_owner_gid, is_sgid_set
+from blueapi.utils import get_owner_gid, is_sgid_set, validate_directory
 
 
 @pytest.mark.parametrize(
@@ -63,3 +63,20 @@ def test_get_owner_gid():
     path.stat().st_gid = 12345
 
     assert get_owner_gid(path) == 12345
+
+
+def test_validate_directory_accepts_directory(tmp_path: Path):
+    validate_directory(tmp_path)
+
+
+def test_validate_directory_rejects_missing(tmp_path: Path):
+    missing = tmp_path / "missing"
+    with pytest.raises(KeyError, match=f"^'{missing}: No such file or directory'$"):
+        validate_directory(missing)
+
+
+def test_validate_directory_rejects_file(tmp_path: Path):
+    file = tmp_path / "file"
+    file.touch()
+    with pytest.raises(KeyError, match=f"^'{file}: Is a file, not a directory'$"):
+        validate_directory(file)

@@ -25,3 +25,8 @@ def test_source_is_not_in_module():
     a = module.__dict__["a"]
     assert callable(a)
     assert not is_function_sourced_from_module(a, module)
+
+
+def test_export_takes_precedence_over_all():
+    module = import_module(".hasexport", package="tests.unit_tests.utils")
+    assert list(load_module_all(module)) == [3]

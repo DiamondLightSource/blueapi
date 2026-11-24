@@ -31,3 +31,22 @@ def test_prints_errors():
 
 def test_passes_args_and_kwargs():
     assert shouldnt_error_with_args(2, bar=3) == 5
+
+
+def test_prints_message_and_traceback_to_stderr(capsys):
+    should_error()
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert err.startswith("Exception in thread: Test exception\n")
+    assert "Traceback (most recent call last)" in err
+    assert 'raise ValueError("Test exception")' in err
+
+
+def test_custom_callback_receives_exception():
+    def raises():
+        raise ValueError("Test exception")
+
+    errors: list[Exception] = []
+    wrapped = handle_all_exceptions(raises, errors.append)
+    assert wrapped() is None
+    assert [str(e) for e in errors] == ["Test exception"]

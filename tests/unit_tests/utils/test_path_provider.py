@@ -364,7 +364,7 @@ def test_start_document_path_provider_called_without_start_raises():
     pp = StartDocumentPathProvider()
     with pytest.raises(
         BlueskyRunStructureError,
-        match="Start document not found. This call must be made inside a run.",
+        match=r"^Start document not found\. This call must be made inside a run\.$",
     ):
         pp("det")
 
@@ -390,5 +390,7 @@ def test_error_if_template_missing(start_doc_1: RunStart):
     pp = StartDocumentPathProvider()
     start_doc_1.pop("detector_file_template")
     pp.run_start("start", start_doc_1)
-    with pytest.raises(ValueError, match="detector_file_template"):
+    with pytest.raises(
+        ValueError, match="^detector_file_template must be set in metadata$"
+    ):
         pp("foo")

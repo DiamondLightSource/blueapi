@@ -321,11 +321,12 @@ class Table(Device):
         super().__init__(name=name)
 
 
-def test_register_device_registers_children_recursively(
+def test_register_children_registers_children_recursively(
     empty_context: BlueskyContext,
 ):
     table = Table(name="table")
     empty_context.register_device(table)
+    empty_context.register_children()
 
     assert empty_context.devices.keys() == {
         "table",
@@ -352,6 +353,7 @@ def test_child_sharing_parent_name_is_skipped_and_warned_once(
     motor = SimMotor(name="motor")
     empty_context.register_device(motor)
     empty_context.register_device(SimMotor(name="other"))
+    empty_context.register_children()
 
     assert empty_context.devices["motor"].device is motor
     assert motor.user_readback not in empty_context.devices.values()
@@ -372,9 +374,12 @@ class AxisBank(Device):
         super().__init__(name=name)
 
 
-def test_device_vector_children_are_registered(empty_context: BlueskyContext):
+def test_device_vector_children_are_registered(
+    empty_context: BlueskyContext,
+):
     bank = AxisBank(name="bank")
     empty_context.register_device(bank)
+    empty_context.register_children()
 
     assert empty_context.devices["bank-axes"].device is bank.axes
     assert empty_context.devices["bank-axes-1"].device is bank.axes[1]
@@ -388,6 +393,7 @@ def test_overridden_registration_name_does_not_rename_children(
     # the motor's readback is registered as "motor", which is not in use
     motor = SimMotor(name="motor")
     empty_context.register_device(motor, name="foo")
+    empty_context.register_children()
 
     assert empty_context.devices["foo"].device is motor
     assert empty_context.devices["motor"].device is motor.user_readback
@@ -399,6 +405,7 @@ def test_unrelated_name_collision_keeps_existing_device_and_logs(
 ):
     sentinel = SimMotor(name="sentinel")
     empty_context.register_device(sentinel, name="stage-x")
+    empty_context.register_children()
 
     caplog.set_level(logging.DEBUG)
     stage = Stage(name="stage")
@@ -419,7 +426,7 @@ def test_top_level_name_collision_keeps_existing_device_and_logs(
     caplog.set_level(logging.DEBUG)
     motor = SimMotor(name="stage-x")
     empty_context.register_device(motor)
-
+    empty_context.register_children()
     assert empty_context.devices["stage-x"].device is stage.x
     assert motor.velocity not in empty_context.devices.values()
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
@@ -437,6 +444,12 @@ def test_register_device_is_idempotent(
 
     assert empty_context.devices == before
     assert not caplog.get_records("call")
+
+
+def test_register_children_is_idempotent(
+    empty_context: BlueskyContext, caplog: LogCaptureFixture
+):
+    pass
 
 
 def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):

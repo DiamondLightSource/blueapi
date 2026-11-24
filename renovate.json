@@ -11,6 +11,17 @@
     "enabled": true,
     "automerge": true
   },
+  "customManagers": [
+    {
+      "description": "Update hook revs in prek.toml (Renovate has no native prek manager)",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)prek\\.toml$/"],
+      "matchStrings": [
+        "repo\\s*=\\s*\"https://github\\.com/(?<depName>[^\"]+?)\"\\s*\\n\\s*rev\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "packageRules": [
     {
       "description": "Disable python version as that is managed by python-copier-template",

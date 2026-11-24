@@ -158,12 +158,13 @@ def test_devices_as_attributes(bc: BlueapiClient):
 def test_sub_device(bc: BlueapiClient):
     stage_x = bc.devices.stage.x
     assert isinstance(stage_x, DeviceRef)
-    assert stage_x.name == "stage.x"
+    assert stage_x.name == "stage-x"
     assert stage_x.model.name == "stage-x"
+    assert stage_x.parent is bc.devices.stage
 
 
 def test_missing_sub_device(bc: BlueapiClient):
-    with pytest.raises(AttributeError, match="No device named 'det.x' available"):
+    with pytest.raises(AttributeError, match="det doesn't have a child named x"):
         _ = bc.devices.det.x
 
 

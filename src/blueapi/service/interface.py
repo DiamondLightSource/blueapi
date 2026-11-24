@@ -11,11 +11,13 @@ from bluesky.run_engine import RunEngineMetadata
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from fastapi import status
+from ophyd_async.core import Device as AsyncDevice
+from ophyd_async.core import Signal
 from tiled.client import from_uri
 from tiled.client.utils import ClientError
 
 from blueapi.config import ApplicationConfig, OIDCConfig, ServiceAccount, StompConfig
-from blueapi.core.bluesky_types import DataEvent
+from blueapi.core.bluesky_types import BlueapiDevice, DataEvent, Device
 from blueapi.core.context import BlueskyContext
 from blueapi.core.event import EventStream
 from blueapi.log import set_up_logging
@@ -207,19 +209,47 @@ def get_plan(name: str) -> PlanModel:
     return PlanModel.from_plan(context().plans[name])
 
 
-def get_devices() -> list[DeviceModel]:
-    """Get all available devices in the BlueskyContext"""
-    return [
-        DeviceModel.from_device(entry.device) for entry in context().devices.values()
-    ]
+def _device_model(
+    device: Device, entry: BlueapiDevice | None, signal: bool
+) -> DeviceModel:
+    model = DeviceModel.from_device(
+        device, {a: c.name for a, c in entry.children.items()} if entry else None
+    )
+    if signal:
+        model.signals = _signal_sources(device)
+    return model
 
 
-def get_device(name: str) -> DeviceModel:
-    """Retrieve device by name from the BlueskyContext"""
-    if not (device := context().find_device(name)):
+def _signal_sources(device: Device, prefix: str = "") -> dict[str, str]:
+    """Source of every ophyd-async signal in device and its descendants, by
+    attribute path, e.g. {"x.user_readback": "ca://BL01T-MO-SIMC-01:M1.RBV"}.
+
+    Walks the live device rather than the registered tree, so children skipped
+    because of a name clash (e.g. a motor's user_readback) are still included.
+    """
+    if isinstance(device, Signal):
+        return {prefix: device.source}
+    if not isinstance(device, AsyncDevice):
+        return {}
+    sources = {}
+    for attr, child in device.children():
+        sources |= _signal_sources(child, f"{prefix}.{attr}" if prefix else attr)
+    return sources
+
+
+def get_devices(signal: bool = False) -> list[DeviceModel]:
+    """Get all available devices in the BlueskyContext, optionally with the
+    sources of their signals"""
+    return [_device_model(e.device, e, signal) for e in context().devices.values()]
+
+
+def get_device(name: str, signal: bool = False) -> DeviceModel:
+    """Retrieve device by name from the BlueskyContext, optionally with the
+    sources of its signals and its children's"""
+    entry = context().devices.get(name)
+    if not (device := entry.device if entry else context().find_device(name)):
         raise KeyError(name)
-
-    return DeviceModel.from_device(device)
+    return _device_model(device, entry, signal)
 
 
 def submit_task(

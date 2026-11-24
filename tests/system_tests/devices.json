@@ -19,7 +19,11 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "x": "stage-x",
+                "theta": "stage-theta"
+            }
         },
         {
             "name": "det",
@@ -52,7 +56,11 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "driver": "det-driver",
+                "hdf": "det-hdf"
+            }
         },
         {
             "name": "det-driver",
@@ -61,7 +69,35 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "port_name": "det-driver-port_name",
+                "unique_id": "det-driver-unique_id",
+                "nd_attributes_file": "det-driver-nd_attributes_file",
+                "array_size_x": "det-driver-array_size_x",
+                "array_size_y": "det-driver-array_size_y",
+                "array_size_z": "det-driver-array_size_z",
+                "array_size0": "det-driver-array_size0",
+                "array_size1": "det-driver-array_size1",
+                "array_size2": "det-driver-array_size2",
+                "color_mode": "det-driver-color_mode",
+                "data_type": "det-driver-data_type",
+                "array_counter": "det-driver-array_counter",
+                "ad_core_version": "det-driver-ad_core_version",
+                "driver_version": "det-driver-driver_version",
+                "acquire_time": "det-driver-acquire_time",
+                "acquire_period": "det-driver-acquire_period",
+                "num_images": "det-driver-num_images",
+                "image_mode": "det-driver-image_mode",
+                "detector_state": "det-driver-detector_state",
+                "acquire": "det-driver-acquire",
+                "wait_for_plugins": "det-driver-wait_for_plugins",
+                "manufacturer": "det-driver-manufacturer",
+                "model": "det-driver-model",
+                "serial_number": "det-driver-serial_number",
+                "sdk_version": "det-driver-sdk_version",
+                "firmware_version": "det-driver-firmware_version"
+            }
         },
         {
             "name": "det-hdf",
@@ -70,7 +106,48 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "port_name": "det-hdf-port_name",
+                "unique_id": "det-hdf-unique_id",
+                "nd_attributes_file": "det-hdf-nd_attributes_file",
+                "array_size_x": "det-hdf-array_size_x",
+                "array_size_y": "det-hdf-array_size_y",
+                "array_size_z": "det-hdf-array_size_z",
+                "array_size0": "det-hdf-array_size0",
+                "array_size1": "det-hdf-array_size1",
+                "array_size2": "det-hdf-array_size2",
+                "color_mode": "det-hdf-color_mode",
+                "data_type": "det-hdf-data_type",
+                "array_counter": "det-hdf-array_counter",
+                "ad_core_version": "det-hdf-ad_core_version",
+                "driver_version": "det-hdf-driver_version",
+                "file_path": "det-hdf-file_path",
+                "file_name": "det-hdf-file_name",
+                "file_path_exists": "det-hdf-file_path_exists",
+                "file_template": "det-hdf-file_template",
+                "full_file_name": "det-hdf-full_file_name",
+                "file_number": "det-hdf-file_number",
+                "auto_increment": "det-hdf-auto_increment",
+                "file_write_mode": "det-hdf-file_write_mode",
+                "num_capture": "det-hdf-num_capture",
+                "num_captured": "det-hdf-num_captured",
+                "capture": "det-hdf-capture",
+                "create_directory": "det-hdf-create_directory",
+                "nd_array_port": "det-hdf-nd_array_port",
+                "enable_callbacks": "det-hdf-enable_callbacks",
+                "nd_array_address": "det-hdf-nd_array_address",
+                "queue_size": "det-hdf-queue_size",
+                "position_mode": "det-hdf-position_mode",
+                "compression": "det-hdf-compression",
+                "num_extra_dims": "det-hdf-num_extra_dims",
+                "swmr_mode": "det-hdf-swmr_mode",
+                "flush_now": "det-hdf-flush_now",
+                "xml_file_name": "det-hdf-xml_file_name",
+                "num_frames_chunks": "det-hdf-num_frames_chunks",
+                "chunk_size_auto": "det-hdf-chunk_size_auto",
+                "lazy_open": "det-hdf-lazy_open"
+            }
         },
         {
             "name": "stage-x",
@@ -111,7 +188,32 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "motor_egu": "stage-x-motor_egu",
+                "motor_resolution": "stage-x-motor_resolution",
+                "steps_per_revolution": "stage-x-steps_per_revolution",
+                "units_per_revolution": "stage-x-units_per_revolution",
+                "encoder_resolution": "stage-x-encoder_resolution",
+                "velocity": "stage-x-velocity",
+                "offset": "stage-x-offset",
+                "user_setpoint": "stage-x-user_setpoint",
+                "max_velocity": "stage-x-max_velocity",
+                "acceleration_time": "stage-x-acceleration_time",
+                "precision": "stage-x-precision",
+                "deadband": "stage-x-deadband",
+                "motor_done_move": "stage-x-motor_done_move",
+                "low_limit_travel": "stage-x-low_limit_travel",
+                "high_limit_travel": "stage-x-high_limit_travel",
+                "dial_low_limit_travel": "stage-x-dial_low_limit_travel",
+                "dial_high_limit_travel": "stage-x-dial_high_limit_travel",
+                "offset_freeze_switch": "stage-x-offset_freeze_switch",
+                "high_limit_switch": "stage-x-high_limit_switch",
+                "low_limit_switch": "stage-x-low_limit_switch",
+                "output_link": "stage-x-output_link",
+                "set_use_switch": "stage-x-set_use_switch",
+                "motor_stop": "stage-x-motor_stop"
+            }
         },
         {
             "name": "stage-theta",
@@ -152,7 +254,32 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {
+                "motor_egu": "stage-theta-motor_egu",
+                "motor_resolution": "stage-theta-motor_resolution",
+                "steps_per_revolution": "stage-theta-steps_per_revolution",
+                "units_per_revolution": "stage-theta-units_per_revolution",
+                "encoder_resolution": "stage-theta-encoder_resolution",
+                "velocity": "stage-theta-velocity",
+                "offset": "stage-theta-offset",
+                "user_setpoint": "stage-theta-user_setpoint",
+                "max_velocity": "stage-theta-max_velocity",
+                "acceleration_time": "stage-theta-acceleration_time",
+                "precision": "stage-theta-precision",
+                "deadband": "stage-theta-deadband",
+                "motor_done_move": "stage-theta-motor_done_move",
+                "low_limit_travel": "stage-theta-low_limit_travel",
+                "high_limit_travel": "stage-theta-high_limit_travel",
+                "dial_low_limit_travel": "stage-theta-dial_low_limit_travel",
+                "dial_high_limit_travel": "stage-theta-dial_high_limit_travel",
+                "offset_freeze_switch": "stage-theta-offset_freeze_switch",
+                "high_limit_switch": "stage-theta-high_limit_switch",
+                "low_limit_switch": "stage-theta-low_limit_switch",
+                "output_link": "stage-theta-output_link",
+                "set_use_switch": "stage-theta-set_use_switch",
+                "motor_stop": "stage-theta-motor_stop"
+            }
         },
         {
             "name": "stage-x-motor_egu",
@@ -173,7 +300,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-motor_resolution",
@@ -194,7 +322,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-steps_per_revolution",
@@ -215,7 +344,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-units_per_revolution",
@@ -236,7 +366,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-encoder_resolution",
@@ -257,7 +388,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-velocity",
@@ -282,7 +414,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-offset",
@@ -307,7 +440,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-user_setpoint",
@@ -332,7 +466,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-max_velocity",
@@ -353,7 +488,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-acceleration_time",
@@ -378,7 +514,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-precision",
@@ -399,7 +536,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-deadband",
@@ -420,7 +558,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-motor_done_move",
@@ -441,7 +580,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-low_limit_travel",
@@ -466,7 +606,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-high_limit_travel",
@@ -491,7 +632,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-dial_low_limit_travel",
@@ -516,7 +658,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-dial_high_limit_travel",
@@ -541,7 +684,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-offset_freeze_switch",
@@ -566,7 +710,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-high_limit_switch",
@@ -587,7 +732,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-low_limit_switch",
@@ -608,7 +754,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-output_link",
@@ -629,7 +776,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-set_use_switch",
@@ -654,7 +802,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-x-motor_stop",
@@ -667,7 +816,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-motor_egu",
@@ -688,7 +838,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-motor_resolution",
@@ -709,7 +860,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-steps_per_revolution",
@@ -730,7 +882,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-units_per_revolution",
@@ -751,7 +904,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-encoder_resolution",
@@ -772,7 +926,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-velocity",
@@ -797,7 +952,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-offset",
@@ -822,7 +978,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-user_setpoint",
@@ -847,7 +1004,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-max_velocity",
@@ -868,7 +1026,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-acceleration_time",
@@ -893,7 +1052,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-precision",
@@ -914,7 +1074,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-deadband",
@@ -935,7 +1096,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-motor_done_move",
@@ -956,7 +1118,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-low_limit_travel",
@@ -981,7 +1144,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-high_limit_travel",
@@ -1006,7 +1170,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-dial_low_limit_travel",
@@ -1031,7 +1196,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-dial_high_limit_travel",
@@ -1056,7 +1222,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-offset_freeze_switch",
@@ -1081,7 +1248,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-high_limit_switch",
@@ -1102,7 +1270,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-low_limit_switch",
@@ -1123,7 +1292,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-output_link",
@@ -1144,7 +1314,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-set_use_switch",
@@ -1169,7 +1340,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "stage-theta-motor_stop",
@@ -1182,7 +1354,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-port_name",
@@ -1203,7 +1376,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-unique_id",
@@ -1224,7 +1398,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-nd_attributes_file",
@@ -1249,7 +1424,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size_x",
@@ -1270,7 +1446,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size_y",
@@ -1291,7 +1468,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size_z",
@@ -1312,7 +1490,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size0",
@@ -1333,7 +1512,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size1",
@@ -1354,7 +1534,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_size2",
@@ -1375,7 +1556,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-color_mode",
@@ -1396,7 +1578,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-data_type",
@@ -1417,7 +1600,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-array_counter",
@@ -1442,7 +1626,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-ad_core_version",
@@ -1463,7 +1648,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-driver_version",
@@ -1484,7 +1670,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-acquire_time",
@@ -1509,7 +1696,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-acquire_period",
@@ -1534,7 +1722,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-num_images",
@@ -1559,7 +1748,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-image_mode",
@@ -1584,7 +1774,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-detector_state",
@@ -1605,7 +1796,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-acquire",
@@ -1630,7 +1822,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-wait_for_plugins",
@@ -1655,7 +1848,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-manufacturer",
@@ -1676,7 +1870,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-model",
@@ -1697,7 +1892,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-serial_number",
@@ -1718,7 +1914,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-sdk_version",
@@ -1739,7 +1936,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-driver-firmware_version",
@@ -1760,7 +1958,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-port_name",
@@ -1781,7 +1980,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-unique_id",
@@ -1802,7 +2002,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-nd_attributes_file",
@@ -1827,7 +2028,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size_x",
@@ -1848,7 +2050,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size_y",
@@ -1869,7 +2072,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size_z",
@@ -1890,7 +2094,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size0",
@@ -1911,7 +2116,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size1",
@@ -1932,7 +2138,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_size2",
@@ -1953,7 +2160,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-color_mode",
@@ -1974,7 +2182,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-data_type",
@@ -1995,7 +2204,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-array_counter",
@@ -2020,7 +2230,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-ad_core_version",
@@ -2041,7 +2252,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-driver_version",
@@ -2062,7 +2274,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_path",
@@ -2087,7 +2300,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_name",
@@ -2112,7 +2326,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_path_exists",
@@ -2133,7 +2348,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_template",
@@ -2158,7 +2374,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-full_file_name",
@@ -2179,7 +2396,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_number",
@@ -2204,7 +2422,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-auto_increment",
@@ -2229,7 +2448,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-file_write_mode",
@@ -2254,7 +2474,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-num_capture",
@@ -2279,7 +2500,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-num_captured",
@@ -2300,7 +2522,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-capture",
@@ -2325,7 +2548,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-create_directory",
@@ -2350,7 +2574,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-nd_array_port",
@@ -2375,7 +2600,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-enable_callbacks",
@@ -2400,7 +2626,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-nd_array_address",
@@ -2425,7 +2652,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-queue_size",
@@ -2450,7 +2678,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-position_mode",
@@ -2475,7 +2704,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-compression",
@@ -2500,7 +2730,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-num_extra_dims",
@@ -2525,7 +2756,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-swmr_mode",
@@ -2550,7 +2782,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-flush_now",
@@ -2575,7 +2808,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-xml_file_name",
@@ -2600,7 +2834,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-num_frames_chunks",
@@ -2625,7 +2860,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-chunk_size_auto",
@@ -2650,7 +2886,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         },
         {
             "name": "det-hdf-lazy_open",
@@ -2675,7 +2912,8 @@
                     "name": "Device",
                     "types": []
                 }
-            ]
+            ],
+            "children": {}
         }
     ]
 }

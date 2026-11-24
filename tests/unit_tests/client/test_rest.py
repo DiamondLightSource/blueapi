@@ -590,3 +590,25 @@ def test_run_blocking_connect_error(
     conn = rest.run_blocking(TASK_REQUEST)
     with pytest.raises(exp_err):
         next(iter(conn))
+
+
+@responses.activate
+def test_get_device_with_signal(rest: BlueapiRestClient):
+    responses.add(
+        GET,
+        "http://localhost:8000/devices/foo",
+        match=[matchers.query_param_matcher({"signal": "true"})],
+        json={"name": "foo", "protocols": [], "signals": {"x": "ca://BL01:X"}},
+    )
+    assert rest.get_device("foo", signal=True).signals == {"x": "ca://BL01:X"}
+
+
+@responses.activate
+def test_get_devices_with_signal(rest: BlueapiRestClient):
+    responses.add(
+        GET,
+        "http://localhost:8000/devices",
+        match=[matchers.query_param_matcher({"signal": "true"})],
+        json={"devices": []},
+    )
+    assert rest.get_devices(signal=True).devices == []

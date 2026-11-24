@@ -160,7 +160,10 @@ def test_get_devices(context_mock: MagicMock):
     # Which child signals exist depends on the upstream Motor class
     devices = interface.get_devices()
     assert [d.name for d in devices] == list(context.devices)
-    assert devices[:2] == [
+    axis_children = {a: c.name for a, c in context.devices["my_axis"].children.items()}
+    assert axis_children
+    assert devices[1].children == axis_children
+    assert [d.model_copy(update={"children": {}}) for d in devices[:2]] == [
         DeviceModel(
             name="my_device",
             protocols=[
@@ -891,3 +894,45 @@ def test_unpipe_events(mock_worker: Mock):
     worker.worker_events.unsubscribe.assert_called_once_with(1)
     worker.progress_events.unsubscribe.assert_called_once_with(2)
     worker.data_events.unsubscribe.assert_called_once_with(3)
+
+
+@patch("blueapi.service.interface.context")
+def test_get_device_with_signals(context_mock: MagicMock):
+    from ophyd_async.core import Device, soft_signal_rw
+    from ophyd_async.epics.core import epics_signal_r, epics_signal_x
+    from ophyd_async.epics.motor import Motor
+
+    class Box(Device):
+        def __init__(self, name=""):
+            self.motor = Motor("BL01:MOT")  # user_readback shares the motor's name
+            self.counts = soft_signal_rw(int)
+            self.temp = epics_signal_r(float, "pva://BL01:TEMP")
+            self.go = epics_signal_x("BL01:GO.PROC")
+            super().__init__(name)
+
+    context = BlueskyContext()
+    context.register_device(Box(name="box"))
+    context_mock.return_value = context
+
+    signals = interface.get_device("box", signal=True).signals
+    assert signals is not None
+    assert {k: v for k, v in signals.items() if not k.startswith("motor.")} == {
+        "counts": "soft://box-counts",
+        "temp": "pva://BL01:TEMP",
+        "go": "ca://BL01:GO.PROC",
+    }
+    # Clashes with the motor's name so is missing from the tree, but still listed
+    assert "user_readback" not in context.devices["box-motor"].children
+    assert signals["motor.user_readback"] == "ca://BL01:MOT.RBV"
+    assert signals["motor.user_setpoint"] == "ca://BL01:MOT.VAL"
+
+    assert interface.get_device("box").signals is None
+    assert interface.get_device("box-temp", signal=True).signals == {
+        "": "pva://BL01:TEMP"
+    }
+    all_models = {m.name: m for m in interface.get_devices(signal=True)}
+    assert all_models["box"].signals == signals
+    motor = {k: v for k, v in signals.items() if k.startswith("motor.")}
+    assert all_models["box-motor"].signals == {
+        k.removeprefix("motor."): v for k, v in motor.items()
+    }

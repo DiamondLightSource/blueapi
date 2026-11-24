@@ -222,11 +222,17 @@ class BlueapiRestClient:
         except NotFoundError as e:
             raise UnknownPlanError(404, f"Plan '{name}' not found") from e
 
-    def get_devices(self) -> DeviceResponse:
-        return self._request_and_deserialize("/devices", DeviceResponse)
+    def get_devices(self, signal: bool = False) -> DeviceResponse:
+        return self._request_and_deserialize(
+            "/devices", DeviceResponse, params={"signal": "true"} if signal else None
+        )
 
-    def get_device(self, name: str) -> DeviceModel:
-        return self._request_and_deserialize(f"/devices/{name}", DeviceModel)
+    def get_device(self, name: str, signal: bool = False) -> DeviceModel:
+        return self._request_and_deserialize(
+            f"/devices/{name}",
+            DeviceModel,
+            params={"signal": "true"} if signal else None,
+        )
 
     def get_state(self) -> WorkerState:
         return self._request_and_deserialize("/worker/state", WorkerState)

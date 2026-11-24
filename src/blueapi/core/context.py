@@ -1,7 +1,7 @@
 import logging
 import sys
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
 from inspect import Parameter, isclass, signature
@@ -267,7 +267,7 @@ class BlueskyContext:
         build_result = manager.build_and_connect(mock=mock, fixtures=fixtures)
 
         for device in build_result.devices.values():
-            self.register_device(device)
+            self.register_device(device, children=False)
 
         self.register_children()
 
@@ -328,7 +328,9 @@ class BlueskyContext:
         )
         return plan
 
-    def register_device(self, device: Device, name: str | None = None) -> None:
+    def register_device(
+        self, device: Device, name: str | None = None, *, children: bool = True
+    ) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
@@ -336,8 +338,8 @@ class BlueskyContext:
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
-        Only register the top-level device. Child devices get registered in the
-        'register_children' function.
+        Pass children=False to defer child registration to 'register_children',
+        e.g. when registering several top-level devices at once.
 
         Children of ophyd-async devices, including signals, are also registered
         under their own names, e.g. registering "stage" also registers "stage-x"
@@ -361,12 +363,16 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self._add_device(name, device)
+        if (wrapped := self._add_device(name, device)) and children:
+            self.register_children([wrapped])
 
-    def register_children(self) -> None:
-        """Register the children of every top-level device,
-        once they are all registered."""
-        buffer = deque(d for d in self.devices.values() if d.parent is None)
+    def register_children(self, roots: Iterable[BlueapiDevice] | None = None) -> None:
+        """Register the children of the given devices (default: every top-level
+        device). Called once all top-level devices are registered so their names
+        take priority over children's."""
+        if roots is None:
+            roots = [d for d in self.devices.values() if d.parent is None]
+        buffer = deque(roots)
         while buffer:
             parent = buffer.popleft()
             if not isinstance(parent.device, AsyncDevice):

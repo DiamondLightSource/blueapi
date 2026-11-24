@@ -39,11 +39,25 @@ class DeviceModel(BlueapiBaseModel):
         "with attribute as a key with the value of the child device's name",
         default_factory=dict,
     )
+    signals: dict[str, str] | None = Field(
+        description="Source of each of the device's signals and its children's, "
+        "e.g. 'ca://BL01-MO-01:X.RBV', keyed by attribute path relative to the "
+        "device ('' for the device itself). Only present when requested with "
+        "signal=true",
+        default=None,
+        exclude_if=lambda signals: signals is None,
+    )
 
     @classmethod
-    def from_device(cls, device: Device) -> "DeviceModel":
+    def from_device(
+        cls, device: Device, children: Mapping[str, str] | None = None
+    ) -> "DeviceModel":
         name = device.name if isinstance(device, HasName) else _UNKNOWN_NAME
-        return cls(name=name, protocols=list(_protocol_info(device)))
+        return cls(
+            name=name,
+            protocols=list(_protocol_info(device)),
+            children=dict(children or {}),
+        )
 
 
 def _protocol_info(device: Device) -> Iterable[ProtocolInfo]:

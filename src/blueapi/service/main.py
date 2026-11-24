@@ -303,9 +303,12 @@ def get_plan_by_name(
 @start_as_current_span(TRACER)
 def get_devices(
     runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    signal: bool = False,
 ) -> DeviceResponse:
-    """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
+    """Retrieve information about all available devices.
+
+    With signal=true, also include the source (e.g. PV) of every signal."""
+    devices = runner.run(interface.get_devices, signal)
     return DeviceResponse(devices=devices)
 
 
@@ -313,10 +316,15 @@ def get_devices(
 @secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
 @start_as_current_span(TRACER, "name")
 def get_device_by_name(
-    name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
+    name: str,
+    runner: Annotated[WorkerDispatcher, Depends(_runner)],
+    signal: bool = False,
 ) -> DeviceModel:
-    """Retrieve information about a devices by its (unique) name."""
-    return runner.run(interface.get_device, name)
+    """Retrieve information about a devices by its (unique) name.
+
+    With signal=true, also include the source (e.g. PV) of the device's signals
+    and those of its children."""
+    return runner.run(interface.get_device, name, signal)
 
 
 example_task_request = TaskRequest(

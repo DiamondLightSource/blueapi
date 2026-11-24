@@ -1,0 +1,104 @@
+{
+    "name": "det",
+    "protocols": [
+        {
+            "name": "Flyable",
+            "types": []
+        },
+        {
+            "name": "Readable",
+            "types": []
+        },
+        {
+            "name": "Stageable",
+            "types": []
+        },
+        {
+            "name": "WritesExternalAssets",
+            "types": []
+        },
+        {
+            "name": "Configurable",
+            "types": []
+        },
+        {
+            "name": "Triggerable",
+            "types": []
+        },
+        {
+            "name": "Device",
+            "types": []
+        }
+    ],
+    "children": {
+        "driver": "det-driver",
+        "hdf": "det-hdf"
+    },
+    "signals": {
+        "driver.port_name": "ca://BL01T-DI-CAM-01:DET:PortName_RBV",
+        "driver.unique_id": "ca://BL01T-DI-CAM-01:DET:UniqueId_RBV",
+        "driver.nd_attributes_file": "ca://BL01T-DI-CAM-01:DET:NDAttributesFile",
+        "driver.array_size_x": "ca://BL01T-DI-CAM-01:DET:ArraySizeX_RBV",
+        "driver.array_size_y": "ca://BL01T-DI-CAM-01:DET:ArraySizeY_RBV",
+        "driver.array_size_z": "ca://BL01T-DI-CAM-01:DET:ArraySizeZ_RBV",
+        "driver.array_size0": "ca://BL01T-DI-CAM-01:DET:ArraySize0_RBV",
+        "driver.array_size1": "ca://BL01T-DI-CAM-01:DET:ArraySize1_RBV",
+        "driver.array_size2": "ca://BL01T-DI-CAM-01:DET:ArraySize2_RBV",
+        "driver.color_mode": "ca://BL01T-DI-CAM-01:DET:ColorMode_RBV",
+        "driver.data_type": "ca://BL01T-DI-CAM-01:DET:DataType_RBV",
+        "driver.array_counter": "ca://BL01T-DI-CAM-01:DET:ArrayCounter_RBV",
+        "driver.ad_core_version": "ca://BL01T-DI-CAM-01:DET:ADCoreVersion_RBV",
+        "driver.driver_version": "ca://BL01T-DI-CAM-01:DET:DriverVersion_RBV",
+        "driver.acquire_time": "ca://BL01T-DI-CAM-01:DET:AcquireTime_RBV",
+        "driver.acquire_period": "ca://BL01T-DI-CAM-01:DET:AcquirePeriod_RBV",
+        "driver.num_images": "ca://BL01T-DI-CAM-01:DET:NumImages_RBV",
+        "driver.image_mode": "ca://BL01T-DI-CAM-01:DET:ImageMode_RBV",
+        "driver.detector_state": "ca://BL01T-DI-CAM-01:DET:DetectorState_RBV",
+        "driver.acquire": "ca://BL01T-DI-CAM-01:DET:Acquire_RBV",
+        "driver.wait_for_plugins": "ca://BL01T-DI-CAM-01:DET:WaitForPlugins",
+        "driver.manufacturer": "ca://BL01T-DI-CAM-01:DET:Manufacturer_RBV",
+        "driver.model": "ca://BL01T-DI-CAM-01:DET:Model_RBV",
+        "driver.serial_number": "ca://BL01T-DI-CAM-01:DET:SerialNumber_RBV",
+        "driver.sdk_version": "ca://BL01T-DI-CAM-01:DET:SDKVersion_RBV",
+        "driver.firmware_version": "ca://BL01T-DI-CAM-01:DET:FirmwareVersion_RBV",
+        "hdf.port_name": "ca://BL01T-DI-CAM-01:HDF5:PortName_RBV",
+        "hdf.unique_id": "ca://BL01T-DI-CAM-01:HDF5:UniqueId_RBV",
+        "hdf.nd_attributes_file": "ca://BL01T-DI-CAM-01:HDF5:NDAttributesFile",
+        "hdf.array_size_x": "ca://BL01T-DI-CAM-01:HDF5:ArraySizeX_RBV",
+        "hdf.array_size_y": "ca://BL01T-DI-CAM-01:HDF5:ArraySizeY_RBV",
+        "hdf.array_size_z": "ca://BL01T-DI-CAM-01:HDF5:ArraySizeZ_RBV",
+        "hdf.array_size0": "ca://BL01T-DI-CAM-01:HDF5:ArraySize0",
+        "hdf.array_size1": "ca://BL01T-DI-CAM-01:HDF5:ArraySize1",
+        "hdf.array_size2": "ca://BL01T-DI-CAM-01:HDF5:ArraySize2_RBV",
+        "hdf.color_mode": "ca://BL01T-DI-CAM-01:HDF5:ColorMode_RBV",
+        "hdf.data_type": "ca://BL01T-DI-CAM-01:HDF5:DataType_RBV",
+        "hdf.array_counter": "ca://BL01T-DI-CAM-01:HDF5:ArrayCounter_RBV",
+        "hdf.ad_core_version": "ca://BL01T-DI-CAM-01:HDF5:ADCoreVersion_RBV",
+        "hdf.driver_version": "ca://BL01T-DI-CAM-01:HDF5:DriverVersion_RBV",
+        "hdf.file_path": "ca://BL01T-DI-CAM-01:HDF5:FilePath_RBV",
+        "hdf.file_name": "ca://BL01T-DI-CAM-01:HDF5:FileName_RBV",
+        "hdf.file_path_exists": "ca://BL01T-DI-CAM-01:HDF5:FilePathExists_RBV",
+        "hdf.file_template": "ca://BL01T-DI-CAM-01:HDF5:FileTemplate_RBV",
+        "hdf.full_file_name": "ca://BL01T-DI-CAM-01:HDF5:FullFileName_RBV",
+        "hdf.file_number": "ca://BL01T-DI-CAM-01:HDF5:FileNumber",
+        "hdf.auto_increment": "ca://BL01T-DI-CAM-01:HDF5:AutoIncrement",
+        "hdf.file_write_mode": "ca://BL01T-DI-CAM-01:HDF5:FileWriteMode_RBV",
+        "hdf.num_capture": "ca://BL01T-DI-CAM-01:HDF5:NumCapture_RBV",
+        "hdf.num_captured": "ca://BL01T-DI-CAM-01:HDF5:NumCaptured_RBV",
+        "hdf.capture": "ca://BL01T-DI-CAM-01:HDF5:Capture_RBV",
+        "hdf.create_directory": "ca://BL01T-DI-CAM-01:HDF5:CreateDirectory",
+        "hdf.nd_array_port": "ca://BL01T-DI-CAM-01:HDF5:NDArrayPort_RBV",
+        "hdf.enable_callbacks": "ca://BL01T-DI-CAM-01:HDF5:EnableCallbacks_RBV",
+        "hdf.nd_array_address": "ca://BL01T-DI-CAM-01:HDF5:NDArrayAddress_RBV",
+        "hdf.queue_size": "ca://BL01T-DI-CAM-01:HDF5:QueueSize_RBV",
+        "hdf.position_mode": "ca://BL01T-DI-CAM-01:HDF5:PositionMode_RBV",
+        "hdf.compression": "ca://BL01T-DI-CAM-01:HDF5:Compression_RBV",
+        "hdf.num_extra_dims": "ca://BL01T-DI-CAM-01:HDF5:NumExtraDims_RBV",
+        "hdf.swmr_mode": "ca://BL01T-DI-CAM-01:HDF5:SWMRMode_RBV",
+        "hdf.flush_now": "ca://BL01T-DI-CAM-01:HDF5:FlushNow",
+        "hdf.xml_file_name": "ca://BL01T-DI-CAM-01:HDF5:XMLFileName_RBV",
+        "hdf.num_frames_chunks": "ca://BL01T-DI-CAM-01:HDF5:NumFramesChunks_RBV",
+        "hdf.chunk_size_auto": "ca://BL01T-DI-CAM-01:HDF5:ChunkSizeAuto_RBV",
+        "hdf.lazy_open": "ca://BL01T-DI-CAM-01:HDF5:LazyOpen_RBV"
+    }
+}

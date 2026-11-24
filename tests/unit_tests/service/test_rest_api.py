@@ -27,6 +27,7 @@ from blueapi.service.authorization import OpaUserClient, opa
 from blueapi.service.interface import (
     cancel_active_task,
     get_device,
+    get_devices,
     get_plan,
     pause_worker,
     resume_worker,
@@ -266,13 +267,30 @@ def test_get_device_by_name(mock_runner: Mock, client: TestClient) -> None:
     mock_runner.run.return_value = DeviceModel.from_device(device)
     response = client.get("/devices/my-device")
 
-    mock_runner.run.assert_called_once_with(get_device, "my-device")
+    mock_runner.run.assert_called_once_with(get_device, "my-device", False)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "name": "my-device",
         "protocols": [{"name": "Stoppable", "types": []}],
         "children": {},
     }
+
+
+def test_get_device_by_name_with_signals(mock_runner: Mock, client: TestClient) -> None:
+    mock_runner.run.return_value = DeviceModel(
+        name="my-device", protocols=[], signals={"x.velocity": "ca://BL01:X.VELO"}
+    )
+    response = client.get("/devices/my-device?signal=true")
+
+    mock_runner.run.assert_called_once_with(get_device, "my-device", True)
+    assert response.json()["signals"] == {"x.velocity": "ca://BL01:X.VELO"}
+
+
+def test_get_devices_with_signals(mock_runner: Mock, client: TestClient) -> None:
+    mock_runner.run.return_value = []
+    client.get("/devices?signal=true")
+
+    mock_runner.run.assert_called_once_with(get_devices, True)
 
 
 def test_get_non_existent_device_by_name(mock_runner: Mock, client: TestClient) -> None:

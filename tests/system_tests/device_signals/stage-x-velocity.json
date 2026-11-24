@@ -1,0 +1,29 @@
+{
+    "name": "stage-x-velocity",
+    "protocols": [
+        {
+            "name": "Movable",
+            "types": []
+        },
+        {
+            "name": "Readable",
+            "types": []
+        },
+        {
+            "name": "Stageable",
+            "types": []
+        },
+        {
+            "name": "Subscribable",
+            "types": []
+        },
+        {
+            "name": "Device",
+            "types": []
+        }
+    ],
+    "children": {},
+    "signals": {
+        "": "ca://BL01T-MO-SIMC-01:M1.VELO"
+    }
+}

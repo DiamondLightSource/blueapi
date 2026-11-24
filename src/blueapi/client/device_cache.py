@@ -14,9 +14,16 @@ class DeviceCache:
             for model in rest.get_devices().devices
         }
         for name, device in self._cache.items():
+            self._link_children(device)
             if name.startswith("_"):
                 continue
             setattr(self, name, device)
+
+    def _link_children(self, device: "DeviceRef") -> None:
+        for attr, child_name in device.model.children.items():
+            if child := self._cache.get(child_name):
+                child.parent = device
+                device.children[attr] = child
 
     def __getitem__(self, name: str) -> "DeviceRef":
         """Get a device by name, fetching it from the server if necessary.
@@ -39,6 +46,7 @@ class DeviceCache:
             model = self._rest.get_device(name)
             device = DeviceRef(name=name, cache=self, model=model)
             self._cache[name] = device
+            self._link_children(device)
             setattr(self, model.name, device)
             return device
         except NotFoundError as e:

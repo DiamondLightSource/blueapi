@@ -1,0 +1,92 @@
+{
+    "name": "stage-x",
+    "protocols": [
+        {
+            "name": "Checkable",
+            "types": []
+        },
+        {
+            "name": "Flyable",
+            "types": []
+        },
+        {
+            "name": "Movable",
+            "types": []
+        },
+        {
+            "name": "Readable",
+            "types": []
+        },
+        {
+            "name": "Stageable",
+            "types": []
+        },
+        {
+            "name": "Stoppable",
+            "types": []
+        },
+        {
+            "name": "Subscribable",
+            "types": []
+        },
+        {
+            "name": "Configurable",
+            "types": []
+        },
+        {
+            "name": "Device",
+            "types": []
+        }
+    ],
+    "children": {
+        "motor_egu": "stage-x-motor_egu",
+        "motor_resolution": "stage-x-motor_resolution",
+        "steps_per_revolution": "stage-x-steps_per_revolution",
+        "units_per_revolution": "stage-x-units_per_revolution",
+        "encoder_resolution": "stage-x-encoder_resolution",
+        "velocity": "stage-x-velocity",
+        "offset": "stage-x-offset",
+        "user_setpoint": "stage-x-user_setpoint",
+        "max_velocity": "stage-x-max_velocity",
+        "acceleration_time": "stage-x-acceleration_time",
+        "precision": "stage-x-precision",
+        "deadband": "stage-x-deadband",
+        "motor_done_move": "stage-x-motor_done_move",
+        "low_limit_travel": "stage-x-low_limit_travel",
+        "high_limit_travel": "stage-x-high_limit_travel",
+        "dial_low_limit_travel": "stage-x-dial_low_limit_travel",
+        "dial_high_limit_travel": "stage-x-dial_high_limit_travel",
+        "offset_freeze_switch": "stage-x-offset_freeze_switch",
+        "high_limit_switch": "stage-x-high_limit_switch",
+        "low_limit_switch": "stage-x-low_limit_switch",
+        "output_link": "stage-x-output_link",
+        "set_use_switch": "stage-x-set_use_switch",
+        "motor_stop": "stage-x-motor_stop"
+    },
+    "signals": {
+        "motor_egu": "ca://BL01T-MO-SIMC-01:M1.EGU",
+        "motor_resolution": "ca://BL01T-MO-SIMC-01:M1.MRES",
+        "steps_per_revolution": "ca://BL01T-MO-SIMC-01:M1.SREV",
+        "units_per_revolution": "ca://BL01T-MO-SIMC-01:M1.UREV",
+        "encoder_resolution": "ca://BL01T-MO-SIMC-01:M1.ERES",
+        "velocity": "ca://BL01T-MO-SIMC-01:M1.VELO",
+        "offset": "ca://BL01T-MO-SIMC-01:M1.OFF",
+        "user_readback": "ca://BL01T-MO-SIMC-01:M1.RBV",
+        "user_setpoint": "ca://BL01T-MO-SIMC-01:M1.VAL",
+        "max_velocity": "ca://BL01T-MO-SIMC-01:M1.VMAX",
+        "acceleration_time": "ca://BL01T-MO-SIMC-01:M1.ACCL",
+        "precision": "ca://BL01T-MO-SIMC-01:M1.PREC",
+        "deadband": "ca://BL01T-MO-SIMC-01:M1.RDBD",
+        "motor_done_move": "ca://BL01T-MO-SIMC-01:M1.DMOV",
+        "low_limit_travel": "ca://BL01T-MO-SIMC-01:M1.LLM",
+        "high_limit_travel": "ca://BL01T-MO-SIMC-01:M1.HLM",
+        "dial_low_limit_travel": "ca://BL01T-MO-SIMC-01:M1.DLLM",
+        "dial_high_limit_travel": "ca://BL01T-MO-SIMC-01:M1.DHLM",
+        "offset_freeze_switch": "ca://BL01T-MO-SIMC-01:M1.FOFF",
+        "high_limit_switch": "ca://BL01T-MO-SIMC-01:M1.HLS",
+        "low_limit_switch": "ca://BL01T-MO-SIMC-01:M1.LLS",
+        "output_link": "ca://BL01T-MO-SIMC-01:M1.OUT",
+        "set_use_switch": "ca://BL01T-MO-SIMC-01:M1.SET",
+        "motor_stop": "ca://BL01T-MO-SIMC-01:M1.STOP"
+    }
+}

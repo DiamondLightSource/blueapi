@@ -331,6 +331,39 @@ def test_get_device_by_name(
         assert rest_client.get_device(device.name) == device
 
 
+_SIGNAL_DEVICES = ["stage", "stage-x", "stage-x-velocity", "det"]
+
+
+def _expected_signals(name: str) -> str:
+    return (_DATA_PATH / "device_signals" / f"{name}.json").read_text()
+
+
+@pytest.mark.parametrize("name", _SIGNAL_DEVICES)
+def test_get_device_with_signals(rest_client: BlueapiRestClient, name: str):
+    device = rest_client.get_device(name, signal=True)
+    assert device.model_dump_json(indent=4) + "\n" == _expected_signals(name)
+
+
+def test_get_devices_with_signals(rest_client: BlueapiRestClient):
+    devices = {d.name: d for d in rest_client.get_devices(signal=True).devices}
+    assert all(d.signals is not None for d in devices.values())
+    for name in _SIGNAL_DEVICES:
+        assert devices[name].model_dump_json(indent=4) + "\n" == _expected_signals(name)
+
+
+def test_get_devices_without_signals_omits_them(rest_client: BlueapiRestClient):
+    assert all(d.signals is None for d in rest_client.get_devices().devices)
+
+
+def test_client_device_tree(client: BlueapiClient):
+    stage = client.devices.stage
+    assert stage.parent is None
+    assert stage.x.parent is stage
+    assert stage.x.name == "stage-x"
+    assert stage.x.velocity.name == "stage-x-velocity"
+    assert stage.x.velocity.parent is stage.x
+
+
 def test_get_non_existent_device(rest_client: BlueapiRestClient):
     with pytest.raises(NotFoundError, match=r"Item not found"):
         rest_client.get_device("Not exists")

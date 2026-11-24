@@ -1,0 +1,75 @@
+{
+    "name": "stage",
+    "protocols": [
+        {
+            "name": "Readable",
+            "types": []
+        },
+        {
+            "name": "Stageable",
+            "types": []
+        },
+        {
+            "name": "Configurable",
+            "types": []
+        },
+        {
+            "name": "Device",
+            "types": []
+        }
+    ],
+    "children": {
+        "x": "stage-x",
+        "theta": "stage-theta"
+    },
+    "signals": {
+        "x.motor_egu": "ca://BL01T-MO-SIMC-01:M1.EGU",
+        "x.motor_resolution": "ca://BL01T-MO-SIMC-01:M1.MRES",
+        "x.steps_per_revolution": "ca://BL01T-MO-SIMC-01:M1.SREV",
+        "x.units_per_revolution": "ca://BL01T-MO-SIMC-01:M1.UREV",
+        "x.encoder_resolution": "ca://BL01T-MO-SIMC-01:M1.ERES",
+        "x.velocity": "ca://BL01T-MO-SIMC-01:M1.VELO",
+        "x.offset": "ca://BL01T-MO-SIMC-01:M1.OFF",
+        "x.user_readback": "ca://BL01T-MO-SIMC-01:M1.RBV",
+        "x.user_setpoint": "ca://BL01T-MO-SIMC-01:M1.VAL",
+        "x.max_velocity": "ca://BL01T-MO-SIMC-01:M1.VMAX",
+        "x.acceleration_time": "ca://BL01T-MO-SIMC-01:M1.ACCL",
+        "x.precision": "ca://BL01T-MO-SIMC-01:M1.PREC",
+        "x.deadband": "ca://BL01T-MO-SIMC-01:M1.RDBD",
+        "x.motor_done_move": "ca://BL01T-MO-SIMC-01:M1.DMOV",
+        "x.low_limit_travel": "ca://BL01T-MO-SIMC-01:M1.LLM",
+        "x.high_limit_travel": "ca://BL01T-MO-SIMC-01:M1.HLM",
+        "x.dial_low_limit_travel": "ca://BL01T-MO-SIMC-01:M1.DLLM",
+        "x.dial_high_limit_travel": "ca://BL01T-MO-SIMC-01:M1.DHLM",
+        "x.offset_freeze_switch": "ca://BL01T-MO-SIMC-01:M1.FOFF",
+        "x.high_limit_switch": "ca://BL01T-MO-SIMC-01:M1.HLS",
+        "x.low_limit_switch": "ca://BL01T-MO-SIMC-01:M1.LLS",
+        "x.output_link": "ca://BL01T-MO-SIMC-01:M1.OUT",
+        "x.set_use_switch": "ca://BL01T-MO-SIMC-01:M1.SET",
+        "x.motor_stop": "ca://BL01T-MO-SIMC-01:M1.STOP",
+        "theta.motor_egu": "ca://BL01T-MO-SIMC-01:M2.EGU",
+        "theta.motor_resolution": "ca://BL01T-MO-SIMC-01:M2.MRES",
+        "theta.steps_per_revolution": "ca://BL01T-MO-SIMC-01:M2.SREV",
+        "theta.units_per_revolution": "ca://BL01T-MO-SIMC-01:M2.UREV",
+        "theta.encoder_resolution": "ca://BL01T-MO-SIMC-01:M2.ERES",
+        "theta.velocity": "ca://BL01T-MO-SIMC-01:M2.VELO",
+        "theta.offset": "ca://BL01T-MO-SIMC-01:M2.OFF",
+        "theta.user_readback": "ca://BL01T-MO-SIMC-01:M2.RBV",
+        "theta.user_setpoint": "ca://BL01T-MO-SIMC-01:M2.VAL",
+        "theta.max_velocity": "ca://BL01T-MO-SIMC-01:M2.VMAX",
+        "theta.acceleration_time": "ca://BL01T-MO-SIMC-01:M2.ACCL",
+        "theta.precision": "ca://BL01T-MO-SIMC-01:M2.PREC",
+        "theta.deadband": "ca://BL01T-MO-SIMC-01:M2.RDBD",
+        "theta.motor_done_move": "ca://BL01T-MO-SIMC-01:M2.DMOV",
+        "theta.low_limit_travel": "ca://BL01T-MO-SIMC-01:M2.LLM",
+        "theta.high_limit_travel": "ca://BL01T-MO-SIMC-01:M2.HLM",
+        "theta.dial_low_limit_travel": "ca://BL01T-MO-SIMC-01:M2.DLLM",
+        "theta.dial_high_limit_travel": "ca://BL01T-MO-SIMC-01:M2.DHLM",
+        "theta.offset_freeze_switch": "ca://BL01T-MO-SIMC-01:M2.FOFF",
+        "theta.high_limit_switch": "ca://BL01T-MO-SIMC-01:M2.HLS",
+        "theta.low_limit_switch": "ca://BL01T-MO-SIMC-01:M2.LLS",
+        "theta.output_link": "ca://BL01T-MO-SIMC-01:M2.OUT",
+        "theta.set_use_switch": "ca://BL01T-MO-SIMC-01:M2.SET",
+        "theta.motor_stop": "ca://BL01T-MO-SIMC-01:M2.STOP"
+    }
+}

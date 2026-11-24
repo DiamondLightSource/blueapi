@@ -74,12 +74,3 @@ jobs:
     uses: DiamondLightSource/myst-version-switcher-plugin/.github/workflows/release.yml@v0.28.0
     permissions:
       contents: write # create the Release + attach assets
-
-  release_please:
-    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main')
-    uses: ./.github/workflows/_release_please.yml
-    secrets:
-      release_please_token: ${{ secrets.RELEASE_PLEASE_CLIENT_SECRET }}
-    permissions:
-      contents: write
-      pull-requests: write

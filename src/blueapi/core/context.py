@@ -223,8 +223,6 @@ class BlueskyContext:
                         )
                     self.with_device_manager(manager, mock)
 
-        self.register_children()
-
         if not self.devices:
             LOGGER.warning(
                 "Context had no devices after loading environment - are all modules "
@@ -269,8 +267,15 @@ class BlueskyContext:
         fixtures = {"path_provider": self.path_provider} if self.path_provider else {}
         build_result = manager.build_and_connect(mock=mock, fixtures=fixtures)
 
-        for device in build_result.devices.values():
-            self.register_device(device)
+        registered_devices = []
+        for name, device in build_result.devices.items():
+            name = getattr(device, "name", name)
+            self.register_device(
+                device, name, include_children=False
+            )  # include_children=False so only register top-level devices not children
+            registered_devices.append(name)
+
+        self._register_children(*(self.devices[name] for name in registered_devices))
 
         if errs := build_result.build_errors:
             LOGGER.warning(
@@ -329,7 +334,9 @@ class BlueskyContext:
         )
         return plan
 
-    def register_device(self, device: Device, name: str | None = None) -> None:
+    def register_device(
+        self, device: Device, name: str | None = None, include_children: bool = True
+    ) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
@@ -337,21 +344,21 @@ class BlueskyContext:
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
-        Only register the top-level device. Child devices get registered in the
-        'register_children' function. This is called by the 'with_config' function after
-        top-level devices have been registered. E.g., top-level devices like 'stage' and
-        'table' are registered first and then their children devices 'stage-x' and
-        'table-mount'. If a name is already in use, the existing device is kept and
-        the new one and its children are not registered.
+        The include_children flag has been set to True so child devices are also
+        registered. This function will therefore register for example the top-level
+        device 'stage' and its children 'stage-x' 'stage-x-velocity'. If a name is
+        already in use, the existing device is kept and the new one and its children
+        are not registered.
 
         Args:
             device (Device): The device to register
             name (Optional[str], optional): A name for the device. Defaults to None.
+            include_children: Flag to decide if child devices should be registered
 
         Raises:
             KeyError: If no name is found/supplied
+            ValueError: If the device specified has already been registered.
         """
-
         if not is_bluesky_compatible_device(device):
             raise TypeError(f"{device} is not a Bluesky compatible device")
 
@@ -361,12 +368,16 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        self._add_device(name, device)
+        if added_device := self._add_device(name, device):
+            if include_children:
+                self._register_children(added_device)
+        else:
+            raise ValueError(f"Device name already registered: {name}")
 
-    def register_children(self) -> None:
+    def _register_children(self, *devices: BlueapiDevice) -> None:
         """Register the children of every top-level device,
         once they are all registered."""
-        buffer = deque(d for d in self.devices.values() if d.parent is None)
+        buffer = deque(devices)
         while buffer:
             parent = buffer.popleft()
             if not isinstance(parent.device, AsyncDevice):

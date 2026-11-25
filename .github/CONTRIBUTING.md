@@ -169,6 +169,10 @@ LLM generated code must be disclosed.
 Documentation is intended for people to read and it is strongly recommended that
 it is written manually.
 
+<<<<<<< before updating
 If it helps ensure the documentation stays in sync with the code, LLMs may be
 used to review new docs for correctness/completeness or to ensure code changes
 update any relevant docs.
+=======
+For more information on common tasks like setting up a developer environment, running the tests, and setting a pre-commit hook, see the template's [How-to guides](https://diamondlightsource.github.io/python-copier-template/5.6.0/how-to.html).
+>>>>>>> after updating

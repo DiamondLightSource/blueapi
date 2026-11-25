@@ -1,12 +1,18 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+requires = ["setuptools>=77.0.3", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "blueapi"
 classifiers = [
+<<<<<<< before updating
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
+=======
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+>>>>>>> after updating
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
@@ -31,7 +37,8 @@ dependencies = [
     "packaging",
 ]
 dynamic = ["version"]
-license.file = "LICENSE"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -71,8 +78,12 @@ dev = [
     "sphinx-copybutton",
     "sphinx-click",
     "sphinx-design",
+<<<<<<< before updating
     "sphinxcontrib-openapi",
     "tox-uv",
+=======
+    "tox-uv-bare",
+>>>>>>> after updating
     "types-mock",
     "types-PyYAML",
     "types-requests",
@@ -139,6 +150,13 @@ env_list = ["pre-commit", "type-checking", "tests", "docs"]
 [tool.tox.env_run_base]
 # Pass all environment variables to the test environments
 passenv = ["*"]
+allowlist_externals = [
+    "pyright",
+    "pytest",
+    "pre-commit",
+    "sphinx-build",
+    "sphinx-autobuild",
+]
 
 [tool.tox.env.pre-commit]
 description = "Run pre-commit (prek) on all files"

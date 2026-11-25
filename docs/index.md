@@ -21,8 +21,7 @@ Documentation is split into [four categories](https://diataxis.fr), also accessi
 :maxdepth: 2
 tutorials
 ```
-
-+++
+:::{card-footer}
 Tutorials for installation and typical usage. New users start here.
 :::
 
@@ -32,8 +31,7 @@ Tutorials for installation and typical usage. New users start here.
 :maxdepth: 2
 how-to
 ```
-
-+++
+:::{card-footer}
 Practical step-by-step guides for the more experienced user.
 :::
 
@@ -43,8 +41,7 @@ Practical step-by-step guides for the more experienced user.
 :maxdepth: 2
 explanations
 ```
-
-+++
+:::{card-footer}
 Explanations of how it works and why it works that way.
 :::
 
@@ -54,8 +51,7 @@ Explanations of how it works and why it works that way.
 :maxdepth: 2
 reference
 ```
-
-+++
+:::{card-footer}
 Technical reference material including APIs and release notes.
 :::
 

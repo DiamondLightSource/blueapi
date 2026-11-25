@@ -103,4 +103,4 @@ Python projects.
 
 For more information on common tasks like setting up a developer environment,
 running the tests, and setting a pre-commit hook, see the template's [How-to
-guides](https://diamondlightsource.github.io/python-copier-template/5.5.0/how-to.html).
+guides](https://diamondlightsource.github.io/python-copier-template/5.6.0/how-to.html).

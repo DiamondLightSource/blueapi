@@ -20,6 +20,9 @@ class ClientProtocol(Protocol):
     @property
     def instrument_session(self) -> str: ...
 
+    @property
+    def subdirectory(self) -> str | None: ...
+
 
 class RestClientProtocol(Protocol):
     def get_devices(self) -> DeviceResponse: ...

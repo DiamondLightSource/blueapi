@@ -249,29 +249,52 @@ def clean_existing_tasks(rest_client: BlueapiRestClient):
     yield
 
 
-@pytest.fixture(autouse=True, scope="module")
-def reset_numtracker():
+NUMTRACKER_CONFIGURE_MUTATION = """
+mutation($instrument: String!, $config: ConfigurationUpdates!) {
+  configure(instrument: $instrument, config: $config) {
+    scanTemplate
+  }
+}
+"""
+SCAN_TEMPLATE = "{instrument}-{scan_number}"
+
+
+def configure_numtracker(config: dict[str, str | int]):
+    """Update the adsim numtracker config, fields left out are unchanged"""
     server_config = load_config(Path(_DATA_PATH, "config.yaml"))
     nt_url = server_config.numtracker.url  # type: ignore - if numtracker is None we should fail
     response = requests.post(
         str(nt_url),
         json={
-            "query": f"""mutation {{
-              configure(instrument: "adsim",
-                        config: {{directory: "/tmp/",
-                            scan: "{{instrument}}-{{scan_number}}",
-                            detector: "{{instrument}}-{{scan_number}}-{{detector}}",
-                            scanNumber: {CURRENT_NUMTRACKER_NUM}}}) {{
-                scanTemplate
-              }}
-            }}"""
+            "query": NUMTRACKER_CONFIGURE_MUTATION,
+            "variables": {"instrument": "adsim", "config": config},
         },
         headers={"authorization": "Bearer " + get_access_token(User.admin)},
     )
     response.raise_for_status()
     if response.json().get("errors") is not None:
         raise Exception(response.json())
+
+
+@pytest.fixture(autouse=True, scope="module")
+def reset_numtracker():
+    configure_numtracker(
+        {
+            "directory": "/tmp/",
+            "scan": SCAN_TEMPLATE,
+            "detector": "{instrument}-{scan_number}-{detector}",
+            "scanNumber": CURRENT_NUMTRACKER_NUM,
+        }
+    )
     yield
+
+
+@pytest.fixture
+def numtracker_with_subdirectory():
+    """Numtracker only uses the subdirectory if the scan template asks for it"""
+    configure_numtracker({"scan": "{subdirectory}/" + SCAN_TEMPLATE})
+    yield
+    configure_numtracker({"scan": SCAN_TEMPLATE})
 
 
 def test_cannot_access_endpoints_without_authentication(
@@ -653,6 +676,36 @@ def test_plan_runs(
     assert start_metadata["blueapi_task_id"] == final_event.task_id
     assert "detectors" in start_metadata
     assert "det" in start_metadata["detectors"]
+
+
+@pytest.mark.usefixtures("numtracker_with_subdirectory")
+def test_plan_runs_with_subdirectory(client_with_stomp: BlueapiClient, scan_id: int):
+    start = Queue(maxsize=1)
+    stream_resources = Queue()
+
+    def on_event(event: AnyEvent) -> None:
+        if isinstance(event, DataEvent) and event.name == "start":
+            start.put_nowait(event.doc)
+        if isinstance(event, DataEvent) and event.name == "stream_resource":
+            stream_resources.put_nowait(event.doc)
+
+    cb_id = client_with_stomp.add_callback(on_event)
+    try:
+        client_with_stomp.with_instrument_session(
+            VALID_INSTRUMENT_SESSION[User.alice]
+        ).with_subdirectory("sample1")
+        client_with_stomp.plans.count([client_with_stomp.devices.det], 3)
+    finally:
+        client_with_stomp.remove_callback(cb_id)
+
+    start_doc = start.get_nowait()
+    assert start_doc["scan_id"] == scan_id
+    assert start_doc["data_session_subdirectory"] == "sample1"
+    assert start_doc["data_session_directory"] == "/tmp"
+    assert start_doc["scan_file"] == f"sample1/adsim-{scan_id}"
+    # Detector files are written alongside the scan file, in the subdirectory
+    resource = stream_resources.get_nowait()
+    assert resource["uri"].endswith(f"/tmp/sample1/adsim-{scan_id}-det.h5")
 
 
 @pytest.mark.parametrize(

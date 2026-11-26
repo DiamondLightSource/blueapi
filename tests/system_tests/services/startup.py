@@ -277,15 +277,20 @@ def configure_numtracker():
     response = requests.post(
         NT_URL,
         json={
-            "query": """mutation {
-              configure(instrument: "adsim",
-                        config: {directory: "/tmp/",
-                        scan: "{instrument}-{scan_number}",
-                        detector: "{instrument}-{scan_number}-{detector}",
-                        scanNumber: 43}) {
+            "query": """mutation($instrument: String!, $config: ConfigurationUpdates!) {
+              configure(instrument: $instrument, config: $config) {
                 scanTemplate
               }
-            }"""
+            }""",
+            "variables": {
+                "instrument": "adsim",
+                "config": {
+                    "directory": "/tmp/",
+                    "scan": "{instrument}-{scan_number}",
+                    "detector": "{instrument}-{scan_number}-{detector}",
+                    "scanNumber": 43,
+                },
+            },
         },
         headers={"authorization": "Bearer " + access_token},
     )

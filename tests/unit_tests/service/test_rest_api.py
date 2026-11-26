@@ -157,7 +157,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
 class MinimalDevice(Stoppable):
     name: str
 
-    def stop(self, success: bool = True):
+    def stop(self, *, success: bool = True):
         pass
 
 

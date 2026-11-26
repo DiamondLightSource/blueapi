@@ -232,7 +232,6 @@ def temp_yaml_config_file(
                     {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "deviceManager", "module": "dodal.ixx", "name": "manager"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
             },
             "api": {"url": "http://0.0.0.0:8000/"},
@@ -243,7 +242,6 @@ def temp_yaml_config_file(
                 "sources": [
                     {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
                 "events": {"broadcast_status_events": True},
             },
@@ -303,10 +301,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "sources": [
                     {"kind": "deviceManager", "module": "dodal.adsim", "mock": True},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {
-                        "kind": "planFunctions",
-                        "module": "dodal.plan_stubs.wrapped",
-                    },
                 ],
             },
             "api": {
@@ -363,10 +357,6 @@ def test_config_yaml_parsed(temp_yaml_config_file):
                 "sources": [
                     {"kind": "deviceManager", "module": "dodal.adsim", "mock": False},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {
-                        "kind": "planFunctions",
-                        "module": "dodal.plan_stubs.wrapped",
-                    },
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {
@@ -447,7 +437,6 @@ def test_config_yaml_parsed_complete(temp_yaml_config_file: dict):
                 "sources": [
                     {"kind": "deviceManager", "module": "dodal.adsim"},
                     {"kind": "planFunctions", "module": "dodal.plans"},
-                    {"kind": "planFunctions", "module": "dodal.plan_stubs.wrapped"},
                 ],
                 "events": {"broadcast_status_events": True},
                 "metadata": {

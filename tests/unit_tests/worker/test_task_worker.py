@@ -21,6 +21,7 @@ from ophyd_async.core import AsyncStatus
 from blueapi.config import DeviceManagerSource, EnvironmentConfig, PlanSource
 from blueapi.core import BlueskyContext, EventStream
 from blueapi.core.bluesky_types import DataEvent
+from blueapi.core.context import DEFAULT_PLAN_STUBS
 from blueapi.service.model import PlanModel
 from blueapi.utils.base_model import BlueapiBaseModel
 from blueapi.worker import (
@@ -39,8 +40,8 @@ from blueapi.worker.task import TaskParameterError
 _SIMPLE_TASK = Task(name="sleep", params={"time": 0.0})
 _LONG_TASK = Task(name="sleep", params={"time": 1.0})
 _INDEFINITE_TASK = Task(
-    name="set_absolute",
-    params={"movable": "fake_device", "value": 4.0},
+    name="abs_set",
+    args=["fake_device", 4.0],
 )
 _FAILING_TASK = Task(name="failing_plan", params={})
 _TASK_WITH_METADATA = Task(
@@ -53,7 +54,7 @@ _TASK_WITH_METADATA = Task(
 )
 
 
-class FakeDevice(Movable[float]):
+class FakeDevice(Movable[Any]):
     event: threading.Event
 
     def __init__(self, name: str = "fake_device") -> None:
@@ -111,9 +112,10 @@ def context(fake_device: FakeDevice, second_fake_device: FakeDevice) -> BlueskyC
     ctx_config = EnvironmentConfig(
         sources=[
             PlanSource(module="dodal.plans"),
-            PlanSource(module="dodal.plan_stubs.wrapped"),
         ]
     )
+    for stub in DEFAULT_PLAN_STUBS:
+        ctx.register_plan(stub)
     ctx_config.sources.append(DeviceManagerSource(module="devices"))
     ctx.register_plan(failing_plan)
     ctx.register_device(fake_device)
@@ -128,7 +130,6 @@ def context_without_devices() -> BlueskyContext:
     ctx_config = EnvironmentConfig(
         sources=[
             PlanSource(module="dodal.plans"),
-            PlanSource(module="dodal.plan_stubs.wrapped"),
         ]
     )
     ctx_config.sources.append(DeviceManagerSource(module="devices"))

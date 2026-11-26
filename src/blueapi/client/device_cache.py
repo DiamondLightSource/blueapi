@@ -1,13 +1,15 @@
+from blueapi.client.rest import BlueapiRestClient, ClientObjectRef
 from blueapi.service.model import DeviceModel
 
-from .protocols import ClientObjectRef, RestClientProtocol
 from .rest import NotFoundError
+
+# This file should be kept in sync with the type stub template in stubs/templates
 
 
 class DeviceCache:
     """Cache and lazily resolve devices from a Blueapi server."""
 
-    def __init__(self, rest: RestClientProtocol):
+    def __init__(self, rest: BlueapiRestClient):
         self._rest = rest
         self._cache = {
             model.name: DeviceRef(name=model.name, cache=self, model=model)

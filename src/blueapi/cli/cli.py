@@ -638,3 +638,17 @@ def logout(obj: dict) -> None:
         ) from e
     except Exception as e:
         raise ClickException(f"Error logging out: {e}") from e
+
+
+@main.command()
+@click.pass_obj
+@click.argument("target", type=click.Path(file_okay=False))
+@check_connection
+def generate_stubs(obj: dict, target: Path):
+    click.echo(f"Writing stubs to {target}")
+
+    config: ApplicationConfig = obj["config"]
+    bc = BlueapiClient.from_config(config)
+    from . import stubgen
+
+    stubgen.generate_stubs(Path(target), list(bc.plans), list(bc.devices))

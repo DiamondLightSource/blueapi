@@ -6,7 +6,7 @@ import pytest
 from blueapi.client.client import PlanCache
 from blueapi.client.plan_cache import Plan
 from blueapi.client.rest import InvalidParametersError, ParameterError
-from blueapi.service.model import PlanModel, TaskRequest
+from blueapi.service.model import PlanModel
 
 FULL_PLAN = PlanModel(
     name="foobar",
@@ -143,22 +143,16 @@ p = pytest.param
     ],
 )
 def test_plan_param_forwarding(args, kwargs):
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    plan = Plan("foobar", FULL_PLAN, client)
+    runner = Mock()
+    plan = Plan("foobar", FULL_PLAN, runner)
 
     plan(*args, **kwargs)
-    client.run_task.assert_called_once_with(
-        TaskRequest(
-            name="foobar", instrument_session="cm12345-1", args=args, params=kwargs
-        )
-    )
+    runner.assert_called_once_with("foobar", args, kwargs)
 
 
 def test_plan_invalid_param_mapping():
-    client = Mock()
-    client.instrument_session = "cm12345-1"
-    client.run_task.side_effect = InvalidParametersError(
+    runner = Mock()
+    runner.side_effect = InvalidParametersError(
         [
             ParameterError(
                 msg="foo is not valid",
@@ -168,8 +162,8 @@ def test_plan_invalid_param_mapping():
             )
         ]
     )
-    plan = Plan("foobar", FULL_PLAN, client)
+    plan = Plan("foobar", FULL_PLAN, runner)
 
     with pytest.raises(TypeError, match="foo is not valid"):
         plan(1, 2, foo="bar")
-    client.run_task.assert_called_once()
+    runner.assert_called_once()

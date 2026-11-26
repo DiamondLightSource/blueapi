@@ -1,13 +1,12 @@
+from typing import Any
 from unittest.mock import Mock, patch
 
-import httpx
 import jwt
 import pytest
 import responses
-import respx
 from fastapi import HTTPException
 from pydantic import SecretStr
-from starlette.status import HTTP_200_OK
+from starlette.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
 from blueapi import service
 from blueapi.client.session import SessionManager
@@ -102,17 +101,26 @@ def test_tiled_auth_raises_exception():
         TiledAuth(tiled_auth=auth)
 
 
-@respx.mock
+@responses.activate
 def test_tiled_auth_sync_auth_flow():
     client_id = "client"
     client_secret = SecretStr("secret")
     token_url = "http://keycloak.com/token"
     access_token = "access_token"
 
-    respx.post(token_url).mock(
-        return_value=httpx.Response(
-            status_code=HTTP_200_OK, json={"access_token": access_token}
-        )
+    token_request = responses.post(
+        token_url,
+        json={"access_token": access_token, "expires_in": 300},
+        status=HTTP_200_OK,
+        match=[
+            responses.matchers.urlencoded_params_matcher(
+                {
+                    "grant_type": "client_credentials",
+                    "client_id": client_id,
+                    "client_secret": client_secret.get_secret_value(),
+                }
+            )
+        ],
     )
 
     tiled_auth = TiledAuth(
@@ -130,3 +138,50 @@ def test_tiled_auth_sync_auth_flow():
     result = next(flow)
 
     assert result.headers["Authorization"] == f"Bearer {access_token}"
+
+    # Token is cached until it expires rather than fetched per request
+    next(tiled_auth.sync_auth_flow(request))
+    assert token_request.call_count == 1
+
+
+def _tiled_auth(token_url: str) -> TiledAuth:
+    return TiledAuth(
+        tiled_auth=ServiceAccount(
+            client_id="client", client_secret=SecretStr("secret"), token_url=token_url
+        )
+    )
+
+
+@responses.activate
+@pytest.mark.parametrize(
+    "token_reply",
+    [
+        {"access_token": "token", "expires_in": 30},  # inside the 60s leeway
+        {"access_token": "token"},  # no expiry given: never cache
+    ],
+)
+def test_tiled_auth_refetches_expired_or_undated_token(token_reply: dict[str, Any]):
+    token_url = "http://keycloak.com/token"
+    token_request = responses.post(token_url, json=token_reply)
+    tiled_auth = _tiled_auth(token_url)
+
+    tiled_auth.get_access_token()
+    tiled_auth.get_access_token()
+
+    assert token_request.call_count == 2
+
+
+@responses.activate
+def test_tiled_auth_retries_once_with_new_token_on_401():
+    token_url = "http://keycloak.com/token"
+    responses.post(token_url, json={"access_token": "old", "expires_in": 300})
+    responses.post(token_url, json={"access_token": "new", "expires_in": 300})
+    tiled_auth = _tiled_auth(token_url)
+    request = Mock(headers={})
+
+    flow = tiled_auth.sync_auth_flow(request)
+    assert next(flow).headers["Authorization"] == "Bearer old"
+    retried = flow.send(Mock(status_code=HTTP_401_UNAUTHORIZED))
+    assert retried.headers["Authorization"] == "Bearer new"
+    with pytest.raises(StopIteration):
+        flow.send(Mock(status_code=HTTP_401_UNAUTHORIZED))

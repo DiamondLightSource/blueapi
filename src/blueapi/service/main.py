@@ -1,143 +1,57 @@
 import logging
-import urllib.parse
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
 
 import jwt
-from bluesky._vendor.super_state_machine.errors import TransitionError
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Body,
-    Depends,
-    FastAPI,
-    HTTPException,
-    Request,
-    Response,
-    WebSocket,
-    WebSocketDisconnect,
-    status,
-)
+from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.datastructures import Address
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.requests import HTTPConnection
-from fastapi.responses import RedirectResponse, StreamingResponse
-from observability_utils.tracing import (
-    add_span_attributes,
-    get_tracer,
-    start_as_current_span,
-)
+from fastapi.responses import StreamingResponse
+from observability_utils.tracing import start_as_current_span
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.trace import get_tracer_provider
-from pydantic import ValidationError
 from starlette.responses import JSONResponse
-from starlette.status import WS_1007_INVALID_FRAME_PAYLOAD_DATA, WS_1013_TRY_AGAIN_LATER
 
-from blueapi.config import ApplicationConfig, OIDCConfig, Tag
-from blueapi.core.bluesky_types import DataEvent
-from blueapi.service import interface, protocol
-from blueapi.service.authentication import (
-    Fedid,
-    build_access_token_check,
-)
+from blueapi.config import ApplicationConfig
+from blueapi.service.authentication import build_access_token_check
 from blueapi.service.middleware import (
     ObservabilityContextPropagator,
     VersionHeaders,
     WebsocketOriginCheck,
     WebsocketTracing,
 )
-from blueapi.service.protocol import (
-    InvalidArgs,
-    PlanNotFound,
-    ServerBusy,
-    Submit,
-    Unauthorized,
-    Update,
-)
-from blueapi.worker import TrackableTask, WorkerState
-from blueapi.worker.event import ProgressEvent, TaskStatusEnum, WorkerEvent
-from blueapi.worker.task import TaskParameterError
-from blueapi.worker.worker_errors import WorkerBusyError
 
-from .authorization import (
-    OpaClient,
-    OpaUserClient,
-    opa,
-    submit_permission,
-    validate_tiled_config,
-)
-from .model import (
-    DeviceModel,
-    DeviceResponse,
-    EnvironmentResponse,
-    Health,
-    HealthProbeResponse,
-    PlanModel,
-    PlanResponse,
-    PythonEnvironmentResponse,
-    SourceInfo,
-    StateChangeRequest,
-    TaskRequest,
-    TaskResponse,
-    TasksListResponse,
-    WorkerTask,
-)
-from .runner import WorkerDispatcher
-
-RUNNER: WorkerDispatcher | None = None
+from .authorization import OpaClient, validate_tiled_config
+from .routes import devices, environment, meta, plans, run_plan, tasks, worker
+from .routes.dependencies import TRACER, setup_runner, teardown_runner
 
 LOGGER = logging.getLogger(__name__)
-TRACER = get_tracer("interface")
 
-
-AnyEvent = WorkerEvent | DataEvent | ProgressEvent
-
-
-def _runner() -> WorkerDispatcher:
-    """Intended to be used only with FastAPI Depends"""
-    if RUNNER is None:
-        raise ValueError()
-    return RUNNER
-
-
-def setup_runner(
-    config: ApplicationConfig | None = None,
-    runner: WorkerDispatcher | None = None,
-):
-    global RUNNER
-    runner = runner or WorkerDispatcher(config)
-    runner.start()
-
-    RUNNER = runner
-
-
-def teardown_runner():
-    global RUNNER
-    if RUNNER is None:
-        return
-    RUNNER.stop()
-    RUNNER = None
+# Routers served under /api/v1 and, deprecated, at the root
+SECURE_ROUTERS = (
+    environment.router,
+    plans.router,
+    devices.router,
+    tasks.router,
+    worker.router,
+    meta.router,
+)
 
 
 def lifespan(config: ApplicationConfig):
     @asynccontextmanager
     async def inner(app: FastAPI):
-        meta = config.env.metadata
+        metadata = config.env.metadata
         setup_runner(config)
-        async with OpaClient.for_config(meta and meta.instrument, config.opa) as opa:
+        async with OpaClient.for_config(
+            metadata and metadata.instrument, config.opa
+        ) as opa:
             app.state.authz = opa
             await validate_tiled_config(config.tiled.authentication, config.oidc, opa)
             yield
         teardown_runner()
 
     return inner
-
-
-open_router = APIRouter()
-secure_router = APIRouter(deprecated=True)
-secure_router_v1 = APIRouter(prefix="/api/v1")
-secure_router_v2 = APIRouter(prefix="/api/v2")
 
 
 def get_app(config: ApplicationConfig):
@@ -157,10 +71,12 @@ def get_app(config: ApplicationConfig):
         app.swagger_ui_init_oauth = {
             "clientId": "NOT_SUPPORTED",
         }
-    app.include_router(open_router)
-    app.include_router(secure_router_v1, dependencies=dependencies)
-    app.include_router(secure_router_v2, dependencies=dependencies)
-    app.include_router(secure_router, dependencies=dependencies)
+    app.include_router(meta.open_router)
+    for router in SECURE_ROUTERS:
+        app.include_router(router, prefix="/api/v1", dependencies=dependencies)
+    app.include_router(run_plan.router, prefix="/api/v2", dependencies=dependencies)
+    for router in SECURE_ROUTERS:
+        app.include_router(router, deprecated=True, dependencies=dependencies)
     app.add_exception_handler(KeyError, on_key_error_404)
     app.add_exception_handler(jwt.PyJWTError, on_token_error_401)
 
@@ -183,37 +99,6 @@ def get_app(config: ApplicationConfig):
     return app
 
 
-async def access_task_permission(
-    opa: Annotated[OpaUserClient | None, Depends(opa)],
-    task_id: str,
-    fedid: Fedid,
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-):
-    task = runner.run(interface.get_task_by_id, task_id)
-
-    if (
-        opa
-        and not await opa.admin()
-        and (task and fedid != task.task.metadata.get("user"))
-    ):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-
-# start_task_permission is used when there is WorkerTask
-async def start_task_permission(
-    task: WorkerTask,
-    opa: Annotated[OpaUserClient, Depends(opa)],
-    fedid: Fedid,
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-):
-    if not task.task_id:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="No task id provided",
-        )
-    await access_task_permission(opa, task.task_id, fedid, runner)
-
-
 async def on_key_error_404(_: Request, __: Exception):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -227,495 +112,6 @@ async def on_token_error_401(_: Request, __: Exception):
         content={"detail": "Not authenticated"},
         headers={"WWW-Authenticate": "Bearer"},
     )
-
-
-@open_router.get("/", include_in_schema=False)
-def root_redirect() -> RedirectResponse:
-    """Redirect to docs url"""
-    return RedirectResponse(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-        url=ApplicationConfig.DOCS_ENDPOINT,
-    )
-
-
-@secure_router_v1.get("/environment", tags=[Tag.ENV])
-@secure_router.get("/environment", tags=[Tag.ENV])
-@start_as_current_span(TRACER, "runner")
-def get_environment(
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> EnvironmentResponse:
-    """Get the current state of the environment, i.e. initialization state."""
-    return runner.state
-
-
-@secure_router_v1.delete("/environment", tags=[Tag.ENV])
-@secure_router.delete("/environment", tags=[Tag.ENV])
-async def delete_environment(
-    background_tasks: BackgroundTasks,
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> EnvironmentResponse:
-    """Delete the current environment, causing internal components to be reloaded."""
-    environment_id = runner.state.environment_id
-    if runner.state.initialized or runner.state.error_message is not None:
-        background_tasks.add_task(runner.reload)
-    return EnvironmentResponse(environment_id=environment_id, initialized=False)
-
-
-@open_router.get(
-    "/config/oidc",
-    tags=[Tag.META],
-    responses={
-        status.HTTP_204_NO_CONTENT: {"description": "No Authentication configured"}
-    },
-)
-@start_as_current_span(TRACER)
-def get_oidc_config(
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> OIDCConfig:
-    """Retrieve the OpenID Connect (OIDC) configuration for the server."""
-    config = runner.run(interface.get_oidc_config)
-    if config is None:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-    return config
-
-
-@secure_router_v1.get("/plans", tags=[Tag.PLAN])
-@secure_router.get("/plans", tags=[Tag.PLAN])
-@start_as_current_span(TRACER)
-def get_plans(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> PlanResponse:
-    """Retrieve information about all available plans."""
-    plans = runner.run(interface.get_plans)
-    return PlanResponse(plans=plans)
-
-
-@secure_router_v1.get("/plans/{name}", tags=[Tag.PLAN])
-@secure_router.get("/plans/{name}", tags=[Tag.PLAN])
-@start_as_current_span(TRACER, "name")
-def get_plan_by_name(
-    name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
-) -> PlanModel:
-    """Retrieve information about a plan by its (unique) name."""
-    return runner.run(interface.get_plan, name)
-
-
-@secure_router_v1.get("/devices", tags=[Tag.DEVICE])
-@secure_router.get("/devices", tags=[Tag.DEVICE])
-@start_as_current_span(TRACER)
-def get_devices(
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> DeviceResponse:
-    """Retrieve information about all available devices."""
-    devices = runner.run(interface.get_devices)
-    return DeviceResponse(devices=devices)
-
-
-@secure_router_v1.get("/devices/{name}", tags=[Tag.DEVICE])
-@secure_router.get("/devices/{name}", tags=[Tag.DEVICE])
-@start_as_current_span(TRACER, "name")
-def get_device_by_name(
-    name: str, runner: Annotated[WorkerDispatcher, Depends(_runner)]
-) -> DeviceModel:
-    """Retrieve information about a devices by its (unique) name."""
-    return runner.run(interface.get_device, name)
-
-
-example_task_request = TaskRequest(
-    name="count",
-    params={"detectors": ["x"]},
-    instrument_session="cm12345-1",
-)
-
-
-@secure_router_v1.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
-@secure_router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=[Tag.TASK])
-@start_as_current_span(
-    TRACER,
-    "request",
-    "task_request.name",
-    "task_request.params",
-    "task_request.instrument_session",
-)
-def submit_task(
-    request: Request,
-    response: Response,
-    task_request: Annotated[TaskRequest, Body(..., examples=[example_task_request])],
-    _: Annotated[None, Depends(submit_permission)],
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    fedid: Fedid,
-) -> TaskResponse:
-    """Submit a task to the worker."""
-    try:
-        task_id: str = runner.run(interface.submit_task, task_request, {"user": fedid})
-        response.headers["Location"] = f"{request.url}/{task_id}"
-        return TaskResponse(task_id=task_id)
-    except TaskParameterError as e:
-        # Add body/params context to location and ensure that all required
-        # fields defined in the generated schema are present
-        errors = [
-            {
-                "loc": ["body", "params", *err.get("loc", [])],
-                "msg": err.get("msg", None),
-                "type": err.get("type", None),
-                # Input is not listed as required but is useful to have if available
-                "input": err.get("input", None),
-            }
-            for err in e.errors
-        ]
-        LOGGER.info("Error submitting task: %s - %s", task_request, e)
-    except Exception as e:
-        # Catch all for anything else that can go wrong
-        errors = [
-            {"loc": ["body", "params"], "msg": str(e), "type": "invalid", "input": None}
-        ]
-        LOGGER.info("Error submitting task: %s - %s", task_request, e)
-    raise HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail=errors,
-    )
-
-
-@secure_router_v1.delete(
-    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
-)
-@secure_router.delete(
-    "/tasks/{task_id}", status_code=status.HTTP_200_OK, tags=[Tag.TASK]
-)
-@start_as_current_span(TRACER, "task_id")
-def delete_submitted_task(
-    task_id: str,
-    _: Annotated[None, Depends(access_task_permission)],
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> TaskResponse:
-    return TaskResponse(task_id=runner.run(interface.clear_task, task_id))
-
-
-@secure_router_v1.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
-@secure_router.get("/tasks", status_code=status.HTTP_200_OK, tags=[Tag.TASK])
-@start_as_current_span(TRACER)
-async def get_tasks(
-    fedid: Fedid,
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    opa: Annotated[OpaUserClient, Depends(opa)],
-    task_status: TaskStatusEnum | None = None,
-) -> TasksListResponse:
-    """
-    Retrieve tasks based on their status.
-    The status of a newly created task is PENDING.
-    """
-    tasks = runner.run(interface.get_tasks, task_status)
-
-    if opa and not await opa.admin():
-        tasks = [t for t in tasks if t.task.metadata.get("user") == fedid]
-
-    return TasksListResponse(tasks=tasks)
-
-
-@secure_router_v1.put(
-    "/worker/task",
-    responses={status.HTTP_409_CONFLICT: {}},
-    tags=[Tag.TASK],
-)
-@secure_router.put(
-    "/worker/task",
-    responses={status.HTTP_409_CONFLICT: {}},
-    tags=[Tag.TASK],
-)
-@start_as_current_span(TRACER, "task.task_id")
-def set_active_task(
-    request: Request,
-    task: WorkerTask,
-    _: Annotated[None, Depends(start_task_permission)],
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> WorkerTask:
-    """Set a task to active status, the worker should begin it as soon as possible.
-    This will return an error response if the worker is not idle."""
-    active_task = runner.run(interface.get_active_task)
-    if active_task is not None and not active_task.is_complete:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Worker already active"
-        )
-    runner.run(
-        interface.begin_task,
-        task=task,
-        pass_through_headers=get_passthrough_headers(request),
-    )
-    return task
-
-
-def get_passthrough_headers(request: HTTPConnection) -> dict[str, str]:
-    return {
-        key: value
-        for key, value in request.headers.items()
-        if key.casefold() in ApplicationConfig.PROPAGATED_HEADERS
-    }
-
-
-@secure_router_v1.get("/tasks/{task_id}", tags=[Tag.TASK])
-@secure_router.get("/tasks/{task_id}", tags=[Tag.TASK])
-@start_as_current_span(TRACER, "task_id")
-def get_task(
-    task_id: str,
-    _: Annotated[None, Depends(access_task_permission)],
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> TrackableTask:
-    """Retrieve a task"""
-    task = runner.run(interface.get_task_by_id, task_id)
-    if task is None:
-        raise KeyError
-    return task
-
-
-@secure_router_v1.get(
-    "/worker/task",
-    tags=[Tag.TASK],
-)
-@secure_router.get(
-    "/worker/task",
-    tags=[Tag.TASK],
-)
-@start_as_current_span(TRACER)
-def get_active_task(
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> WorkerTask:
-    active = runner.run(interface.get_active_task)
-    task_id = active.task_id if active is not None else None
-    return WorkerTask(task_id=task_id)
-
-
-@secure_router_v1.get(
-    "/worker/state",
-    tags=[Tag.TASK],
-)
-@secure_router.get(
-    "/worker/state",
-    tags=[Tag.TASK],
-)
-@start_as_current_span(TRACER)
-def get_state(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> WorkerState:
-    """Get the State of the Worker"""
-    return runner.run(interface.get_worker_state)
-
-
-# Map of current_state: allowed new_states
-_ALLOWED_TRANSITIONS: dict[WorkerState, set[WorkerState]] = {
-    WorkerState.RUNNING: {
-        WorkerState.PAUSED,
-        WorkerState.ABORTING,
-        WorkerState.STOPPING,
-    },
-    WorkerState.PAUSED: {
-        WorkerState.RUNNING,
-        WorkerState.ABORTING,
-        WorkerState.STOPPING,
-    },
-}
-
-
-@secure_router_v1.put(
-    "/worker/state",
-    status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {},
-        status.HTTP_202_ACCEPTED: {},
-    },
-    tags=[Tag.TASK],
-)
-@secure_router.put(
-    "/worker/state",
-    status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {},
-        status.HTTP_202_ACCEPTED: {},
-    },
-    tags=[Tag.TASK],
-)
-@start_as_current_span(TRACER, "state_change_request.new_state")
-async def set_state(
-    state_change_request: StateChangeRequest,
-    response: Response,
-    fedid: Fedid,
-    opa: Annotated[OpaUserClient, Depends(opa)],
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-) -> WorkerState:
-    """
-    Request that the worker is put into a particular state.
-    Returns the state of the worker at the end of the call.
-
-    - **The following transitions are allowed and return 202: Accepted**
-    - If the worker is **PAUSED**, new_state may be **RUNNING** to resume.
-    - If the worker is **RUNNING**, new_state may be **PAUSED** to pause:
-        - If defer is False (default): pauses and rewinds to the previous checkpoint
-        - If defer is True: waits until the next checkpoint to pause
-        - **If the task has no checkpoints, the task will instead be Aborted**
-    - If the worker is **RUNNING/PAUSED**, new_state may be **STOPPING** to stop.
-        Stop marks any currently open Runs in the Task as a success and ends the task.
-    - If the worker is **RUNNING/PAUSED**, new_state may be **ABORTING** to abort.
-        Abort marks any currently open Runs in the Task as a Failure and ends the task.
-        - If reason is set, the reason will be passed as the reason for the Run failure.
-    - **All other transitions return 400: Bad Request**
-    """
-    current_state = runner.run(interface.get_worker_state)
-    new_state = state_change_request.new_state
-    add_span_attributes({"current_state": current_state})
-    if (
-        current_state in _ALLOWED_TRANSITIONS
-        and new_state in _ALLOWED_TRANSITIONS[current_state]
-    ):
-        active = runner.run(interface.get_active_task)
-
-        if (
-            opa
-            and not await opa.admin()
-            and active
-            and active.task.metadata.get("user") != fedid
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to set worker state",
-            )
-
-        if new_state == WorkerState.PAUSED:
-            runner.run(interface.pause_worker, state_change_request.defer)
-        elif new_state == WorkerState.RUNNING:
-            runner.run(interface.resume_worker)
-        elif new_state in {WorkerState.ABORTING, WorkerState.STOPPING}:
-            try:
-                runner.run(
-                    interface.cancel_active_task,
-                    state_change_request.new_state is WorkerState.ABORTING,
-                    state_change_request.reason,
-                )
-            except TransitionError as e:
-                suffix = f" - {e}" if str(e) else ""
-                raise HTTPException(
-                    status.HTTP_400_BAD_REQUEST,
-                    detail=(
-                        f"Error while transitioning from {current_state} "
-                        f"to {new_state}{suffix}"
-                    ),
-                ) from e
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(f"Cannot transition from {current_state} to {new_state}"),
-        )
-    return runner.run(interface.get_worker_state)
-
-
-@secure_router_v1.get("/python_environment", tags=[Tag.ENV])
-@secure_router.get("/python_environment", tags=[Tag.ENV])
-@start_as_current_span(TRACER)
-def get_python_environment(
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    name: str | None = None,
-    source: SourceInfo | None = None,
-) -> PythonEnvironmentResponse:
-    """
-    Retrieve the Python environment details.
-    This endpoint fetches information about the Python environment,
-    such as the installed packages and scratch packages.
-    """
-    return runner.run(interface.get_python_env, name, source)
-
-
-@open_router.get("/healthz", status_code=status.HTTP_200_OK, tags=[Tag.META])
-def health_probe() -> HealthProbeResponse:
-    """If able to serve this, server is live and ready for requests."""
-    return HealthProbeResponse(status=Health.OK)
-
-
-@secure_router_v1.get("/logout", include_in_schema=False)
-@secure_router.get("/logout", include_in_schema=False)
-def logout(runner: Annotated[WorkerDispatcher, Depends(_runner)]) -> Response:
-    """Redirect to logout url"""
-    config = runner.run(interface.get_oidc_config)
-    if config is None or not config.logout_redirect_endpoint:
-        raise HTTPException(status_code=status.HTTP_205_RESET_CONTENT)
-
-    encoded_url = urllib.parse.quote_plus(config.end_session_endpoint)
-    return RedirectResponse(
-        status_code=status.HTTP_308_PERMANENT_REDIRECT,
-        url=config.logout_redirect_endpoint.rstrip("/") + "?rd=" + encoded_url,
-    )
-
-
-@secure_router_v2.websocket("/run_plan")
-async def run_plan(
-    ws: WebSocket,
-    runner: Annotated[WorkerDispatcher, Depends(_runner)],
-    user: Fedid,
-    opa: Annotated[OpaUserClient | None, Depends(opa)],
-):
-    LOGGER.info("Starting WS plan as %s", user)
-    await ws.accept()
-    rq = await ws.receive_text()
-    try:
-        task_request = Submit.model_validate_json(rq)
-    except ValidationError:
-        LOGGER.info("Failed to deserialize request: %r", rq, exc_info=True)
-        await ws.close(
-            code=WS_1007_INVALID_FRAME_PAYLOAD_DATA, reason="Invalid Request"
-        )
-        return
-    LOGGER.info("Plan request: %s", task_request)
-
-    if opa:
-        try:
-            await opa.can_submit_task(task_request.task)
-        except Exception as e:
-            LOGGER.info(
-                "User %s does not have permission to run task", user, exc_info=e
-            )
-            await ws.send_text(Unauthorized().model_dump_json())
-            await ws.close(code=protocol.AUTHZ_ERROR, reason="Unauthorized")
-            return
-
-    try:
-        task_id: str = runner.run(
-            interface.submit_task, task_request.task, {"user": user}
-        )
-        LOGGER.info("Task ID: %s", task_id)
-    except TaskParameterError as tpe:
-        LOGGER.info("Plan args not valid: %s - %s", task_request, tpe)
-        await ws.send_text(InvalidArgs.from_parameter_error(tpe).model_dump_json())
-        await ws.close(code=protocol.INVALID_ARGS, reason="Invalid Args")
-        return
-    except KeyError as ke:
-        LOGGER.info("Plan %r not recognised", ke.args[0])
-        await ws.send_text(PlanNotFound(plan_name=ke.args[0]).model_dump_json())
-        await ws.close(code=protocol.UNKNOWN_PLAN, reason="Unknown Plan")
-        return
-
-    try:
-        with runner.event_pipe() as events:
-            active_task = runner.run(interface.get_active_task)
-            if active_task is not None and not active_task.is_complete:
-                raise WorkerBusyError("Task already running")
-            runner.run(
-                interface.begin_task,
-                task=WorkerTask(task_id=task_id),
-                pass_through_headers=get_passthrough_headers(ws),
-            )
-            async for evt in events:
-                if evt.task_id != task_id:
-                    continue
-                LOGGER.debug("Event: %s", evt)
-                await ws.send_text(Update(data=evt).model_dump_json())
-                if isinstance(evt, WorkerEvent) and evt.is_complete():
-                    LOGGER.debug("End of stream")
-                    break
-    except WorkerBusyError:
-        LOGGER.error("Worker was busy")
-        await ws.send_text(ServerBusy().model_dump_json())
-        await ws.close(code=WS_1013_TRY_AGAIN_LATER, reason="Worker busy")
-    except WebSocketDisconnect:
-        LOGGER.info("Client disconnected")
-        runner.run(
-            interface.cancel_active_task, failure=True, reason="Client disconnected"
-        )
-    else:
-        LOGGER.info("Plan complete")
-        await ws.close()
 
 
 @start_as_current_span(TRACER, "config")

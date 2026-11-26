@@ -272,8 +272,9 @@ def test_get_devices(mock_runner: Mock, client: TestClient, v1_api_base: str) ->
             {
                 "name": "my-device",
                 "protocols": [{"name": "Stoppable", "types": []}],
+                "children": {},
             }
-        ]
+        ],
     }
 
 
@@ -290,6 +291,7 @@ def test_get_device_by_name(
     assert response.json() == {
         "name": "my-device",
         "protocols": [{"name": "Stoppable", "types": []}],
+        "children": {},
     }
 
 

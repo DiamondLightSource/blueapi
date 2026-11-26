@@ -65,17 +65,35 @@ class DeviceRef(ClientObjectRef):
 
     name: str
     model: DeviceModel
+    parent: "DeviceRef | None" = None
+    children: dict[str, "DeviceRef"]
     _cache: DeviceCache
 
-    def __init__(self, name: str, cache: DeviceCache, model: DeviceModel):
+    def __init__(
+        self,
+        name: str,
+        cache: DeviceCache,
+        model: DeviceModel,
+        parent: "DeviceRef | None" = None,
+    ):
         self.name = name
         self.model = model
         self._cache = cache
+        self.parent = parent
+        self.children = {}
 
     def __getattr__(self, name: str) -> "DeviceRef":
         if name.startswith("_"):
             raise AttributeError(f"No child device named {name}")
-        return self._cache[f"{self.name}.{name}"]
+        try:
+            return self.children[name]
+        except KeyError as e:
+            raise AttributeError(
+                f"{self.name} doesn't have a child named {name}"
+            ) from e
+
+    def __dir__(self):
+        return [*super().__dir__(), *self.children]
 
     def __repr__(self):
         return f"Device({self.name})"

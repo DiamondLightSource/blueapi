@@ -34,6 +34,11 @@ class DeviceModel(BlueapiBaseModel):
     protocols: list[ProtocolInfo] = Field(
         description="Protocols that a device conforms to, indicating its capabilities"
     )
+    children: dict[str, str] = Field(
+        description="Direct children that a device has, "
+        "with attribute as a key with the value of the child device's name",
+        default_factory=dict,
+    )
 
     @classmethod
     def from_device(cls, device: Device) -> "DeviceModel":

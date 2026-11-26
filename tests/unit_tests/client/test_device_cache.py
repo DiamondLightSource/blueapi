@@ -35,6 +35,23 @@ def test_device_cache_repr(client):
     assert repr(client.devices) == "DeviceCache(2 devices)"
 
 
+def test_child_devices_has_parent():
+    cache = MagicMock()
+    model = Mock()
+    model.name = "stage"
+    parent = DeviceRef(name="stage", cache=cache, model=Mock())
+    child = DeviceRef(name="stage-x", cache=cache, model=Mock(), parent=parent)
+    assert child.parent is parent
+
+
+def test_parent_devices_has_no_parent():
+    cache = MagicMock()
+    model = Mock()
+    model.name = "stage"
+    parent = DeviceRef(name="stage", cache=cache, model=Mock(), parent=None)
+    assert parent.parent is None
+
+
 def test_device_repr():
     cache = Mock()
     model = Mock()

@@ -35,7 +35,6 @@ from blueapi.service.model import (
     EnvironmentResponse,
     PlanModel,
     PlanResponse,
-    ProtocolInfo,
     TaskRequest,
     TaskResponse,
     WorkerTask,
@@ -120,15 +119,17 @@ def test_get_nonexistent_device(
 
 
 def test_get_child_device(mock_rest: Mock, client: BlueapiClient):
-    mock_rest.get_device.side_effect = lambda name: (
-        DeviceModel(name="foo.x", protocols=[ProtocolInfo(name="One")])
-        if name == "foo.x"
-        else None
+    mock_rest.get_devices.return_value = DeviceResponse(
+        devices=[
+            DeviceModel(name="stage", protocols=[], children={"x": "stage-x"}),
+            DeviceModel(name="stage-x", protocols=[], children={}),
+        ]
     )
-    foo = client.devices.foo
-    assert foo.model.name == "foo"
-    x = client.devices.foo.x
-    assert x.model.name == "foo.x"
+    stage = client.devices.stage
+    assert stage.model.name == "stage"
+    x = client.devices.stage.x
+    assert x.model.name == "stage-x"
+    assert x.parent is stage
 
 
 def test_state_property(client: BlueapiClient):

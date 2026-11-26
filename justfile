@@ -63,7 +63,7 @@ repl:
     uv run --with ptpython ptpython -i <(cat << EOF
     from blueapi.client import BlueapiClient
     from blueapi.client.rest import ServiceUnavailableError
-    bc = BlueapiClient.from_config_file("{{ TEST_CONFIG }}").with_instrument_session("cm12345-1")
+    bc = BlueapiClient.for_host().with_instrument_session("cm12345-1")
     try:
         bc.login()
     except KeyboardInterrupt:

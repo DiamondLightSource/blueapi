@@ -7,6 +7,9 @@ from multiprocessing.connection import Connection
 from typing import Any
 
 from bluesky.callbacks.tiled_writer import TiledWriter
+from bluesky.protocols import Readable, Reading
+from bluesky.run_engine import call_in_bluesky_event_loop
+from bluesky.utils import maybe_await
 from bluesky_stomp.messaging import StompClient
 from bluesky_stomp.models import Broker, DestinationBase, MessageTopic
 from fastapi import status
@@ -219,6 +222,19 @@ def get_device(name: str) -> DeviceModel:
         raise KeyError(name)
 
     return DeviceModel.from_device(device)
+
+
+def read_device(addr: str) -> dict[str, Reading[Any]]:
+    if not (device := context().find_device(addr)):
+        raise KeyError(addr)
+
+    if not isinstance(device, Readable):
+        raise TypeError("Requested device is not readable")
+
+    return call_in_bluesky_event_loop(
+        maybe_await(device.read()),
+        timeout=10.0,
+    )
 
 
 def submit_task(

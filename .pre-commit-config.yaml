@@ -29,7 +29,7 @@ repos:
         args: ["--chart-search-root=helm"]
 
   - repo: https://github.com/losisin/helm-values-schema-json
-    rev: v2.5.0
+    rev: v2.6.1
     hooks:
       - id: helm-schema
         args: ["--config", "helm/blueapi/.schema.yaml"]

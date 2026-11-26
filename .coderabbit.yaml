@@ -1,0 +1,23 @@
+# CodeRabbit configuration (V2): https://docs.coderabbit.ai/reference/configuration
+version: 2
+reviews:
+  # Do not review automatically; only review when asked via `@coderabbitai review`
+  auto_review:
+    enabled: false
+  # Do not write an auto-generated high-level summary into the PR description
+  high_level_summary: false
+  # Disable every finishing touch that can commit/push to the PR branch
+  finishing_touches:
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+chat:
+  # Do not automatically reply to comments on the PR
+  auto_reply: false

@@ -1,0 +1,22 @@
+# Overlay on config.yaml reproducing the i08-1 Andor scan (panda_scan) with mocked devices.
+# Not used in CI. Run locally:
+#   blueapi -c config.yaml -c config-i08-1.yaml setup-scratch
+#   blueapi -c config.yaml -c config-i08-1.yaml serve
+env:
+  metadata:
+    instrument: i08-1
+  sources:
+    - kind: deviceManager
+      module: dodal.beamlines.i08_1
+      mock: true
+    - kind: planFunctions
+      module: imaging_bluesky.beamlines.i08_1.plans
+scratch:
+  root: /tmp/scratch/blueapi
+  repositories:
+    - name: dodal
+      remote_url: https://github.com/DiamondLightSource/dodal.git
+      target_revision: i08-1
+    - name: imaging-bluesky
+      remote_url: https://github.com/DiamondLightSource/imaging-bluesky.git
+      target_revision: i08-1-ss

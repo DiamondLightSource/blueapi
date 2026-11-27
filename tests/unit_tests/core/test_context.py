@@ -321,7 +321,7 @@ class Table(Device):
         super().__init__(name=name)
 
 
-def test_register_device_registers_children_recursively(
+def test_register_children_registers_children_recursively(
     empty_context: BlueskyContext,
 ):
     table = Table(name="table")
@@ -372,7 +372,9 @@ class AxisBank(Device):
         super().__init__(name=name)
 
 
-def test_device_vector_children_are_registered(empty_context: BlueskyContext):
+def test_device_vector_children_are_registered(
+    empty_context: BlueskyContext,
+):
     bank = AxisBank(name="bank")
     empty_context.register_device(bank)
 
@@ -418,10 +420,13 @@ def test_top_level_name_collision_keeps_existing_device_and_logs(
 
     caplog.set_level(logging.DEBUG)
     motor = SimMotor(name="stage-x")
-    empty_context.register_device(motor)
+    with pytest.raises(ValueError, match="Device name already registered: stage-x"):
+        empty_context.register_device(motor)
 
     assert empty_context.devices["stage-x"].device is stage.x
-    assert motor.velocity not in empty_context.devices.values()
+    assert not any(
+        wrapped.device is motor.velocity for wrapped in empty_context.devices.values()
+    )
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
@@ -444,6 +449,55 @@ def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):
     empty_context.register_device(stage, name="stage")
 
     assert empty_context.devices.keys() == {"stage"}
+
+
+def test_register_device_does_register_children(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+    assert empty_context.devices.keys() == {
+        "stage",
+        "stage-x",
+        "stage-theta",
+        "stage-x-motor_egu",
+        "stage-x-motor_resolution",
+        "stage-x-steps_per_revolution",
+        "stage-x-units_per_revolution",
+        "stage-x-encoder_resolution",
+        "stage-x-velocity",
+        "stage-x-offset",
+        "stage-x-user_setpoint",
+        "stage-x-max_velocity",
+        "stage-x-acceleration_time",
+        "stage-x-precision",
+        "stage-x-deadband",
+        "stage-x-motor_done_move",
+        "stage-x-low_limit_travel",
+        "stage-x-high_limit_travel",
+        "stage-x-dial_low_limit_travel",
+        "stage-x-dial_high_limit_travel",
+        "stage-x-offset_freeze_switch",
+        "stage-x-high_limit_switch",
+        "stage-x-low_limit_switch",
+        "stage-x-output_link",
+        "stage-x-set_use_switch",
+        "stage-x-motor_stop",
+        "stage-theta-motor_egu",
+    }
+
+
+def test_register_device_only_registers_top_level_device(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    motor = SimMotor(name="motor")
+    empty_context.register_device(stage, include_children=False)
+    empty_context.register_device(motor, include_children=False)
+    assert empty_context.devices.keys() == {
+        "stage",
+        "motor",
+    }
+
+
+# def_tree_structure
+# def test top level devices get registsered first
 
 
 def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):
@@ -660,7 +714,7 @@ class ConcreteStoppable(Stoppable):
     def name(self) -> str:
         return "Concrete"
 
-    def stop(self, success: bool = True):
+    def stop(self, *, success: bool = True):
         pass
 
 
@@ -894,7 +948,7 @@ def test_single_device_manager(empty_context: BlueskyContext):
     sdm = StaticDeviceManager(devices={"foo": foo})
     empty_context.with_device_manager(sdm)
 
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice("foo", foo)}
 
 
 def test_device_manager_build_error(empty_context: BlueskyContext):
@@ -964,7 +1018,7 @@ def test_device_manager_environment_source(empty_context: BlueskyContext):
     with patch("blueapi.core.context.import_module") as imp_mod:
         imp_mod.side_effect = lambda mod: dev_mod if mod == "foo.bar" else None
         empty_context.with_config(env)
-    assert empty_context.devices == {"foo": BlueapiDevice(foo)}
+    assert empty_context.devices == {"foo": BlueapiDevice("foo", foo)}
 
 
 def test_non_device_manager_errors(empty_context: BlueskyContext):

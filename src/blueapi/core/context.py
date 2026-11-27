@@ -1,5 +1,6 @@
 import logging
 import sys
+from collections import deque
 from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field, fields, is_dataclass
 from importlib import import_module, metadata
@@ -193,7 +194,7 @@ class BlueskyContext:
 
     def with_config(self, config: EnvironmentConfig) -> None:
         if config.metadata is not None:
-            self.run_engine.md |= config.metadata.model_dump()
+            self.run_engine.md.update(config.metadata.model_dump())
 
         package_map = metadata.packages_distributions()
         packages = {src.module.split(".")[0] for src in config.sources}
@@ -221,6 +222,7 @@ class BlueskyContext:
                             f"{name} in module {mod} is not a device manager"
                         )
                     self.with_device_manager(manager, mock)
+
         if not self.devices:
             LOGGER.warning(
                 "Context had no devices after loading environment - are all modules "
@@ -265,8 +267,15 @@ class BlueskyContext:
         fixtures = {"path_provider": self.path_provider} if self.path_provider else {}
         build_result = manager.build_and_connect(mock=mock, fixtures=fixtures)
 
-        for device in build_result.devices.values():
-            self.register_device(device)
+        registered_devices = []
+        for name, device in build_result.devices.items():
+            name = getattr(device, "name", name)
+            self.register_device(
+                device, name, include_children=False
+            )  # include_children=False so only register top-level devices not children
+            registered_devices.append(name)
+
+        self._register_children(*(self.devices[name] for name in registered_devices))
 
         if errs := build_result.build_errors:
             LOGGER.warning(
@@ -325,7 +334,9 @@ class BlueskyContext:
         )
         return plan
 
-    def register_device(self, device: Device, name: str | None = None) -> None:
+    def register_device(
+        self, device: Device, name: str | None = None, include_children: bool = True
+    ) -> None:
         """
         Register an device in the context. The device needs to be registered with a
         name. If the device is Readable, Movable or Flyable it has a `name`
@@ -333,19 +344,21 @@ class BlueskyContext:
         `name` parameter here. If the device conforms to a different protocol then
         the parameter must be used to name it.
 
-        Children of ophyd-async devices, including signals, are also registered
-        under their own names, e.g. registering "stage" also registers "stage-x"
-        and "stage-x-velocity". If a name is already in use, the existing device
-        is kept and the new one and its children are not registered.
+        The include_children flag has been set to True so child devices are also
+        registered. This function will therefore register for example the top-level
+        device 'stage' and its children 'stage-x' 'stage-x-velocity'. If a name is
+        already in use, the existing device is kept and the new one and its children
+        are not registered.
 
         Args:
             device (Device): The device to register
             name (Optional[str], optional): A name for the device. Defaults to None.
+            include_children: Flag to decide if child devices should be registered
 
         Raises:
             KeyError: If no name is found/supplied
+            ValueError: If the device specified has already been registered.
         """
-
         if not is_bluesky_compatible_device(device):
             raise TypeError(f"{device} is not a Bluesky compatible device")
 
@@ -355,24 +368,31 @@ class BlueskyContext:
             else:
                 raise KeyError(f"Must supply a name for this device: {device}")
 
-        if self._add_device(name, device):
-            self._register_children(device)
+        if added_device := self._add_device(name, device):
+            if include_children:
+                self._register_children(added_device)
+        else:
+            raise ValueError(f"Device name already registered: {name}")
 
-    def _register_children(self, device: Device) -> None:
-        """Register the children of an ophyd-async device under their own names."""
+    def _register_children(self, *devices: BlueapiDevice) -> None:
+        """Register the children of every top-level device,
+        once they are all registered."""
+        buffer = deque(devices)
+        while buffer:
+            parent = buffer.popleft()
+            if not isinstance(parent.device, AsyncDevice):
+                continue
+            for attr, device in parent.device.children():
+                if device.name and (child := self._add_device(device.name, device)):
+                    child.parent = parent
+                    parent.children[attr] = child
+                    buffer.append(child)
 
-        if not isinstance(device, AsyncDevice):
-            return
-
-        for _, child in device.children():
-            if child.name and self._add_device(child.name, child):
-                self._register_children(child)
-
-    def _add_device(self, name: str, device: Device) -> bool:
+    def _add_device(self, name: str, device: Device) -> BlueapiDevice | None:
         """Add a device unless a different one is already registered as name."""
 
-        existing = self.devices.setdefault(name, BlueapiDevice(device))
-        if existing.device is not device:
+        wrapped = self.devices.setdefault(name, BlueapiDevice(name, device))
+        if wrapped.device is not device:
             # Expected for e.g. a motor's user_readback, which has the motor's name.
             # The caller skips its children too, as their names start with this one
             if not self._warned_name_clash:
@@ -386,8 +406,8 @@ class BlueskyContext:
                 device,
                 name,
             )
-            return False
-        return True
+            return None
+        return wrapped
 
     def unregister_all_devices(self):
         """Unregister all devices from the context."""

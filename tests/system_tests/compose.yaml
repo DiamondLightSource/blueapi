@@ -111,7 +111,8 @@ services:
       - ./services/blueapi/start.sh:/blueapi/start.sh:ro
     entrypoint: ["sh", "/blueapi/start.sh"]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      # CMD-SHELL: podman's docker-compat API word-splits CMD args, breaking the -c script
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
       interval: 5s
       timeout: 5s
       retries: 10

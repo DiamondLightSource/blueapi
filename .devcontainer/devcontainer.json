@@ -5,9 +5,22 @@
         "dockerfile": "../Dockerfile",
         "target": "developer"
     },
+    "features": {
+        // Docker CLI + compose talking to the host's container engine (docker-outside-of-docker).
+        // moby=false installs Docker CE CLI, which (unlike moby) is packaged for this Ubuntu release.
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "moby": false
+        }
+    },
     "containerEnv": {
         "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
         "OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318",
+        // The host engine resolves bind mount sources on the host, so compose must be run on
+        // paths that are the same inside and outside the container (see the mirror mount below)
+        "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+        // Likewise compose expands ~ in bind mount sources (e.g. phoebus' ~/.Xauthority), so it
+        // must see the host's HOME, not the container's /root
+        "LOCAL_HOME": "${localEnv:HOME}"
     },
     "remoteEnv": {
         // Allow X11 apps to run inside the container
@@ -16,6 +29,8 @@
         "PREK_HOME": "/cache/prek",
         "UV_CACHE_DIR": "/cache/uv",
         "UV_PYTHON_CACHE_DIR": "/cache/uv-python",
+        // Keep the system test browser in the cache so it survives rebuilds
+        "PLAYWRIGHT_BROWSERS_PATH": "/cache/ms-playwright",
         // Make a venv that is specific for this workspace path as the cache is shared
         "UV_PROJECT_ENVIRONMENT": "/cache/venv-for${localWorkspaceFolder}",
         // Do the equivalent of "activate" the venv so we don't have to "uv run" everything
@@ -55,7 +70,9 @@
         // Allow the container to access the host X11 display and EPICS CA
         "--net=host",
         // Make sure SELinux does not disable with access to host filesystems like tmp
-        "--security-opt=label=disable"
+        "--security-opt=label=disable",
+        // Needed by claude-sandbox network jail
+        "--device=/dev/net/tun"
     ],
     "mounts": [
         // Mount in the user terminal config folder so it can be edited
@@ -69,10 +86,27 @@
             "source": "devcontainer-shared-cache",
             "target": "/cache",
             "type": "volume"
+        },
+        // docker-outside-of-docker: give the feature the host's engine socket. This replaces the
+        // feature's default /var/run/docker.sock mount, which doesn't exist with rootless podman.
+        // Needs `systemctl --user enable --now podman.socket` on the host once. With rootful
+        // docker on the host, change the source to /var/run/docker.sock.
+        {
+            "source": "${localEnv:XDG_RUNTIME_DIR}/podman/podman.sock",
+            "target": "/var/run/docker-host.sock",
+            "type": "bind"
+        },
+        // Mirror the workspace at its host path so relative bind mounts in compose files resolve
+        // to paths the host engine can see
+        {
+            "source": "${localWorkspaceFolder}/..",
+            "target": "${localWorkspaceFolder}/..",
+            "type": "bind"
         }
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
-    // After the container is created, recreate the venv then make prek first run faster
-    "postCreateCommand": "uv venv --clear && uv sync && prek install --install-hooks"
+    // After the container is created, recreate the venv then make prek first run faster,
+    // and install the system test browser (into the cache) plus its system libraries
+    "postCreateCommand": "uv venv --clear && uv sync && prek install --install-hooks && playwright install --with-deps chromium && uvx claude-sandbox==5.2.2 install --minimal"
 }

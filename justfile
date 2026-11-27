@@ -1,5 +1,9 @@
 SESSION := "cm12345-1"
 RUNNER := `command -v docker || command -v podman || true`
+# In the devcontainer the engine is the host's (docker-outside-of-docker), which resolves
+# bind mounts on the host, so use the compose file via its host path, mirrored in the container
+COMPOSE_ROOT := env("LOCAL_WORKSPACE_FOLDER", ".")
+COMPOSE_HOME := env("LOCAL_HOME", env("HOME"))
 
 TEST_CONFIG := "tests/system_tests/config.yaml"
 
@@ -22,7 +26,7 @@ init-example-services:
 
 [doc('Bring up the example services with docker/podman compose')]
 compose +ARGS="up -d --no-recreate": init-example-services _check-runner
-    {{ RUNNER }} compose -f tests/system_tests/compose.yaml {{ ARGS }}
+    HOME={{ COMPOSE_HOME }} {{ RUNNER }} compose -f {{ COMPOSE_ROOT }}/tests/system_tests/compose.yaml {{ ARGS }}
 
 [doc('Bring up the example services plus the NeXus file converter (Diamond registry only)')]
 compose-diamond: (compose "--profile diamond up -d --no-recreate")

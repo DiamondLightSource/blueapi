@@ -51,6 +51,10 @@ class NumtrackerClient:
     ) -> None:
         self._url = url
         self._headers: Mapping[str, str] = {}
+        # One client reused across requests so connections are pooled.
+        # Only used from the RunEngine's event loop; teardown() clears the
+        # cached NumtrackerClient, so a fresh one is built with the new context.
+        self._client = httpx.AsyncClient()
 
     def set_headers(self, headers: Mapping[str, str]) -> None:
         """
@@ -94,12 +98,11 @@ class NumtrackerClient:
             """)
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self._url.unicode_string(),
-                headers=self._headers,
-                json=query,
-            )
+        response = await self._client.post(
+            self._url.unicode_string(),
+            headers=self._headers,
+            json=query,
+        )
 
         response.raise_for_status()
         json = response.json()

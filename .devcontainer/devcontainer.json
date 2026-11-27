@@ -64,7 +64,9 @@
         // (rootless podman gives no CAP_NET_ADMIN over the host's), and it keeps the compose
         // subnets and ports from clashing with the host. X11 goes via the socket mounted below.
         // Make sure SELinux does not disable with access to host filesystems like tmp
-        "--security-opt=label=disable"
+        "--security-opt=label=disable",
+        // Needed by claude-sandbox's network jail
+        "--device=/dev/net/tun"
     ],
     "mounts": [
         // Our own /tmp so docker-in-docker's init doesn't mount a tmpfs over it, which would
@@ -94,6 +96,6 @@
     ],
     // Mount the parent as /workspaces so we can pip install peers as editable
     "workspaceMount": "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind",
-    // After the container is created, recreate the venv then make prek first run faster
-    "postCreateCommand": "uv venv --clear && uv sync && prek install --install-hooks"
+    // Recreate the venv, warm prek, install claude-sandbox and Playwright
+    "postCreateCommand": "bash .devcontainer/postCreate.sh"
 }

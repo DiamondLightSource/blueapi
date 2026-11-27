@@ -326,7 +326,6 @@ def test_register_children_registers_children_recursively(
 ):
     table = Table(name="table")
     empty_context.register_device(table)
-    empty_context.register_children()
 
     assert empty_context.devices.keys() == {
         "table",
@@ -353,7 +352,6 @@ def test_child_sharing_parent_name_is_skipped_and_warned_once(
     motor = SimMotor(name="motor")
     empty_context.register_device(motor)
     empty_context.register_device(SimMotor(name="other"))
-    empty_context.register_children()
 
     assert empty_context.devices["motor"].device is motor
     assert motor.user_readback not in empty_context.devices.values()
@@ -379,7 +377,6 @@ def test_device_vector_children_are_registered(
 ):
     bank = AxisBank(name="bank")
     empty_context.register_device(bank)
-    empty_context.register_children()
 
     assert empty_context.devices["bank-axes"].device is bank.axes
     assert empty_context.devices["bank-axes-1"].device is bank.axes[1]
@@ -393,7 +390,6 @@ def test_overridden_registration_name_does_not_rename_children(
     # the motor's readback is registered as "motor", which is not in use
     motor = SimMotor(name="motor")
     empty_context.register_device(motor, name="foo")
-    empty_context.register_children()
 
     assert empty_context.devices["foo"].device is motor
     assert empty_context.devices["motor"].device is motor.user_readback
@@ -405,7 +401,6 @@ def test_unrelated_name_collision_keeps_existing_device_and_logs(
 ):
     sentinel = SimMotor(name="sentinel")
     empty_context.register_device(sentinel, name="stage-x")
-    empty_context.register_children()
 
     caplog.set_level(logging.DEBUG)
     stage = Stage(name="stage")
@@ -425,10 +420,13 @@ def test_top_level_name_collision_keeps_existing_device_and_logs(
 
     caplog.set_level(logging.DEBUG)
     motor = SimMotor(name="stage-x")
-    empty_context.register_device(motor)
-    empty_context.register_children()
+    with pytest.raises(ValueError, match="Device name already registered: stage-x"):
+        empty_context.register_device(motor)
+
     assert empty_context.devices["stage-x"].device is stage.x
-    assert motor.velocity not in empty_context.devices.values()
+    assert not any(
+        wrapped.device is motor.velocity for wrapped in empty_context.devices.values()
+    )
     assert any("stage-x" in record.message for record in caplog.get_records("call"))
 
 
@@ -446,17 +444,60 @@ def test_register_device_is_idempotent(
     assert not caplog.get_records("call")
 
 
-def test_register_children_is_idempotent(
-    empty_context: BlueskyContext, caplog: LogCaptureFixture
-):
-    pass
-
-
 def test_register_device_skips_unnamed_children(empty_context: BlueskyContext):
     stage = Stage()  # unnamed, so its children are too
     empty_context.register_device(stage, name="stage")
 
     assert empty_context.devices.keys() == {"stage"}
+
+
+def test_register_device_does_register_children(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    empty_context.register_device(stage)
+    assert empty_context.devices.keys() == {
+        "stage",
+        "stage-x",
+        "stage-theta",
+        "stage-x-motor_egu",
+        "stage-x-motor_resolution",
+        "stage-x-steps_per_revolution",
+        "stage-x-units_per_revolution",
+        "stage-x-encoder_resolution",
+        "stage-x-velocity",
+        "stage-x-offset",
+        "stage-x-user_setpoint",
+        "stage-x-max_velocity",
+        "stage-x-acceleration_time",
+        "stage-x-precision",
+        "stage-x-deadband",
+        "stage-x-motor_done_move",
+        "stage-x-low_limit_travel",
+        "stage-x-high_limit_travel",
+        "stage-x-dial_low_limit_travel",
+        "stage-x-dial_high_limit_travel",
+        "stage-x-offset_freeze_switch",
+        "stage-x-high_limit_switch",
+        "stage-x-low_limit_switch",
+        "stage-x-output_link",
+        "stage-x-set_use_switch",
+        "stage-x-motor_stop",
+        "stage-theta-motor_egu",
+    }
+
+
+def test_register_device_only_registers_top_level_device(empty_context: BlueskyContext):
+    stage = Stage(name="stage")
+    motor = SimMotor(name="motor")
+    empty_context.register_device(stage, include_children=False)
+    empty_context.register_device(motor, include_children=False)
+    assert empty_context.devices.keys() == {
+        "stage",
+        "motor",
+    }
+
+
+# def_tree_structure
+# def test top level devices get registsered first
 
 
 def test_child_device_usable_as_plan_argument(empty_context: BlueskyContext):
